@@ -1,4 +1,5 @@
 {
+
 exception Eof
 
 type token =
@@ -79,12 +80,12 @@ let upCase = ['A'-'Z']
 let lowCase = ['a'-'z']
 let id = ( upCase | lowCase | '_' | digit )
 let white = ['\t' ' ']
-let constChar = ( [^ '\\' '\"' '\''] ) | ( '\\'( ['n' 't' 'r' '0' '\\' '\'' '\"'] ) | ( 'x' hexdig hexdig ) )
+let constChar = ( [^ '\\' '\"' '\''] ) | ( '\\'( ( ['n' 't' 'r' '0' '\\' '\'' '\"'] ) | ( 'x' hexdig hexdig ) ) )
 (*let num_lines = ref 0*)
 
 rule token = parse
-    white  { token lexbuf }
-  | ['\n'] { (*incr num_lines;*) EOL }
+  | white  { token lexbuf }
+  | ['\n'] { (*incr num_lines; token lexbuf *) EOL }
   | digit+ { INT } 
   | digit+( '.'digit+('e'['-''+']?digit+)? ) { FLOAT }
   | "and" { ANDDEF }
@@ -154,8 +155,8 @@ rule token = parse
   | lowCase+id* { ID }
   | upCase+id* { CID }
   | '\''constChar '\'' { CHAR }
-  | '\"'constChar* '\'' { STRING }
-  | "--"_* { token lexbuf }
+  | '\"'constChar* '\"' { STRING }
+  | "--"[^'\n']* { token lexbuf }
   | "(*" { print_endline "comments start"; comments 0 lexbuf }
   | _ { Printf.printf "error"; token lexbuf}
   | eof { print_endline "file over"; EOF }
@@ -167,7 +168,7 @@ and comments level = parse
   | "(*" { Printf.printf "comments (%d) start\n" (level+1);
 	  comments (level+1) lexbuf
 	 }
-  | '\n' { (*incr num_lines;*) EOL }
+  | '\n' { (*incr num_lines;*) comments level lexbuf }
 
   | _ { comments level lexbuf  }
   | eof { print_endline "comments not closed";
@@ -247,9 +248,13 @@ and comments level = parse
   | COLON -> "COLON"
   | EOF -> "EOF"
 
-
 let main =
-  let lexbuf = Lexing.from_channel stdin in
+  let cin =
+    if Array.length Sys.argv >1
+    then open_in Sys.argv.(1)
+    else stdin
+  in
+  let lexbuf = Lexing.from_channel cin in
   let rec loop () =
     let token = token lexbuf in
     Printf.printf "token=%s, lexeme=\"%s\"\n"
