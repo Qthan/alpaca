@@ -19,7 +19,7 @@ asdf__f_s_s
 "route66"
 
 "hellowworld!\n" test
-test "Nam e:\t\"douglasadams\"\nvalue:\t42\n"test
+test "Na\m e:\t\"douglasadams\"\nvalue:\t42\n"test
 
 12
 123
@@ -57,5 +57,10 @@ kai ama laxei
 -4.2e-12
 -4.2e12
 -4.2e+12
+
+"fdskjkfsdkjfkjs
+jkfdskjf"
+if zoo then (*helloI*)Zoep
+    else Qthan
 
 

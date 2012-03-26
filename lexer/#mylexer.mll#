@@ -172,7 +172,7 @@ rule token = parse
   | "--"[^'\n']* { token lexbuf }
   | "(*" { print_endline "comments start"; comments 0 lexbuf }
   | _ as chr { print_error lexbuf chr ; token lexbuf}
-  | eof { print_endline "file over"; EOF }
+  | eof { print_ endline "file over"; EOF }
 
 and comments level = parse
   | "*)" { Printf.printf "comments (%d) end\n" level;
