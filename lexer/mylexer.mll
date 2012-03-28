@@ -3,75 +3,75 @@
 exception Eof
 
 type token =
-  | ANDDEF
-  | ARRAY
-  | EOF
-  | BEGIN
-  | BOOL
-  | CHAR
-  | DELETE
-  | DIM
-  | DO
-  | DONE
-  | DOWNTO
-  | EOL
-  | ELSE
-  | END
-  | FALSE
-  | FLOAT
-  | FOR
-  | IF
-  | IN
-  | INT
-  | LET
-  | MATCH
-  | MOD
-  | MUTABLE
-  | NEW
-  | NOT
-  | OF
-  | REC
-  | REF
-  | THEN
-  | TO
-  | TRUE
-  | TYPE
-  | UNIT
-  | WHILE
-  | WITH
-  | ID 
-  | CID 
-  | OP 
-  | GIVES
-  | SEQ 
-  | PLUS 
-  | MINUS
-  | STRING
-  | TIMES
-  | DIV
-  | FPLUS
-  | FMINUS
-  | FTIMES
-  | FDIV
-  | POWER
-  | BANK
-  | SEMICOLON
-  | AND
-  | OR
-  | NSEQ
-  | L
-  | G
-  | LE
-  | GE
-  | EQ
-  | NEQ
-  | ASSIGN
-  | LPAR
-  | RPAR
-  | LBRACK
-  | RBRACK
-  | COMA
-  | COLON
+    T_ANDDEF
+  | T_ARRAY
+  | T_EOF
+  | T_BEGIN
+  | T_BOOL
+  | T_CHAR
+  | T_DELETE
+  | T_DIM
+  | T_DO
+  | T_DONE
+  | T_DOWNTO
+  | T_EOL
+  | T_ELSE
+  | T_END
+  | T_FALSE
+  | T_FLOAT
+  | T_FOR
+  | T_IF
+  | T_IN
+  | T_INT
+  | T_LET
+  | T_MATCH
+  | T_MOD
+  | T_MUTABLE
+  | T_NEW
+  | T_NOT
+  | T_OF
+  | T_REC
+  | T_REF
+  | T_THEN
+  | T_TO
+  | T_TRUE
+  | T_TYPE
+  | T_UNIT
+  | T_WHILE
+  | T_WITH
+  | T_ID 
+  | T_CID 
+  | T_OP 
+  | T_GIVES
+  | T_SEQ 
+  | T_PLUS 
+  | T_MINUS
+  | T_STRING
+  | T_TIMES
+  | T_DIV
+  | T_FPLUS
+  | T_FMINUS
+  | T_FTIMES
+  | T_FDIV
+  | T_POWER
+  | T_BANK
+  | T_SMCOLON
+  | T_AND
+  | T_OR
+  | T_NSEQ
+  | T_L
+  | T_G
+  | T_LE
+  | T_GE
+  | T_EQ
+  | T_NEQ
+  | T_ASSIGN
+  | T_LPAR
+  | T_RPAR
+  | T_LBRACK
+  | T_RBRACK
+  | T_COMA
+  | T_COLON
 
 
 let incr_linenum lexbuf =
@@ -83,184 +83,183 @@ let incr_linenum lexbuf =
 
 let print_error lexbuf chr = 
   let pos = lexbuf.Lexing.lex_curr_p in
-  Printf.printf "line:%d-character:%d:->error::Invalid character '%c' (ascii: %d)\n" 
+  Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
     (pos.Lexing.pos_lnum) (pos.Lexing.pos_cnum - pos.Lexing.pos_bol) (chr) (Char.code chr)
 }
 
-let digit = ['0'-'9']
-let hexdig = ['0'-'9''a'-'f''A'-'F']
-let upCase = ['A'-'Z']
-let lowCase = ['a'-'z']
-let id = ( upCase | lowCase | '_' | digit )
-let white = ['\t' ' ']
+let digit     = ['0'-'9']
+let hexdig    = ['0'-'9''a'-'f''A'-'F']
+let upCase    = ['A'-'Z']
+let lowCase   = ['a'-'z']
+let id        = ( upCase | lowCase | '_' | digit )
+let white     = ['\t' ' ']
 let constChar = ( [^ '\\' '\"' '\''] ) | ( '\\'( ( ['n' 't' 'r' '0' '\\' '\'' '\"'] ) | ( 'x' hexdig hexdig ) ) )
 
 
 rule token = parse
-  | white  { token lexbuf }
-  | ['\n'] { incr_linenum lexbuf; token lexbuf  (*; EOL*) }
-  | digit+ { INT } 
-  | digit+( '.'digit+('e'['-''+']?digit+)? ) { FLOAT }
-  | "and" { ANDDEF }
-  | "array" { ARRAY }
-  | "begin"{ BEGIN } 
-  | "bool" { BOOL }
-  | "char" { CHAR }
-  | "delete" { DELETE }
-  | "dim" { DIM }
-  | "do" { DO }
-  | "done" { DONE }
-  | "downto" { DOWNTO }
-  | "else" { ELSE }
-  | "end" { END }
-  | "false"{ FALSE }
-  | "float"{ FLOAT }
-  | "for"{ FOR }
-  | "if" { IF }
-  | "in" { IN }
-  | "int" { INT }
-  | "let" { LET }
-  | "match" { MATCH }
-  | "mod" { MOD }
-  | "mutable" { MUTABLE }
-  | "new" { NEW }
-  | "not" { NOT }
-  | "of" { OF }
-  | "rec" { REC }
-  | "ref" { REF }
-  | "then" { THEN }
-  | "to" { TO }
-  | "true" { TRUE }
-  | "type" { TYPE }
-  | "unit" { UNIT }
-  | "while" { WHILE }
-  | "with" { WITH }
-  | "->" { GIVES }
-  | "=" { SEQ }
-  | "|" { MATCH }
-  | "+" { PLUS }
-  | "-" { MINUS }
-  | "*" { TIMES }
-  | "/" { DIV }
-  | "+." { FPLUS }
-  | "-." { FMINUS }
-  | "*." { FTIMES }
-  | "/." { FDIV }
-  | "**" { POWER }
-  | "!" { BANK }
-  | ";" { SEMICOLON }
-  | "&&" { AND }
-  | "||" { OR }
-  | "<>" { NSEQ }
-  | "<" { L }
-  | ">" { G }
-  | "<=" { LE }
-  | ">=" { GE }
-  | "==" { EQ }
-  | "!=" { NEQ }
-  | ":=" { ASSIGN }
-  | "(" { LPAR }
-  | ")" { RPAR }
-  | "[" { LBRACK }
-  | "]" { RBRACK }
-  | "," { COMA }
-  | ":" { COLON }
-  | lowCase+id* { ID }
-  | upCase+id* { CID }
-  | '\''constChar '\'' { CHAR }
-  | '\"'[^'\n']* '\"' { STRING }
-  | "--"[^'\n']* { token lexbuf }
-  | "(*" { print_endline "comments start"; comments 0 lexbuf }
-  | _ as chr { print_error lexbuf chr ; token lexbuf}
-  | eof { print_endline "file over"; EOF }
+  | white               { token lexbuf }
+  | ['\n']              { incr_linenum lexbuf; token lexbuf  (*; EOL*) }
+  | digit+              { T_INT } 
+  | digit+( '.'digit+('e'['-''+']?digit+)? ) 
+                        { T_FLOAT }
+  | "and"               { T_ANDDEF }
+  | "array"             { T_ARRAY }
+  | "begin"             { T_BEGIN } 
+  | "bool"              { T_BOOL }
+  | "char"              { T_CHAR }
+  | "delete"            { T_DELETE }
+  | "dim"               { T_DIM }
+  | "do"                { T_DO }
+  | "done"              { T_DONE }
+  | "downto"            { T_DOWNTO }
+  | "else"              { T_ELSE }
+  | "end"               { T_END }
+  | "false"             { T_FALSE }
+  | "float"             { T_FLOAT }
+  | "for"               { T_FOR }
+  | "if"                { T_IF }
+  | "in"                { T_IN }
+  | "int"               { T_INT }
+  | "let"               { T_LET }
+  | "match"             { T_MATCH }
+  | "mod"               { T_MOD }
+  | "mutable"           { T_MUTABLE }
+  | "new"               { T_NEW }
+  | "not"               { T_NOT }
+  | "of"                { T_OF }
+  | "rec"               { T_REC }
+  | "ref"               { T_REF }
+  | "then"              { T_THEN }
+  | "to"                { T_TO }
+  | "true"              { T_TRUE }
+  | "type"              { T_TYPE }
+  | "unit"              { T_UNIT }
+  | "while"             { T_WHILE }
+  | "with"              { T_WITH }
+  | "->"                { T_GIVES }
+  | "="                 { T_SEQ }
+  | "|"                 { T_MATCH }
+  | "+"                 { T_PLUS }
+  | "-"                 { T_MINUS }
+  | "*"                 { T_TIMES }
+  | "/"                 { T_DIV }
+  | "+."                { T_FPLUS } 
+  | "-."                { T_FMINUS }
+  | "*."                { T_FTIMES }
+  | "/."                { T_FDIV }
+  | "**"                { T_POWER }
+  | "!"                 { T_BANK }
+  | ";"                 { T_SMCOLON }
+  | "&&"                { T_AND }
+  | "||"                { T_OR }
+  | "<>"                { T_NSEQ }
+  | "<"                 { T_L }
+  | ">"                 { T_G }
+  | "<="                { T_LE }
+  | ">="                { T_GE }
+  | "=="                { T_EQ }
+  | "!="                { T_NEQ }
+  | ":="                { T_ASSIGN }
+  | "("                 { T_LPAR }
+  | ")"                 { T_RPAR }
+  | "["                 { T_LBRACK }
+  | "]"                 { T_RBRACK }
+  | ","                 { T_COMA }
+  | ":"                 { T_COLON }
+  | lowCase+id*         { T_ID }
+  | upCase+id*          { T_CID }
+  | '\''constChar '\''  { T_CHAR }
+  | '\"'[^'\n']* '\"'   { T_STRING }
+  | "--"[^'\n']*        { token lexbuf } 
+  | "(*"                { print_endline "comments start"; comments 0 lexbuf }
+  | _ as chr            { print_error lexbuf chr ; token lexbuf }
+  | eof                 { T_EOF }
 
 and comments level = parse
-  | "*)" { Printf.printf "comments (%d) end\n" level;
-	   if level = 0 then token lexbuf
-	   else comments (level-1) lexbuf
-	 }
-  | "(*" { Printf.printf "comments (%d) start\n" (level+1);
-	  comments (level+1) lexbuf
-	 }
-  | '\n' { incr_linenum lexbuf ; comments level lexbuf }
+  | "*)"                { Printf.printf "comments (%d) end\n" level;
+	                      if level = 0 then token lexbuf
+	                        else comments (level-1) lexbuf
+	                    }
+  | "(*"                { Printf.printf "comments (%d) start\n" (level+1);
+                          comments (level+1) lexbuf
+	                    }
+  | '\n'                { incr_linenum lexbuf ; comments level lexbuf }
+  | _                   { comments level lexbuf  }
+  | eof                 { print_endline "comments not closed"; raise Eof }
 
-  | _ { comments level lexbuf  }
-  | eof { print_endline "comments not closed";
-	  raise Eof
-	}
+  
 {
-
   let string_of_token token =
     match token with
-  | ANDDEF -> "ANDDEF"
-  | ARRAY -> "ARRAY"
-  | BEGIN -> "BEGIN"
-  | BOOL -> "BOOL"
-  | DELETE -> "DELETE"
-  | DIM -> "DIM"
-  | DO -> "DO"
-  | DONE -> "DONE"
-  | DOWNTO -> "DOWNTO"
-  | STRING -> "STRING"
-  | ELSE -> "ELSE"
-  | END -> "END"
-  | FALSE -> "FALSE"
-  | FOR -> "FOR"
-  | IF -> "IF"
-  | IN -> "IN"
-  | LET -> "LET"
-  | MOD -> "MOD"
-  | MUTABLE -> "MUTABLE"
-  | NEW -> "NEW"
-  | NOT -> "NOT"
-  | OF -> "OF"
-  | REC -> "REC"
-  | REF -> "REF"
-  | THEN -> "THEN"
-  | TO -> "TO"
-  | TRUE -> "TRUE"
-  | TYPE -> "TYPE"
-  | UNIT -> "UNIT"
-  | WHILE -> "WHILE"
-  | WITH -> "WITH"
-  | ID  -> "ID"
-  | CID  -> "CID"
-  | OP  -> "OP"
-  | INT -> "INT"
-  | FLOAT -> "FLOAT"
-  | CHAR -> "CHAR"
-  | GIVES -> "GIVES"
-  | SEQ  -> "SEQ"
-  | MATCH  ->"MATCH"
-  | PLUS  -> "PLUS"
-  | MINUS -> "MINUS"
-  | TIMES -> "TIMES"
-  | DIV -> "DIV"
-  | FPLUS -> "FPLUS"
-  | FMINUS -> "FMINUS"
-  | FTIMES -> "FTIMES"
-  | FDIV -> "FDIV"
-  | POWER -> "POWER"
-  | EOL -> "EOL"
-  | BANK -> "BANK"
-  | SEMICOLON -> "SEMICOLON"
-  | AND -> "AND"
-  | OR -> "OR"
-  | NSEQ -> "NSEQ"
-  | L -> "L"
-  | G -> "G"
-  | LE -> "LE"
-  | GE -> "GE"
-  | EQ -> "EQ"
-  | NEQ -> "NEQ"
-  | ASSIGN -> "ASSIGN"
-  | LPAR -> "LPAR"
-  | RPAR -> "RPAR"
-  | LBRACK -> "LBRACK"
-  | RBRACK -> "RBRACK"
-  | COMA -> "COMA"
-  | COLON -> "COLON"
-  | EOF -> "EOF"
+  | T_ANDDEF  -> "ANDDEF"
+  | T_ARRAY   -> "ARRAY"
+  | T_BEGIN   -> "BEGIN"
+  | T_BOOL    -> "BOOL"
+  | T_DELETE  -> "DELETE"
+  | T_DIM     -> "DIM"
+  | T_DO      -> "DO"
+  | T_DONE    -> "DONE"
+  | T_DOWNTO  -> "DOWNTO"
+  | T_STRING  -> "STRING"
+  | T_ELSE    -> "ELSE"
+  | T_END     -> "END"
+  | T_FALSE   -> "FALSE"
+  | T_FOR     -> "FOR"
+  | T_IF      -> "IF"
+  | T_IN      -> "IN"
+  | T_LET     -> "LET"
+  | T_MOD     -> "MOD"
+  | T_MUTABLE -> "MUTABLE"
+  | T_NEW     -> "NEW"
+  | T_NOT     -> "NOT"
+  | T_OF      -> "OF"
+  | T_REC     -> "REC"
+  | T_REF     -> "REF"
+  | T_THEN    -> "THEN"
+  | T_TO      -> "TO"
+  | T_TRUE    -> "TRUE"
+  | T_TYPE    -> "TYPE"
+  | T_UNIT    -> "UNIT"
+  | T_WHILE   -> "WHILE"
+  | T_WITH    -> "WITH"
+  | T_ID      -> "ID"
+  | T_CID     -> "CID"
+  | T_OP      -> "OP"
+  | T_INT     -> "INT"
+  | T_FLOAT   -> "FLOAT"
+  | T_CHAR    -> "CHAR"
+  | T_GIVES   -> "GIVES"
+  | T_SEQ     -> "SEQ"
+  | T_MATCH   -> "MATCH"
+  | T_PLUS    -> "PLUS"
+  | T_MINUS   -> "MINUS"
+  | T_TIMES   -> "TIMES"
+  | T_DIV     -> "DIV"
+  | T_FPLUS   -> "FPLUS"
+  | T_FMINUS  -> "FMINUS"
+  | T_FTIMES  -> "FTIMES"
+  | T_FDIV    -> "FDIV"
+  | T_POWER   -> "POWER"
+  | T_EOL     -> "EOL"
+  | T_BANK    -> "BANK"
+  | T_SMCOLON -> "SMCOLON"
+  | T_AND     -> "AND"
+  | T_OR      -> "OR"
+  | T_NSEQ    -> "NSEQ"
+  | T_L       -> "L"
+  | T_G       -> "G"
+  | T_LE      -> "LE"
+  | T_GE      -> "GE"
+  | T_EQ      -> "EQ"
+  | T_NEQ     -> "NEQ"
+  | T_ASSIGN  -> "ASSIGN"
+  | T_LPAR    -> "LPAR"
+  | T_RPAR    -> "RPAR"
+  | T_LBRACK  -> "LBRACK"
+  | T_RBRACK  -> "RBRACK"
+  | T_COMA    -> "COMA"
+  | T_COLON   -> "COLON"
+  | T_EOF     -> "EOF"
 
 
 let incr_linenum lexbuf =
@@ -279,9 +278,11 @@ let main =
   let lexbuf = Lexing.from_channel cin in
   let rec loop () =
     let token = token lexbuf in
-    Printf.printf "line=%d, token=%s, lexeme=\"%s\"\n"
-      ( lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum)(string_of_token token) (Lexing.lexeme lexbuf);
-    if token <> EOF then loop () in
+        Printf.printf "line=%d\t token=%s\t lexeme= %s\n"
+          ( lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum )
+          ( string_of_token token ) 
+          ( Lexing.lexeme lexbuf );
+        if token <> T_EOF then loop () in
   loop ()
 }
 

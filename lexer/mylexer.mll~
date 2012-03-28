@@ -72,6 +72,19 @@ type token =
   | RBRACK
   | COMA
   | COLON
+
+
+let incr_linenum lexbuf =
+  let pos = lexbuf.Lexing.lex_curr_p in
+    lexbuf.Lexing.lex_curr_p <- { pos with
+      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
+      Lexing.pos_bol = pos.Lexing.pos_cnum;
+    } 
+
+let print_error lexbuf chr = 
+  let pos = lexbuf.Lexing.lex_curr_p in
+  Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
+    (pos.Lexing.pos_lnum) (pos.Lexing.pos_cnum - pos.Lexing.pos_bol) (chr) (Char.code chr)
 }
 
 let digit = ['0'-'9']
@@ -81,16 +94,16 @@ let lowCase = ['a'-'z']
 let id = ( upCase | lowCase | '_' | digit )
 let white = ['\t' ' ']
 let constChar = ( [^ '\\' '\"' '\''] ) | ( '\\'( ( ['n' 't' 'r' '0' '\\' '\'' '\"'] ) | ( 'x' hexdig hexdig ) ) )
-(*let num_lines = ref 0*)
+
 
 rule token = parse
   | white  { token lexbuf }
-  | ['\n'] { (*incr num_lines; token lexbuf *) EOL }
+  | ['\n'] { incr_linenum lexbuf; token lexbuf  (*; EOL*) }
   | digit+ { INT } 
   | digit+( '.'digit+('e'['-''+']?digit+)? ) { FLOAT }
   | "and" { ANDDEF }
   | "array" { ARRAY }
-  | "begin"{ BEGIN }
+  | "begin"{ BEGIN } 
   | "bool" { BOOL }
   | "char" { CHAR }
   | "delete" { DELETE }
@@ -155,11 +168,12 @@ rule token = parse
   | lowCase+id* { ID }
   | upCase+id* { CID }
   | '\''constChar '\'' { CHAR }
-  | '\"'constChar* '\"' { STRING }
+  | '\"'[^'\n']* '\"' { STRING }
   | "--"[^'\n']* { token lexbuf }
   | "(*" { print_endline "comments start"; comments 0 lexbuf }
-  | _ { Printf.printf "error"; token lexbuf}
+  | _ as chr { print_error lexbuf chr ; token lexbuf}
   | eof { print_endline "file over"; EOF }
+
 and comments level = parse
   | "*)" { Printf.printf "comments (%d) end\n" level;
 	   if level = 0 then token lexbuf
@@ -168,11 +182,11 @@ and comments level = parse
   | "(*" { Printf.printf "comments (%d) start\n" (level+1);
 	  comments (level+1) lexbuf
 	 }
-  | '\n' { (*incr num_lines;*) comments level lexbuf }
+  | '\n' { incr_linenum lexbuf ; comments level lexbuf }
 
   | _ { comments level lexbuf  }
   | eof { print_endline "comments not closed";
-	  raise End_of_file
+	  raise Eof
 	}
 {
 
@@ -248,6 +262,14 @@ and comments level = parse
   | COLON -> "COLON"
   | EOF -> "EOF"
 
+
+let incr_linenum lexbuf =
+  let pos = lexbuf.Lexing.lex_curr_p in
+    lexbuf.Lexing.lex_curr_p <- { pos with
+      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
+      Lexing.pos_bol = pos.Lexing.pos_cnum;
+    }
+
 let main =
   let cin =
     if Array.length Sys.argv >1
@@ -257,8 +279,8 @@ let main =
   let lexbuf = Lexing.from_channel cin in
   let rec loop () =
     let token = token lexbuf in
-    Printf.printf "token=%s, lexeme=\"%s\"\n"
-      (string_of_token token) (Lexing.lexeme lexbuf);
+    Printf.printf "line=%d, token=%s, lexeme=\"%s\"\n"
+      ( lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum)(string_of_token token) (Lexing.lexeme lexbuf);
     if token <> EOF then loop () in
   loop ()
 }
