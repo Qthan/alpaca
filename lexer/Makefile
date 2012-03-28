@@ -22,4 +22,4 @@ clean:
 		$(RM) mylexer.ml *.cmo *.cmi *~
 
 distclean: clean
-		$(RM) Llexer$(EXE)
+		$(RM) Llexer

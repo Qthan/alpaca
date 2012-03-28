@@ -2,6 +2,7 @@
  
 
 exception Eof
+open Lexing
 
 type token =
     T_ANDDEF
@@ -76,18 +77,18 @@ type token =
 
 
 let incr_linenum lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-    lexbuf.Lexing.lex_curr_p <- { pos with
-      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
-      Lexing.pos_bol = pos.Lexing.pos_cnum;
+  let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
     } 
 
 let print_error lexbuf chr = 
-  let pos = lexbuf.Lexing.lex_curr_p in
+  let pos = lexbuf.lex_curr_p in
   Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
-    (pos.Lexing.pos_lnum) (pos.Lexing.pos_cnum - pos.Lexing.pos_bol) (chr) (Char.code chr)
+    (pos.pos_lnum) (pos.pos_cnum - pos.pos_bol) (chr) (Char.code chr)
 
-# 91 "mylexer.ml"
+# 92 "mylexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\180\255\181\255\001\000\089\000\085\000\163\000\189\255\
@@ -2351,389 +2352,389 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 100 "mylexer.mll"
+# 101 "mylexer.mll"
                         ( token lexbuf )
-# 2357 "mylexer.ml"
+# 2358 "mylexer.ml"
 
   | 1 ->
-# 101 "mylexer.mll"
+# 102 "mylexer.mll"
                         ( incr_linenum lexbuf; token lexbuf  (*; EOL*) )
-# 2362 "mylexer.ml"
+# 2363 "mylexer.ml"
 
   | 2 ->
-# 102 "mylexer.mll"
+# 103 "mylexer.mll"
                         ( T_INT )
-# 2367 "mylexer.ml"
+# 2368 "mylexer.ml"
 
   | 3 ->
-# 104 "mylexer.mll"
+# 105 "mylexer.mll"
                         ( T_FLOAT )
-# 2372 "mylexer.ml"
+# 2373 "mylexer.ml"
 
   | 4 ->
-# 105 "mylexer.mll"
+# 106 "mylexer.mll"
                         ( T_ANDDEF )
-# 2377 "mylexer.ml"
+# 2378 "mylexer.ml"
 
   | 5 ->
-# 106 "mylexer.mll"
+# 107 "mylexer.mll"
                         ( T_ARRAY )
-# 2382 "mylexer.ml"
+# 2383 "mylexer.ml"
 
   | 6 ->
-# 107 "mylexer.mll"
+# 108 "mylexer.mll"
                         ( T_BEGIN )
-# 2387 "mylexer.ml"
+# 2388 "mylexer.ml"
 
   | 7 ->
-# 108 "mylexer.mll"
+# 109 "mylexer.mll"
                         ( T_BOOL )
-# 2392 "mylexer.ml"
+# 2393 "mylexer.ml"
 
   | 8 ->
-# 109 "mylexer.mll"
+# 110 "mylexer.mll"
                         ( T_CHAR )
-# 2397 "mylexer.ml"
+# 2398 "mylexer.ml"
 
   | 9 ->
-# 110 "mylexer.mll"
+# 111 "mylexer.mll"
                         ( T_DELETE )
-# 2402 "mylexer.ml"
+# 2403 "mylexer.ml"
 
   | 10 ->
-# 111 "mylexer.mll"
+# 112 "mylexer.mll"
                         ( T_DIM )
-# 2407 "mylexer.ml"
+# 2408 "mylexer.ml"
 
   | 11 ->
-# 112 "mylexer.mll"
+# 113 "mylexer.mll"
                         ( T_DO )
-# 2412 "mylexer.ml"
+# 2413 "mylexer.ml"
 
   | 12 ->
-# 113 "mylexer.mll"
+# 114 "mylexer.mll"
                         ( T_DONE )
-# 2417 "mylexer.ml"
+# 2418 "mylexer.ml"
 
   | 13 ->
-# 114 "mylexer.mll"
+# 115 "mylexer.mll"
                         ( T_DOWNTO )
-# 2422 "mylexer.ml"
+# 2423 "mylexer.ml"
 
   | 14 ->
-# 115 "mylexer.mll"
+# 116 "mylexer.mll"
                         ( T_ELSE )
-# 2427 "mylexer.ml"
+# 2428 "mylexer.ml"
 
   | 15 ->
-# 116 "mylexer.mll"
+# 117 "mylexer.mll"
                         ( T_END )
-# 2432 "mylexer.ml"
+# 2433 "mylexer.ml"
 
   | 16 ->
-# 117 "mylexer.mll"
+# 118 "mylexer.mll"
                         ( T_FALSE )
-# 2437 "mylexer.ml"
+# 2438 "mylexer.ml"
 
   | 17 ->
-# 118 "mylexer.mll"
+# 119 "mylexer.mll"
                         ( T_FLOAT )
-# 2442 "mylexer.ml"
+# 2443 "mylexer.ml"
 
   | 18 ->
-# 119 "mylexer.mll"
+# 120 "mylexer.mll"
                         ( T_FOR )
-# 2447 "mylexer.ml"
+# 2448 "mylexer.ml"
 
   | 19 ->
-# 120 "mylexer.mll"
+# 121 "mylexer.mll"
                         ( T_IF )
-# 2452 "mylexer.ml"
+# 2453 "mylexer.ml"
 
   | 20 ->
-# 121 "mylexer.mll"
+# 122 "mylexer.mll"
                         ( T_IN )
-# 2457 "mylexer.ml"
+# 2458 "mylexer.ml"
 
   | 21 ->
-# 122 "mylexer.mll"
+# 123 "mylexer.mll"
                         ( T_INT )
-# 2462 "mylexer.ml"
+# 2463 "mylexer.ml"
 
   | 22 ->
-# 123 "mylexer.mll"
+# 124 "mylexer.mll"
                         ( T_LET )
-# 2467 "mylexer.ml"
+# 2468 "mylexer.ml"
 
   | 23 ->
-# 124 "mylexer.mll"
+# 125 "mylexer.mll"
                         ( T_MATCH )
-# 2472 "mylexer.ml"
+# 2473 "mylexer.ml"
 
   | 24 ->
-# 125 "mylexer.mll"
+# 126 "mylexer.mll"
                         ( T_MOD )
-# 2477 "mylexer.ml"
+# 2478 "mylexer.ml"
 
   | 25 ->
-# 126 "mylexer.mll"
+# 127 "mylexer.mll"
                         ( T_MUTABLE )
-# 2482 "mylexer.ml"
+# 2483 "mylexer.ml"
 
   | 26 ->
-# 127 "mylexer.mll"
+# 128 "mylexer.mll"
                         ( T_NEW )
-# 2487 "mylexer.ml"
+# 2488 "mylexer.ml"
 
   | 27 ->
-# 128 "mylexer.mll"
+# 129 "mylexer.mll"
                         ( T_NOT )
-# 2492 "mylexer.ml"
+# 2493 "mylexer.ml"
 
   | 28 ->
-# 129 "mylexer.mll"
+# 130 "mylexer.mll"
                         ( T_OF )
-# 2497 "mylexer.ml"
+# 2498 "mylexer.ml"
 
   | 29 ->
-# 130 "mylexer.mll"
+# 131 "mylexer.mll"
                         ( T_REC )
-# 2502 "mylexer.ml"
+# 2503 "mylexer.ml"
 
   | 30 ->
-# 131 "mylexer.mll"
+# 132 "mylexer.mll"
                         ( T_REF )
-# 2507 "mylexer.ml"
+# 2508 "mylexer.ml"
 
   | 31 ->
-# 132 "mylexer.mll"
+# 133 "mylexer.mll"
                         ( T_THEN )
-# 2512 "mylexer.ml"
+# 2513 "mylexer.ml"
 
   | 32 ->
-# 133 "mylexer.mll"
+# 134 "mylexer.mll"
                         ( T_TO )
-# 2517 "mylexer.ml"
+# 2518 "mylexer.ml"
 
   | 33 ->
-# 134 "mylexer.mll"
+# 135 "mylexer.mll"
                         ( T_TRUE )
-# 2522 "mylexer.ml"
+# 2523 "mylexer.ml"
 
   | 34 ->
-# 135 "mylexer.mll"
+# 136 "mylexer.mll"
                         ( T_TYPE )
-# 2527 "mylexer.ml"
+# 2528 "mylexer.ml"
 
   | 35 ->
-# 136 "mylexer.mll"
+# 137 "mylexer.mll"
                         ( T_UNIT )
-# 2532 "mylexer.ml"
+# 2533 "mylexer.ml"
 
   | 36 ->
-# 137 "mylexer.mll"
+# 138 "mylexer.mll"
                         ( T_WHILE )
-# 2537 "mylexer.ml"
+# 2538 "mylexer.ml"
 
   | 37 ->
-# 138 "mylexer.mll"
+# 139 "mylexer.mll"
                         ( T_WITH )
-# 2542 "mylexer.ml"
+# 2543 "mylexer.ml"
 
   | 38 ->
-# 139 "mylexer.mll"
+# 140 "mylexer.mll"
                         ( T_GIVES )
-# 2547 "mylexer.ml"
+# 2548 "mylexer.ml"
 
   | 39 ->
-# 140 "mylexer.mll"
+# 141 "mylexer.mll"
                         ( T_SEQ )
-# 2552 "mylexer.ml"
+# 2553 "mylexer.ml"
 
   | 40 ->
-# 141 "mylexer.mll"
+# 142 "mylexer.mll"
                         ( T_MATCH )
-# 2557 "mylexer.ml"
+# 2558 "mylexer.ml"
 
   | 41 ->
-# 142 "mylexer.mll"
+# 143 "mylexer.mll"
                         ( T_PLUS )
-# 2562 "mylexer.ml"
+# 2563 "mylexer.ml"
 
   | 42 ->
-# 143 "mylexer.mll"
+# 144 "mylexer.mll"
                         ( T_MINUS )
-# 2567 "mylexer.ml"
+# 2568 "mylexer.ml"
 
   | 43 ->
-# 144 "mylexer.mll"
+# 145 "mylexer.mll"
                         ( T_TIMES )
-# 2572 "mylexer.ml"
+# 2573 "mylexer.ml"
 
   | 44 ->
-# 145 "mylexer.mll"
+# 146 "mylexer.mll"
                         ( T_DIV )
-# 2577 "mylexer.ml"
+# 2578 "mylexer.ml"
 
   | 45 ->
-# 146 "mylexer.mll"
+# 147 "mylexer.mll"
                         ( T_FPLUS )
-# 2582 "mylexer.ml"
+# 2583 "mylexer.ml"
 
   | 46 ->
-# 147 "mylexer.mll"
+# 148 "mylexer.mll"
                         ( T_FMINUS )
-# 2587 "mylexer.ml"
+# 2588 "mylexer.ml"
 
   | 47 ->
-# 148 "mylexer.mll"
+# 149 "mylexer.mll"
                         ( T_FTIMES )
-# 2592 "mylexer.ml"
+# 2593 "mylexer.ml"
 
   | 48 ->
-# 149 "mylexer.mll"
+# 150 "mylexer.mll"
                         ( T_FDIV )
-# 2597 "mylexer.ml"
+# 2598 "mylexer.ml"
 
   | 49 ->
-# 150 "mylexer.mll"
+# 151 "mylexer.mll"
                         ( T_POWER )
-# 2602 "mylexer.ml"
+# 2603 "mylexer.ml"
 
   | 50 ->
-# 151 "mylexer.mll"
+# 152 "mylexer.mll"
                         ( T_BANK )
-# 2607 "mylexer.ml"
+# 2608 "mylexer.ml"
 
   | 51 ->
-# 152 "mylexer.mll"
+# 153 "mylexer.mll"
                         ( T_SMCOLON )
-# 2612 "mylexer.ml"
+# 2613 "mylexer.ml"
 
   | 52 ->
-# 153 "mylexer.mll"
+# 154 "mylexer.mll"
                         ( T_AND )
-# 2617 "mylexer.ml"
+# 2618 "mylexer.ml"
 
   | 53 ->
-# 154 "mylexer.mll"
+# 155 "mylexer.mll"
                         ( T_OR )
-# 2622 "mylexer.ml"
+# 2623 "mylexer.ml"
 
   | 54 ->
-# 155 "mylexer.mll"
+# 156 "mylexer.mll"
                         ( T_NSEQ )
-# 2627 "mylexer.ml"
+# 2628 "mylexer.ml"
 
   | 55 ->
-# 156 "mylexer.mll"
+# 157 "mylexer.mll"
                         ( T_L )
-# 2632 "mylexer.ml"
+# 2633 "mylexer.ml"
 
   | 56 ->
-# 157 "mylexer.mll"
+# 158 "mylexer.mll"
                         ( T_G )
-# 2637 "mylexer.ml"
+# 2638 "mylexer.ml"
 
   | 57 ->
-# 158 "mylexer.mll"
+# 159 "mylexer.mll"
                         ( T_LE )
-# 2642 "mylexer.ml"
+# 2643 "mylexer.ml"
 
   | 58 ->
-# 159 "mylexer.mll"
+# 160 "mylexer.mll"
                         ( T_GE )
-# 2647 "mylexer.ml"
+# 2648 "mylexer.ml"
 
   | 59 ->
-# 160 "mylexer.mll"
+# 161 "mylexer.mll"
                         ( T_EQ )
-# 2652 "mylexer.ml"
+# 2653 "mylexer.ml"
 
   | 60 ->
-# 161 "mylexer.mll"
+# 162 "mylexer.mll"
                         ( T_NEQ )
-# 2657 "mylexer.ml"
+# 2658 "mylexer.ml"
 
   | 61 ->
-# 162 "mylexer.mll"
+# 163 "mylexer.mll"
                         ( T_ASSIGN )
-# 2662 "mylexer.ml"
+# 2663 "mylexer.ml"
 
   | 62 ->
-# 163 "mylexer.mll"
+# 164 "mylexer.mll"
                         ( T_LPAR )
-# 2667 "mylexer.ml"
+# 2668 "mylexer.ml"
 
   | 63 ->
-# 164 "mylexer.mll"
+# 165 "mylexer.mll"
                         ( T_RPAR )
-# 2672 "mylexer.ml"
+# 2673 "mylexer.ml"
 
   | 64 ->
-# 165 "mylexer.mll"
+# 166 "mylexer.mll"
                         ( T_LBRACK )
-# 2677 "mylexer.ml"
+# 2678 "mylexer.ml"
 
   | 65 ->
-# 166 "mylexer.mll"
+# 167 "mylexer.mll"
                         ( T_RBRACK )
-# 2682 "mylexer.ml"
+# 2683 "mylexer.ml"
 
   | 66 ->
-# 167 "mylexer.mll"
+# 168 "mylexer.mll"
                         ( T_COMA )
-# 2687 "mylexer.ml"
+# 2688 "mylexer.ml"
 
   | 67 ->
-# 168 "mylexer.mll"
+# 169 "mylexer.mll"
                         ( T_COLON )
-# 2692 "mylexer.ml"
+# 2693 "mylexer.ml"
 
   | 68 ->
-# 169 "mylexer.mll"
+# 170 "mylexer.mll"
                         ( T_ID )
-# 2697 "mylexer.ml"
+# 2698 "mylexer.ml"
 
   | 69 ->
-# 170 "mylexer.mll"
+# 171 "mylexer.mll"
                         ( T_CID )
-# 2702 "mylexer.ml"
+# 2703 "mylexer.ml"
 
   | 70 ->
-# 171 "mylexer.mll"
+# 172 "mylexer.mll"
                         ( T_CHAR )
-# 2707 "mylexer.ml"
+# 2708 "mylexer.ml"
 
   | 71 ->
-# 172 "mylexer.mll"
+# 173 "mylexer.mll"
                         ( T_STRING )
-# 2712 "mylexer.ml"
+# 2713 "mylexer.ml"
 
   | 72 ->
-# 173 "mylexer.mll"
+# 174 "mylexer.mll"
                         ( token lexbuf )
-# 2717 "mylexer.ml"
+# 2718 "mylexer.ml"
 
   | 73 ->
-# 174 "mylexer.mll"
+# 175 "mylexer.mll"
                         ( print_endline "comments start"; comments 0 lexbuf )
-# 2722 "mylexer.ml"
+# 2723 "mylexer.ml"
 
   | 74 ->
 let
-# 175 "mylexer.mll"
+# 176 "mylexer.mll"
          chr
-# 2728 "mylexer.ml"
+# 2729 "mylexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 175 "mylexer.mll"
+# 176 "mylexer.mll"
                         ( print_error lexbuf chr ; token lexbuf )
-# 2732 "mylexer.ml"
+# 2733 "mylexer.ml"
 
   | 75 ->
-# 176 "mylexer.mll"
+# 177 "mylexer.mll"
                         ( T_EOF )
-# 2737 "mylexer.ml"
+# 2738 "mylexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_token_rec lexbuf __ocaml_lex_state
 
@@ -2742,40 +2743,40 @@ and comments level lexbuf =
 and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 179 "mylexer.mll"
+# 180 "mylexer.mll"
                         ( Printf.printf "comments (%d) end\n" level;
 	                      if level = 0 then token lexbuf
 	                        else comments (level-1) lexbuf
 	                    )
-# 2751 "mylexer.ml"
+# 2752 "mylexer.ml"
 
   | 1 ->
-# 183 "mylexer.mll"
+# 184 "mylexer.mll"
                         ( Printf.printf "comments (%d) start\n" (level+1);
                           comments (level+1) lexbuf
 	                    )
-# 2758 "mylexer.ml"
+# 2759 "mylexer.ml"
 
   | 2 ->
-# 186 "mylexer.mll"
+# 187 "mylexer.mll"
                         ( incr_linenum lexbuf ; comments level lexbuf )
-# 2763 "mylexer.ml"
+# 2764 "mylexer.ml"
 
   | 3 ->
-# 187 "mylexer.mll"
+# 188 "mylexer.mll"
                         ( comments level lexbuf  )
-# 2768 "mylexer.ml"
+# 2769 "mylexer.ml"
 
   | 4 ->
-# 188 "mylexer.mll"
+# 189 "mylexer.mll"
                         ( print_endline "comments not closed"; raise Eof )
-# 2773 "mylexer.ml"
+# 2774 "mylexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state
 
 ;;
 
-# 191 "mylexer.mll"
+# 192 "mylexer.mll"
  
   let string_of_token token =
     match token with
@@ -2851,10 +2852,10 @@ and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
 
 
 let incr_linenum lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-    lexbuf.Lexing.lex_curr_p <- { pos with
-      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
-      Lexing.pos_bol = pos.Lexing.pos_cnum;
+  let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
     }
 
 let main =
@@ -2863,14 +2864,14 @@ let main =
     then open_in Sys.argv.(1)
     else stdin
   in
-  let lexbuf = Lexing.from_channel cin in
+  let lexbuf = from_channel cin in
   let rec loop () =
     let token = token lexbuf in
         Printf.printf "line=%d\t token=%s\t lexeme= %s\n"
-          ( lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum )
+          ( lexbuf.lex_curr_p.pos_lnum )
           ( string_of_token token ) 
-          ( Lexing.lexeme lexbuf );
+          ( lexeme lexbuf );
         if token <> T_EOF then loop () in
   loop ()
 
-# 2877 "mylexer.ml"
+# 2878 "mylexer.ml"

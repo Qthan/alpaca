@@ -1,6 +1,7 @@
 {
 
 exception Eof
+open Lexing
 
 type token =
     T_ANDDEF
@@ -75,16 +76,16 @@ type token =
 
 
 let incr_linenum lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-    lexbuf.Lexing.lex_curr_p <- { pos with
-      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
-      Lexing.pos_bol = pos.Lexing.pos_cnum;
+  let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
     } 
 
 let print_error lexbuf chr = 
-  let pos = lexbuf.Lexing.lex_curr_p in
+  let pos = lexbuf.lex_curr_p in
   Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
-    (pos.Lexing.pos_lnum) (pos.Lexing.pos_cnum - pos.Lexing.pos_bol) (chr) (Char.code chr)
+    (pos.pos_lnum) (pos.pos_cnum - pos.pos_bol) (chr) (Char.code chr)
 }
 
 let digit     = ['0'-'9']
@@ -263,10 +264,10 @@ and comments level = parse
 
 
 let incr_linenum lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-    lexbuf.Lexing.lex_curr_p <- { pos with
-      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
-      Lexing.pos_bol = pos.Lexing.pos_cnum;
+  let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
     }
 
 let main =
@@ -275,13 +276,13 @@ let main =
     then open_in Sys.argv.(1)
     else stdin
   in
-  let lexbuf = Lexing.from_channel cin in
+  let lexbuf = from_channel cin in
   let rec loop () =
     let token = token lexbuf in
         Printf.printf "line=%d\t token=%s\t lexeme= %s\n"
-          ( lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum )
+          ( lexbuf.lex_curr_p.pos_lnum )
           ( string_of_token token ) 
-          ( Lexing.lexeme lexbuf );
+          ( lexeme lexbuf );
         if token <> T_EOF then loop () in
   loop ()
 }
