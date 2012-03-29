@@ -1,7 +1,7 @@
 # 1 "mylexer.mll"
  
 
-exception Eof
+exception EOF of string
 open Lexing
 
 type token =
@@ -2769,7 +2769,7 @@ and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
 
   | 4 ->
 # 189 "mylexer.mll"
-                        ( print_endline "comments not closed"; raise Eof )
+                        ( (*print_endline "comments not closed";*) raise ( EOF "File ended before comments were closed" )  )
 # 2774 "mylexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state

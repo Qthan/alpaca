@@ -1,6 +1,6 @@
 {
 
-exception Eof
+exception EOF of string
 open Lexing
 
 type token =
@@ -186,7 +186,7 @@ and comments level = parse
 	                    }
   | '\n'                { incr_linenum lexbuf ; comments level lexbuf }
   | _                   { comments level lexbuf  }
-  | eof                 { print_endline "comments not closed"; raise Eof }
+  | eof                 { (*print_endline "comments not closed";*) raise ( EOF "File ended before comments were closed" )  }
 
   
 {
