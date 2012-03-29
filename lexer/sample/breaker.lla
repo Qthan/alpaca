@@ -7,6 +7,7 @@
 '\x10'
 '\xf0'
 '\xff'
+'\r'
 
 Asdf__f_s_s
 asdf__f_s_s
@@ -57,11 +58,12 @@ kai ama laxei
 -4.2
 -4.2e-12
 -4.2e12
--4.2e+12
+-14.2e+12
+-14.2eE+12
 
 "fdskjkfsdkjfkjs
 jkfdskjf"
 if zoo then (*helloI*)Zoep
     else Qthan
-
-"dsa
+(*
+"fdjsjfsd\n

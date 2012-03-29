@@ -74,6 +74,10 @@ type token =
   | T_COMA
   | T_COLON
 
+let pfile = 
+    if Array.length Sys.argv >1
+        then  Sys.argv.(1)
+    else "stdin"
 
 let incr_linenum lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -84,8 +88,8 @@ let incr_linenum lexbuf =
 
 let print_error lexbuf chr = 
   let pos = lexbuf.lex_curr_p in
-  Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
-    (pos.pos_lnum) (pos.pos_cnum - pos.pos_bol) (chr) (Char.code chr)
+  Printf.printf "%s:line%d:character:%d: Invalid character '%c' (ascii: %d)\n" 
+    ( pfile )( pos.pos_lnum ) ( pos.pos_cnum - pos.pos_bol ) ( chr ) ( Char.code chr ) 
 }
 
 let digit     = ['0'-'9']
@@ -101,7 +105,7 @@ rule token = parse
   | white               { token lexbuf }
   | ['\n']              { incr_linenum lexbuf; token lexbuf  (*; EOL*) }
   | digit+              { T_INT } 
-  | digit+( '.'digit+('e'['-''+']?digit+)? ) 
+  | digit+( '.'digit+(('e'|'E')['-''+']?digit+)? ) 
                         { T_FLOAT }
   | "and"               { T_ANDDEF }
   | "array"             { T_ARRAY }
@@ -186,7 +190,7 @@ and comments level = parse
 	                    }
   | '\n'                { incr_linenum lexbuf ; comments level lexbuf }
   | _                   { comments level lexbuf  }
-  | eof                 { (*print_endline "comments not closed";*) raise ( EOF "File ended before comments were closed" )  }
+  | eof                 {  raise ( EOF "File ended before comments were closed" )  }
 
   
 {
@@ -261,14 +265,6 @@ and comments level = parse
   | T_COMA    -> "COMA"
   | T_COLON   -> "COLON"
   | T_EOF     -> "EOF"
-
-
-let incr_linenum lexbuf =
-  let pos = lexbuf.lex_curr_p in
-    lexbuf.lex_curr_p <- { pos with
-      pos_lnum = pos.pos_lnum + 1;
-      pos_bol = pos.pos_cnum;
-    }
 
 let main =
   let cin =
