@@ -1,9 +1,8 @@
-# 1 "mylexer.mll"
+# 1 "Lexer.mll"
  
-
-
 open Parser
 open Lexing
+
 exception EOF of string
 (*
 
@@ -46,7 +45,7 @@ type token =
   | T_WITH
   | T_ID 
   | T_CID 
-  | T_BAR
+  | T_OP 
   | T_GIVES
   | T_SEQ 
   | T_PLUS 
@@ -77,11 +76,8 @@ type token =
   | T_RBRACK
   | T_COMA
   | T_COLON
+
 *)
-let pfile = 
-    if Array.length Sys.argv >1
-        then  Sys.argv.(1)
-    else "stdin"
 
 let incr_linenum lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -92,10 +88,11 @@ let incr_linenum lexbuf =
 
 let print_error lexbuf chr = 
   let pos = lexbuf.lex_curr_p in
-  Printf.printf "%s:line%d:character:%d: Invalid character '%c' (ascii: %d)\n" 
-    ( pfile )( pos.pos_lnum ) ( pos.pos_cnum - pos.pos_bol ) ( chr ) ( Char.code chr ) 
+  Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
+    (pos.pos_lnum) (pos.pos_cnum - pos.pos_bol) (chr) (Char.code chr)
 
-# 99 "mylexer.ml"
+
+# 96 "Lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\180\255\181\255\001\000\089\000\085\000\163\000\189\255\
@@ -103,7 +100,7 @@ let __ocaml_lex_tables = {
     \204\255\035\000\079\000\084\000\081\000\005\000\070\000\163\000\
     \249\000\068\001\143\001\218\001\037\002\112\002\187\002\006\003\
     \081\003\156\003\231\003\050\004\125\004\200\004\019\005\096\005\
-    \254\255\255\255\238\000\106\005\128\005\138\005\148\005\160\005\
+    \254\255\255\255\238\000\106\005\121\005\131\005\141\005\160\005\
     \235\005\054\006\129\006\204\006\023\007\098\007\173\007\248\007\
     \067\008\142\008\217\008\036\009\111\009\186\009\005\010\080\010\
     \155\010\230\010\049\011\124\011\199\011\018\012\093\012\168\012\
@@ -118,7 +115,7 @@ let __ocaml_lex_tables = {
     \179\031\254\031\003\000\209\255\217\255\196\255\202\255\210\255\
     \206\255\208\255\207\255\195\255\203\255\198\255\201\255\197\255\
     \194\255\182\255\073\032\162\032\093\000\185\255\163\032\235\032\
-    \187\032\188\032\251\004\251\255\252\255\253\255\101\000\103\000\
+    \189\005\190\005\251\004\251\255\252\255\253\255\101\000\103\000\
     \255\255\254\255";
   Lexing.lex_backtrk = 
    "\255\255\255\255\255\255\074\000\074\000\069\000\068\000\255\255\
@@ -347,15 +344,15 @@ let __ocaml_lex_tables = {
     \006\000\006\000\006\000\006\000\006\000\006\000\042\000\000\000\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\043\000\043\000\043\000\043\000\043\000\043\000\
-    \043\000\043\000\043\000\043\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\046\000\000\000\046\000\000\000\044\000\
+    \043\000\043\000\043\000\043\000\046\000\000\000\046\000\000\000\
+    \000\000\045\000\045\000\045\000\045\000\045\000\045\000\045\000\
     \045\000\045\000\045\000\045\000\045\000\045\000\045\000\045\000\
     \045\000\045\000\045\000\045\000\045\000\045\000\045\000\045\000\
-    \045\000\045\000\045\000\045\000\045\000\045\000\045\000\045\000\
-    \045\000\045\000\045\000\045\000\045\000\045\000\000\000\044\000\
+    \045\000\045\000\045\000\045\000\045\000\045\000\045\000\255\255\
+    \255\255\000\000\000\000\000\000\000\000\000\000\000\000\044\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
-    \047\000\047\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
+    \047\000\047\000\000\000\000\000\000\000\000\000\000\000\161\000\
+    \161\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\163\000\000\000\000\000\000\000\047\000\
@@ -382,7 +379,7 @@ let __ocaml_lex_tables = {
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
-    \047\000\047\000\047\000\000\000\000\000\000\000\000\000\000\000\
+    \047\000\047\000\047\000\000\000\000\000\255\255\255\255\000\000\
     \000\000\000\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
@@ -1215,10 +1212,10 @@ let __ocaml_lex_tables = {
     \154\000\000\000\154\000\154\000\154\000\154\000\154\000\154\000\
     \154\000\154\000\154\000\154\000\154\000\154\000\154\000\154\000\
     \154\000\154\000\154\000\154\000\154\000\154\000\154\000\154\000\
-    \154\000\154\000\154\000\154\000\156\000\255\255\255\255\000\000\
+    \154\000\154\000\154\000\154\000\156\000\000\000\000\000\000\000\
     \000\000\156\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\156\000\159\000\159\000\159\000\159\000\159\000\
-    \159\000\159\000\159\000\159\000\159\000\161\000\161\000\000\000\
+    \159\000\159\000\159\000\159\000\159\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\159\000\159\000\159\000\159\000\
     \159\000\159\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -1246,7 +1243,7 @@ let __ocaml_lex_tables = {
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\255\255\255\255\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -1434,15 +1431,15 @@ let __ocaml_lex_tables = {
     \038\000\038\000\038\000\038\000\038\000\038\000\039\000\255\255\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\043\000\043\000\043\000\043\000\043\000\043\000\
-    \043\000\043\000\043\000\043\000\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\044\000\255\255\044\000\255\255\043\000\
-    \044\000\044\000\044\000\044\000\044\000\044\000\044\000\044\000\
-    \044\000\044\000\045\000\045\000\045\000\045\000\045\000\045\000\
-    \045\000\045\000\045\000\045\000\046\000\046\000\046\000\046\000\
-    \046\000\046\000\046\000\046\000\046\000\046\000\255\255\043\000\
+    \043\000\043\000\043\000\043\000\044\000\255\255\044\000\255\255\
+    \255\255\044\000\044\000\044\000\044\000\044\000\044\000\044\000\
+    \044\000\044\000\044\000\045\000\045\000\045\000\045\000\045\000\
+    \045\000\045\000\045\000\045\000\045\000\046\000\046\000\046\000\
+    \046\000\046\000\046\000\046\000\046\000\046\000\046\000\160\000\
+    \161\000\255\255\255\255\255\255\255\255\255\255\255\255\043\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
-    \047\000\047\000\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
+    \047\000\047\000\255\255\255\255\255\255\255\255\255\255\160\000\
+    \161\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\162\000\255\255\255\255\255\255\047\000\
@@ -1469,7 +1466,7 @@ let __ocaml_lex_tables = {
     \049\000\049\000\049\000\049\000\049\000\049\000\049\000\049\000\
     \049\000\049\000\049\000\049\000\049\000\049\000\049\000\049\000\
     \049\000\050\000\050\000\050\000\050\000\050\000\050\000\050\000\
-    \050\000\050\000\050\000\255\255\255\255\255\255\255\255\255\255\
+    \050\000\050\000\050\000\255\255\255\255\160\000\161\000\255\255\
     \255\255\255\255\050\000\050\000\050\000\050\000\050\000\050\000\
     \050\000\050\000\050\000\050\000\050\000\050\000\050\000\050\000\
     \050\000\050\000\050\000\050\000\050\000\050\000\050\000\050\000\
@@ -2302,10 +2299,10 @@ let __ocaml_lex_tables = {
     \154\000\255\255\154\000\154\000\154\000\154\000\154\000\154\000\
     \154\000\154\000\154\000\154\000\154\000\154\000\154\000\154\000\
     \154\000\154\000\154\000\154\000\154\000\154\000\154\000\154\000\
-    \154\000\154\000\154\000\154\000\155\000\160\000\161\000\255\255\
+    \154\000\154\000\154\000\154\000\155\000\255\255\255\255\255\255\
     \255\255\155\000\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\155\000\158\000\158\000\158\000\158\000\158\000\
-    \158\000\158\000\158\000\158\000\158\000\160\000\161\000\255\255\
+    \158\000\158\000\158\000\158\000\158\000\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\158\000\158\000\158\000\158\000\
     \158\000\158\000\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -2333,7 +2330,7 @@ let __ocaml_lex_tables = {
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\160\000\161\000\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -2354,437 +2351,438 @@ let __ocaml_lex_tables = {
    "";
 }
 
-let rec token lexbuf =
-  __ocaml_lex_token_rec lexbuf 0
-and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
+let rec lexer lexbuf =
+  __ocaml_lex_lexer_rec lexbuf 0
+and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 108 "mylexer.mll"
-                        ( token lexbuf )
-# 2365 "mylexer.ml"
+# 105 "Lexer.mll"
+                        ( lexer lexbuf )
+# 2362 "Lexer.ml"
 
   | 1 ->
-# 109 "mylexer.mll"
-                        ( incr_linenum lexbuf; token lexbuf  (*; EOL*) )
-# 2370 "mylexer.ml"
+# 106 "Lexer.mll"
+                        ( incr_linenum lexbuf; lexer lexbuf  (*; EOL*) )
+# 2367 "Lexer.ml"
 
   | 2 ->
-# 110 "mylexer.mll"
+# 107 "Lexer.mll"
                         ( T_INT )
-# 2375 "mylexer.ml"
+# 2372 "Lexer.ml"
 
   | 3 ->
-# 112 "mylexer.mll"
+# 109 "Lexer.mll"
                         ( T_FLOAT )
-# 2380 "mylexer.ml"
+# 2377 "Lexer.ml"
 
   | 4 ->
-# 113 "mylexer.mll"
+# 110 "Lexer.mll"
                         ( T_ANDDEF )
-# 2385 "mylexer.ml"
+# 2382 "Lexer.ml"
 
   | 5 ->
-# 114 "mylexer.mll"
+# 111 "Lexer.mll"
                         ( T_ARRAY )
-# 2390 "mylexer.ml"
+# 2387 "Lexer.ml"
 
   | 6 ->
-# 115 "mylexer.mll"
+# 112 "Lexer.mll"
                         ( T_BEGIN )
-# 2395 "mylexer.ml"
+# 2392 "Lexer.ml"
 
   | 7 ->
-# 116 "mylexer.mll"
+# 113 "Lexer.mll"
                         ( T_BOOL )
-# 2400 "mylexer.ml"
+# 2397 "Lexer.ml"
 
   | 8 ->
-# 117 "mylexer.mll"
+# 114 "Lexer.mll"
                         ( T_CHAR )
-# 2405 "mylexer.ml"
+# 2402 "Lexer.ml"
 
   | 9 ->
-# 118 "mylexer.mll"
+# 115 "Lexer.mll"
                         ( T_DELETE )
-# 2410 "mylexer.ml"
+# 2407 "Lexer.ml"
 
   | 10 ->
-# 119 "mylexer.mll"
+# 116 "Lexer.mll"
                         ( T_DIM )
-# 2415 "mylexer.ml"
+# 2412 "Lexer.ml"
 
   | 11 ->
-# 120 "mylexer.mll"
+# 117 "Lexer.mll"
                         ( T_DO )
-# 2420 "mylexer.ml"
+# 2417 "Lexer.ml"
 
   | 12 ->
-# 121 "mylexer.mll"
+# 118 "Lexer.mll"
                         ( T_DONE )
-# 2425 "mylexer.ml"
+# 2422 "Lexer.ml"
 
   | 13 ->
-# 122 "mylexer.mll"
+# 119 "Lexer.mll"
                         ( T_DOWNTO )
-# 2430 "mylexer.ml"
+# 2427 "Lexer.ml"
 
   | 14 ->
-# 123 "mylexer.mll"
+# 120 "Lexer.mll"
                         ( T_ELSE )
-# 2435 "mylexer.ml"
+# 2432 "Lexer.ml"
 
   | 15 ->
-# 124 "mylexer.mll"
+# 121 "Lexer.mll"
                         ( T_END )
-# 2440 "mylexer.ml"
+# 2437 "Lexer.ml"
 
   | 16 ->
-# 125 "mylexer.mll"
+# 122 "Lexer.mll"
                         ( T_FALSE )
-# 2445 "mylexer.ml"
+# 2442 "Lexer.ml"
 
   | 17 ->
-# 126 "mylexer.mll"
+# 123 "Lexer.mll"
                         ( T_FLOAT )
-# 2450 "mylexer.ml"
+# 2447 "Lexer.ml"
 
   | 18 ->
-# 127 "mylexer.mll"
+# 124 "Lexer.mll"
                         ( T_FOR )
-# 2455 "mylexer.ml"
+# 2452 "Lexer.ml"
 
   | 19 ->
-# 128 "mylexer.mll"
+# 125 "Lexer.mll"
                         ( T_IF )
-# 2460 "mylexer.ml"
+# 2457 "Lexer.ml"
 
   | 20 ->
-# 129 "mylexer.mll"
+# 126 "Lexer.mll"
                         ( T_IN )
-# 2465 "mylexer.ml"
+# 2462 "Lexer.ml"
 
   | 21 ->
-# 130 "mylexer.mll"
+# 127 "Lexer.mll"
                         ( T_INT )
-# 2470 "mylexer.ml"
+# 2467 "Lexer.ml"
 
   | 22 ->
-# 131 "mylexer.mll"
+# 128 "Lexer.mll"
                         ( T_LET )
-# 2475 "mylexer.ml"
+# 2472 "Lexer.ml"
 
   | 23 ->
-# 132 "mylexer.mll"
+# 129 "Lexer.mll"
                         ( T_MATCH )
-# 2480 "mylexer.ml"
+# 2477 "Lexer.ml"
 
   | 24 ->
-# 133 "mylexer.mll"
+# 130 "Lexer.mll"
                         ( T_MOD )
-# 2485 "mylexer.ml"
+# 2482 "Lexer.ml"
 
   | 25 ->
-# 134 "mylexer.mll"
+# 131 "Lexer.mll"
                         ( T_MUTABLE )
-# 2490 "mylexer.ml"
+# 2487 "Lexer.ml"
 
   | 26 ->
-# 135 "mylexer.mll"
+# 132 "Lexer.mll"
                         ( T_NEW )
-# 2495 "mylexer.ml"
+# 2492 "Lexer.ml"
 
   | 27 ->
-# 136 "mylexer.mll"
+# 133 "Lexer.mll"
                         ( T_NOT )
-# 2500 "mylexer.ml"
+# 2497 "Lexer.ml"
 
   | 28 ->
-# 137 "mylexer.mll"
+# 134 "Lexer.mll"
                         ( T_OF )
-# 2505 "mylexer.ml"
+# 2502 "Lexer.ml"
 
   | 29 ->
-# 138 "mylexer.mll"
+# 135 "Lexer.mll"
                         ( T_REC )
-# 2510 "mylexer.ml"
+# 2507 "Lexer.ml"
 
   | 30 ->
-# 139 "mylexer.mll"
+# 136 "Lexer.mll"
                         ( T_REF )
-# 2515 "mylexer.ml"
+# 2512 "Lexer.ml"
 
   | 31 ->
-# 140 "mylexer.mll"
+# 137 "Lexer.mll"
                         ( T_THEN )
-# 2520 "mylexer.ml"
+# 2517 "Lexer.ml"
 
   | 32 ->
-# 141 "mylexer.mll"
+# 138 "Lexer.mll"
                         ( T_TO )
-# 2525 "mylexer.ml"
+# 2522 "Lexer.ml"
 
   | 33 ->
-# 142 "mylexer.mll"
+# 139 "Lexer.mll"
                         ( T_TRUE )
-# 2530 "mylexer.ml"
+# 2527 "Lexer.ml"
 
   | 34 ->
-# 143 "mylexer.mll"
+# 140 "Lexer.mll"
                         ( T_TYPE )
-# 2535 "mylexer.ml"
+# 2532 "Lexer.ml"
 
   | 35 ->
-# 144 "mylexer.mll"
+# 141 "Lexer.mll"
                         ( T_UNIT )
-# 2540 "mylexer.ml"
+# 2537 "Lexer.ml"
 
   | 36 ->
-# 145 "mylexer.mll"
+# 142 "Lexer.mll"
                         ( T_WHILE )
-# 2545 "mylexer.ml"
+# 2542 "Lexer.ml"
 
   | 37 ->
-# 146 "mylexer.mll"
+# 143 "Lexer.mll"
                         ( T_WITH )
-# 2550 "mylexer.ml"
+# 2547 "Lexer.ml"
 
   | 38 ->
-# 147 "mylexer.mll"
+# 144 "Lexer.mll"
                         ( T_GIVES )
-# 2555 "mylexer.ml"
+# 2552 "Lexer.ml"
 
   | 39 ->
-# 148 "mylexer.mll"
+# 145 "Lexer.mll"
                         ( T_SEQ )
-# 2560 "mylexer.ml"
+# 2557 "Lexer.ml"
 
   | 40 ->
-# 149 "mylexer.mll"
+# 146 "Lexer.mll"
                         ( T_BAR )
-# 2565 "mylexer.ml"
+# 2562 "Lexer.ml"
 
   | 41 ->
-# 150 "mylexer.mll"
+# 147 "Lexer.mll"
                         ( T_PLUS )
-# 2570 "mylexer.ml"
+# 2567 "Lexer.ml"
 
   | 42 ->
-# 151 "mylexer.mll"
+# 148 "Lexer.mll"
                         ( T_MINUS )
-# 2575 "mylexer.ml"
+# 2572 "Lexer.ml"
 
   | 43 ->
-# 152 "mylexer.mll"
+# 149 "Lexer.mll"
                         ( T_TIMES )
-# 2580 "mylexer.ml"
+# 2577 "Lexer.ml"
 
   | 44 ->
-# 153 "mylexer.mll"
+# 150 "Lexer.mll"
                         ( T_DIV )
-# 2585 "mylexer.ml"
+# 2582 "Lexer.ml"
 
   | 45 ->
-# 154 "mylexer.mll"
+# 151 "Lexer.mll"
                         ( T_FPLUS )
-# 2590 "mylexer.ml"
+# 2587 "Lexer.ml"
 
   | 46 ->
-# 155 "mylexer.mll"
+# 152 "Lexer.mll"
                         ( T_FMINUS )
-# 2595 "mylexer.ml"
+# 2592 "Lexer.ml"
 
   | 47 ->
-# 156 "mylexer.mll"
+# 153 "Lexer.mll"
                         ( T_FTIMES )
-# 2600 "mylexer.ml"
+# 2597 "Lexer.ml"
 
   | 48 ->
-# 157 "mylexer.mll"
+# 154 "Lexer.mll"
                         ( T_FDIV )
-# 2605 "mylexer.ml"
+# 2602 "Lexer.ml"
 
   | 49 ->
-# 158 "mylexer.mll"
+# 155 "Lexer.mll"
                         ( T_POWER )
-# 2610 "mylexer.ml"
+# 2607 "Lexer.ml"
 
   | 50 ->
-# 159 "mylexer.mll"
+# 156 "Lexer.mll"
                         ( T_BANK )
-# 2615 "mylexer.ml"
+# 2612 "Lexer.ml"
 
   | 51 ->
-# 160 "mylexer.mll"
+# 157 "Lexer.mll"
                         ( T_SMCOLON )
-# 2620 "mylexer.ml"
+# 2617 "Lexer.ml"
 
   | 52 ->
-# 161 "mylexer.mll"
+# 158 "Lexer.mll"
                         ( T_AND )
-# 2625 "mylexer.ml"
+# 2622 "Lexer.ml"
 
   | 53 ->
-# 162 "mylexer.mll"
+# 159 "Lexer.mll"
                         ( T_OR )
-# 2630 "mylexer.ml"
+# 2627 "Lexer.ml"
 
   | 54 ->
-# 163 "mylexer.mll"
+# 160 "Lexer.mll"
                         ( T_NSEQ )
-# 2635 "mylexer.ml"
+# 2632 "Lexer.ml"
 
   | 55 ->
-# 164 "mylexer.mll"
+# 161 "Lexer.mll"
                         ( T_L )
-# 2640 "mylexer.ml"
+# 2637 "Lexer.ml"
 
   | 56 ->
-# 165 "mylexer.mll"
+# 162 "Lexer.mll"
                         ( T_G )
-# 2645 "mylexer.ml"
+# 2642 "Lexer.ml"
 
   | 57 ->
-# 166 "mylexer.mll"
+# 163 "Lexer.mll"
                         ( T_LE )
-# 2650 "mylexer.ml"
+# 2647 "Lexer.ml"
 
   | 58 ->
-# 167 "mylexer.mll"
+# 164 "Lexer.mll"
                         ( T_GE )
-# 2655 "mylexer.ml"
+# 2652 "Lexer.ml"
 
   | 59 ->
-# 168 "mylexer.mll"
+# 165 "Lexer.mll"
                         ( T_EQ )
-# 2660 "mylexer.ml"
+# 2657 "Lexer.ml"
 
   | 60 ->
-# 169 "mylexer.mll"
+# 166 "Lexer.mll"
                         ( T_NEQ )
-# 2665 "mylexer.ml"
+# 2662 "Lexer.ml"
 
   | 61 ->
-# 170 "mylexer.mll"
+# 167 "Lexer.mll"
                         ( T_ASSIGN )
-# 2670 "mylexer.ml"
+# 2667 "Lexer.ml"
 
   | 62 ->
-# 171 "mylexer.mll"
+# 168 "Lexer.mll"
                         ( T_LPAR )
-# 2675 "mylexer.ml"
+# 2672 "Lexer.ml"
 
   | 63 ->
-# 172 "mylexer.mll"
+# 169 "Lexer.mll"
                         ( T_RPAR )
-# 2680 "mylexer.ml"
+# 2677 "Lexer.ml"
 
   | 64 ->
-# 173 "mylexer.mll"
+# 170 "Lexer.mll"
                         ( T_LBRACK )
-# 2685 "mylexer.ml"
+# 2682 "Lexer.ml"
 
   | 65 ->
-# 174 "mylexer.mll"
+# 171 "Lexer.mll"
                         ( T_RBRACK )
-# 2690 "mylexer.ml"
+# 2687 "Lexer.ml"
 
   | 66 ->
-# 175 "mylexer.mll"
+# 172 "Lexer.mll"
                         ( T_COMA )
-# 2695 "mylexer.ml"
+# 2692 "Lexer.ml"
 
   | 67 ->
-# 176 "mylexer.mll"
+# 173 "Lexer.mll"
                         ( T_COLON )
-# 2700 "mylexer.ml"
+# 2697 "Lexer.ml"
 
   | 68 ->
-# 177 "mylexer.mll"
+# 174 "Lexer.mll"
                         ( T_ID )
-# 2705 "mylexer.ml"
+# 2702 "Lexer.ml"
 
   | 69 ->
-# 178 "mylexer.mll"
+# 175 "Lexer.mll"
                         ( T_CID )
-# 2710 "mylexer.ml"
+# 2707 "Lexer.ml"
 
   | 70 ->
-# 179 "mylexer.mll"
+# 176 "Lexer.mll"
                         ( T_CHAR )
-# 2715 "mylexer.ml"
+# 2712 "Lexer.ml"
 
   | 71 ->
-# 180 "mylexer.mll"
+# 177 "Lexer.mll"
                         ( T_STRING )
-# 2720 "mylexer.ml"
+# 2717 "Lexer.ml"
 
   | 72 ->
-# 181 "mylexer.mll"
-                        ( token lexbuf )
-# 2725 "mylexer.ml"
+# 178 "Lexer.mll"
+                        ( lexer lexbuf )
+# 2722 "Lexer.ml"
 
   | 73 ->
-# 182 "mylexer.mll"
+# 179 "Lexer.mll"
                         ( print_endline "comments start"; comments 0 lexbuf )
-# 2730 "mylexer.ml"
+# 2727 "Lexer.ml"
 
   | 74 ->
 let
-# 183 "mylexer.mll"
+# 180 "Lexer.mll"
          chr
-# 2736 "mylexer.ml"
+# 2733 "Lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 183 "mylexer.mll"
-                        ( print_error lexbuf chr ; token lexbuf )
-# 2740 "mylexer.ml"
+# 180 "Lexer.mll"
+                        ( print_error lexbuf chr ; lexer lexbuf )
+# 2737 "Lexer.ml"
 
   | 75 ->
-# 184 "mylexer.mll"
+# 181 "Lexer.mll"
                         ( T_EOF )
-# 2745 "mylexer.ml"
+# 2742 "Lexer.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_token_rec lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state
 
 and comments level lexbuf =
   __ocaml_lex_comments_rec level lexbuf 162
 and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 187 "mylexer.mll"
+# 184 "Lexer.mll"
                         ( Printf.printf "comments (%d) end\n" level;
-	                      if level = 0 then token lexbuf
+	                      if level = 0 then lexer lexbuf
 	                        else comments (level-1) lexbuf
 	                    )
-# 2759 "mylexer.ml"
+# 2756 "Lexer.ml"
 
   | 1 ->
-# 191 "mylexer.mll"
+# 188 "Lexer.mll"
                         ( Printf.printf "comments (%d) start\n" (level+1);
                           comments (level+1) lexbuf
 	                    )
-# 2766 "mylexer.ml"
+# 2763 "Lexer.ml"
 
   | 2 ->
-# 194 "mylexer.mll"
+# 191 "Lexer.mll"
                         ( incr_linenum lexbuf ; comments level lexbuf )
-# 2771 "mylexer.ml"
+# 2768 "Lexer.ml"
 
   | 3 ->
-# 195 "mylexer.mll"
+# 192 "Lexer.mll"
                         ( comments level lexbuf  )
-# 2776 "mylexer.ml"
+# 2773 "Lexer.ml"
 
   | 4 ->
-# 196 "mylexer.mll"
-                        (  raise ( EOF "File ended before comments were closed" )  )
-# 2781 "mylexer.ml"
+# 193 "Lexer.mll"
+                        ( raise ( EOF "File ended before comments were closed") )
+# 2778 "Lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state
 
 ;;
 
-# 199 "mylexer.mll"
- (*
+# 195 "Lexer.mll"
+ 
+ (* 
   let string_of_token token =
     match token with
   | T_ANDDEF  -> "ANDDEF"
@@ -2827,7 +2825,6 @@ and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   | T_GIVES   -> "GIVES"
   | T_SEQ     -> "SEQ"
   | T_MATCH   -> "MATCH"
-  | T_BAR     -> "BAR"
   | T_PLUS    -> "PLUS"
   | T_MINUS   -> "MINUS"
   | T_TIMES   -> "TIMES"
@@ -2858,6 +2855,14 @@ and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   | T_COLON   -> "COLON"
   | T_EOF     -> "EOF"
 
+
+let incr_linenum lexbuf =
+  let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
+    }
+
 let main =
   let cin =
     if Array.length Sys.argv >1
@@ -2873,6 +2878,6 @@ let main =
           ( lexeme lexbuf );
         if token <> T_EOF then loop () in
   loop ()
-  *)
+*)
 
-# 2879 "mylexer.ml"
+# 2884 "Lexer.ml"

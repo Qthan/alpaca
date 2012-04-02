@@ -1,25 +1,38 @@
 OCAMLC_FLAGS=-g
 OCAMLC=ocamlc
+OCAMLDEP=ocamldep
 
 %.cmo: %.ml %.mli
-		$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
 %.cmi: %.mli
-		$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
 %.cmo %.cmi: %.ml
-		$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-Llexer: mylexer.cmo
-		$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
+Llama: Lexer.cmo Parser.cmo Main.cmo
+	$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
 
-mylexer.ml: mylexer.mll
-		ocamllex -o $@ $<
+Lexer.ml: Lexer.mll
+	ocamllex -o $@ $<
+
+Parser.ml Parser.mli: Parser.mly
+	ocamlyacc -v Parser.mly
 
 .PHONY: clean distclean
 
+-include .depend
+
+depend: Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
+	$(OCAMLDEP) $^ > .depend
+
 clean:
-		$(RM) mylexer.ml *.cmo *.cmi *~
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output *.cmo *.cmi *~
 
 distclean: clean
-		$(RM) Llexer
+	$(RM) Llama .depend
+
+
+
+# DO NOT DELETE
