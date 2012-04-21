@@ -4,8 +4,7 @@ open Parser
 open Lexing
 
 exception EOF of string
-(*
-
+(*:/
 type token =
     T_ANDDEF
   | T_ARRAY
@@ -92,7 +91,7 @@ let print_error lexbuf chr =
     (pos.pos_lnum) (pos.pos_cnum - pos.pos_bol) (chr) (Char.code chr)
 
 
-# 96 "Lexer.ml"
+# 95 "Lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\180\255\181\255\001\000\089\000\085\000\163\000\189\255\
@@ -2356,389 +2355,389 @@ let rec lexer lexbuf =
 and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 105 "Lexer.mll"
+# 104 "Lexer.mll"
                         ( lexer lexbuf )
-# 2362 "Lexer.ml"
+# 2361 "Lexer.ml"
 
   | 1 ->
-# 106 "Lexer.mll"
+# 105 "Lexer.mll"
                         ( incr_linenum lexbuf; lexer lexbuf  (*; EOL*) )
-# 2367 "Lexer.ml"
+# 2366 "Lexer.ml"
 
   | 2 ->
-# 107 "Lexer.mll"
+# 106 "Lexer.mll"
                         ( T_INT )
-# 2372 "Lexer.ml"
+# 2371 "Lexer.ml"
 
   | 3 ->
-# 109 "Lexer.mll"
+# 108 "Lexer.mll"
                         ( T_FLOAT )
-# 2377 "Lexer.ml"
+# 2376 "Lexer.ml"
 
   | 4 ->
-# 110 "Lexer.mll"
+# 109 "Lexer.mll"
                         ( T_ANDDEF )
-# 2382 "Lexer.ml"
+# 2381 "Lexer.ml"
 
   | 5 ->
-# 111 "Lexer.mll"
+# 110 "Lexer.mll"
                         ( T_ARRAY )
-# 2387 "Lexer.ml"
+# 2386 "Lexer.ml"
 
   | 6 ->
-# 112 "Lexer.mll"
+# 111 "Lexer.mll"
                         ( T_BEGIN )
-# 2392 "Lexer.ml"
+# 2391 "Lexer.ml"
 
   | 7 ->
-# 113 "Lexer.mll"
+# 112 "Lexer.mll"
                         ( T_BOOL )
-# 2397 "Lexer.ml"
+# 2396 "Lexer.ml"
 
   | 8 ->
-# 114 "Lexer.mll"
+# 113 "Lexer.mll"
                         ( T_CHAR )
-# 2402 "Lexer.ml"
+# 2401 "Lexer.ml"
 
   | 9 ->
-# 115 "Lexer.mll"
+# 114 "Lexer.mll"
                         ( T_DELETE )
-# 2407 "Lexer.ml"
+# 2406 "Lexer.ml"
 
   | 10 ->
-# 116 "Lexer.mll"
+# 115 "Lexer.mll"
                         ( T_DIM )
-# 2412 "Lexer.ml"
+# 2411 "Lexer.ml"
 
   | 11 ->
-# 117 "Lexer.mll"
+# 116 "Lexer.mll"
                         ( T_DO )
-# 2417 "Lexer.ml"
+# 2416 "Lexer.ml"
 
   | 12 ->
-# 118 "Lexer.mll"
+# 117 "Lexer.mll"
                         ( T_DONE )
-# 2422 "Lexer.ml"
+# 2421 "Lexer.ml"
 
   | 13 ->
-# 119 "Lexer.mll"
+# 118 "Lexer.mll"
                         ( T_DOWNTO )
-# 2427 "Lexer.ml"
+# 2426 "Lexer.ml"
 
   | 14 ->
-# 120 "Lexer.mll"
+# 119 "Lexer.mll"
                         ( T_ELSE )
-# 2432 "Lexer.ml"
+# 2431 "Lexer.ml"
 
   | 15 ->
-# 121 "Lexer.mll"
+# 120 "Lexer.mll"
                         ( T_END )
-# 2437 "Lexer.ml"
+# 2436 "Lexer.ml"
 
   | 16 ->
-# 122 "Lexer.mll"
+# 121 "Lexer.mll"
                         ( T_FALSE )
-# 2442 "Lexer.ml"
+# 2441 "Lexer.ml"
 
   | 17 ->
-# 123 "Lexer.mll"
-                        ( T_FLOAT )
-# 2447 "Lexer.ml"
+# 122 "Lexer.mll"
+                        ( T_FLOATST )
+# 2446 "Lexer.ml"
 
   | 18 ->
-# 124 "Lexer.mll"
+# 123 "Lexer.mll"
                         ( T_FOR )
-# 2452 "Lexer.ml"
+# 2451 "Lexer.ml"
 
   | 19 ->
-# 125 "Lexer.mll"
+# 124 "Lexer.mll"
                         ( T_IF )
-# 2457 "Lexer.ml"
+# 2456 "Lexer.ml"
 
   | 20 ->
-# 126 "Lexer.mll"
+# 125 "Lexer.mll"
                         ( T_IN )
-# 2462 "Lexer.ml"
+# 2461 "Lexer.ml"
 
   | 21 ->
-# 127 "Lexer.mll"
-                        ( T_INT )
-# 2467 "Lexer.ml"
+# 126 "Lexer.mll"
+                        ( T_INTST )
+# 2466 "Lexer.ml"
 
   | 22 ->
-# 128 "Lexer.mll"
+# 127 "Lexer.mll"
                         ( T_LET )
-# 2472 "Lexer.ml"
+# 2471 "Lexer.ml"
 
   | 23 ->
-# 129 "Lexer.mll"
+# 128 "Lexer.mll"
                         ( T_MATCH )
-# 2477 "Lexer.ml"
+# 2476 "Lexer.ml"
 
   | 24 ->
-# 130 "Lexer.mll"
+# 129 "Lexer.mll"
                         ( T_MOD )
-# 2482 "Lexer.ml"
+# 2481 "Lexer.ml"
 
   | 25 ->
-# 131 "Lexer.mll"
+# 130 "Lexer.mll"
                         ( T_MUTABLE )
-# 2487 "Lexer.ml"
+# 2486 "Lexer.ml"
 
   | 26 ->
-# 132 "Lexer.mll"
+# 131 "Lexer.mll"
                         ( T_NEW )
-# 2492 "Lexer.ml"
+# 2491 "Lexer.ml"
 
   | 27 ->
-# 133 "Lexer.mll"
+# 132 "Lexer.mll"
                         ( T_NOT )
-# 2497 "Lexer.ml"
+# 2496 "Lexer.ml"
 
   | 28 ->
-# 134 "Lexer.mll"
+# 133 "Lexer.mll"
                         ( T_OF )
-# 2502 "Lexer.ml"
+# 2501 "Lexer.ml"
 
   | 29 ->
-# 135 "Lexer.mll"
+# 134 "Lexer.mll"
                         ( T_REC )
-# 2507 "Lexer.ml"
+# 2506 "Lexer.ml"
 
   | 30 ->
-# 136 "Lexer.mll"
+# 135 "Lexer.mll"
                         ( T_REF )
-# 2512 "Lexer.ml"
+# 2511 "Lexer.ml"
 
   | 31 ->
-# 137 "Lexer.mll"
+# 136 "Lexer.mll"
                         ( T_THEN )
-# 2517 "Lexer.ml"
+# 2516 "Lexer.ml"
 
   | 32 ->
-# 138 "Lexer.mll"
+# 137 "Lexer.mll"
                         ( T_TO )
-# 2522 "Lexer.ml"
+# 2521 "Lexer.ml"
 
   | 33 ->
-# 139 "Lexer.mll"
+# 138 "Lexer.mll"
                         ( T_TRUE )
-# 2527 "Lexer.ml"
+# 2526 "Lexer.ml"
 
   | 34 ->
-# 140 "Lexer.mll"
+# 139 "Lexer.mll"
                         ( T_TYPE )
-# 2532 "Lexer.ml"
+# 2531 "Lexer.ml"
 
   | 35 ->
-# 141 "Lexer.mll"
+# 140 "Lexer.mll"
                         ( T_UNIT )
-# 2537 "Lexer.ml"
+# 2536 "Lexer.ml"
 
   | 36 ->
-# 142 "Lexer.mll"
+# 141 "Lexer.mll"
                         ( T_WHILE )
-# 2542 "Lexer.ml"
+# 2541 "Lexer.ml"
 
   | 37 ->
-# 143 "Lexer.mll"
+# 142 "Lexer.mll"
                         ( T_WITH )
-# 2547 "Lexer.ml"
+# 2546 "Lexer.ml"
 
   | 38 ->
-# 144 "Lexer.mll"
+# 143 "Lexer.mll"
                         ( T_GIVES )
-# 2552 "Lexer.ml"
+# 2551 "Lexer.ml"
 
   | 39 ->
-# 145 "Lexer.mll"
+# 144 "Lexer.mll"
                         ( T_SEQ )
-# 2557 "Lexer.ml"
+# 2556 "Lexer.ml"
 
   | 40 ->
-# 146 "Lexer.mll"
+# 145 "Lexer.mll"
                         ( T_BAR )
-# 2562 "Lexer.ml"
+# 2561 "Lexer.ml"
 
   | 41 ->
-# 147 "Lexer.mll"
+# 146 "Lexer.mll"
                         ( T_PLUS )
-# 2567 "Lexer.ml"
+# 2566 "Lexer.ml"
 
   | 42 ->
-# 148 "Lexer.mll"
+# 147 "Lexer.mll"
                         ( T_MINUS )
-# 2572 "Lexer.ml"
+# 2571 "Lexer.ml"
 
   | 43 ->
-# 149 "Lexer.mll"
+# 148 "Lexer.mll"
                         ( T_TIMES )
-# 2577 "Lexer.ml"
+# 2576 "Lexer.ml"
 
   | 44 ->
-# 150 "Lexer.mll"
+# 149 "Lexer.mll"
                         ( T_DIV )
-# 2582 "Lexer.ml"
+# 2581 "Lexer.ml"
 
   | 45 ->
-# 151 "Lexer.mll"
+# 150 "Lexer.mll"
                         ( T_FPLUS )
-# 2587 "Lexer.ml"
+# 2586 "Lexer.ml"
 
   | 46 ->
-# 152 "Lexer.mll"
+# 151 "Lexer.mll"
                         ( T_FMINUS )
-# 2592 "Lexer.ml"
+# 2591 "Lexer.ml"
 
   | 47 ->
-# 153 "Lexer.mll"
+# 152 "Lexer.mll"
                         ( T_FTIMES )
-# 2597 "Lexer.ml"
+# 2596 "Lexer.ml"
 
   | 48 ->
-# 154 "Lexer.mll"
+# 153 "Lexer.mll"
                         ( T_FDIV )
-# 2602 "Lexer.ml"
+# 2601 "Lexer.ml"
 
   | 49 ->
-# 155 "Lexer.mll"
+# 154 "Lexer.mll"
                         ( T_POWER )
-# 2607 "Lexer.ml"
+# 2606 "Lexer.ml"
 
   | 50 ->
-# 156 "Lexer.mll"
+# 155 "Lexer.mll"
                         ( T_BANK )
-# 2612 "Lexer.ml"
+# 2611 "Lexer.ml"
 
   | 51 ->
-# 157 "Lexer.mll"
+# 156 "Lexer.mll"
                         ( T_SMCOLON )
-# 2617 "Lexer.ml"
+# 2616 "Lexer.ml"
 
   | 52 ->
-# 158 "Lexer.mll"
+# 157 "Lexer.mll"
                         ( T_AND )
-# 2622 "Lexer.ml"
+# 2621 "Lexer.ml"
 
   | 53 ->
-# 159 "Lexer.mll"
+# 158 "Lexer.mll"
                         ( T_OR )
-# 2627 "Lexer.ml"
+# 2626 "Lexer.ml"
 
   | 54 ->
-# 160 "Lexer.mll"
+# 159 "Lexer.mll"
                         ( T_NSEQ )
-# 2632 "Lexer.ml"
+# 2631 "Lexer.ml"
 
   | 55 ->
-# 161 "Lexer.mll"
+# 160 "Lexer.mll"
                         ( T_L )
-# 2637 "Lexer.ml"
+# 2636 "Lexer.ml"
 
   | 56 ->
-# 162 "Lexer.mll"
+# 161 "Lexer.mll"
                         ( T_G )
-# 2642 "Lexer.ml"
+# 2641 "Lexer.ml"
 
   | 57 ->
-# 163 "Lexer.mll"
+# 162 "Lexer.mll"
                         ( T_LE )
-# 2647 "Lexer.ml"
+# 2646 "Lexer.ml"
 
   | 58 ->
-# 164 "Lexer.mll"
+# 163 "Lexer.mll"
                         ( T_GE )
-# 2652 "Lexer.ml"
+# 2651 "Lexer.ml"
 
   | 59 ->
-# 165 "Lexer.mll"
+# 164 "Lexer.mll"
                         ( T_EQ )
-# 2657 "Lexer.ml"
+# 2656 "Lexer.ml"
 
   | 60 ->
-# 166 "Lexer.mll"
+# 165 "Lexer.mll"
                         ( T_NEQ )
-# 2662 "Lexer.ml"
+# 2661 "Lexer.ml"
 
   | 61 ->
-# 167 "Lexer.mll"
+# 166 "Lexer.mll"
                         ( T_ASSIGN )
-# 2667 "Lexer.ml"
+# 2666 "Lexer.ml"
 
   | 62 ->
-# 168 "Lexer.mll"
+# 167 "Lexer.mll"
                         ( T_LPAR )
-# 2672 "Lexer.ml"
+# 2671 "Lexer.ml"
 
   | 63 ->
-# 169 "Lexer.mll"
+# 168 "Lexer.mll"
                         ( T_RPAR )
-# 2677 "Lexer.ml"
+# 2676 "Lexer.ml"
 
   | 64 ->
-# 170 "Lexer.mll"
+# 169 "Lexer.mll"
                         ( T_LBRACK )
-# 2682 "Lexer.ml"
+# 2681 "Lexer.ml"
 
   | 65 ->
-# 171 "Lexer.mll"
+# 170 "Lexer.mll"
                         ( T_RBRACK )
-# 2687 "Lexer.ml"
+# 2686 "Lexer.ml"
 
   | 66 ->
-# 172 "Lexer.mll"
+# 171 "Lexer.mll"
                         ( T_COMA )
-# 2692 "Lexer.ml"
+# 2691 "Lexer.ml"
 
   | 67 ->
-# 173 "Lexer.mll"
+# 172 "Lexer.mll"
                         ( T_COLON )
-# 2697 "Lexer.ml"
+# 2696 "Lexer.ml"
 
   | 68 ->
-# 174 "Lexer.mll"
+# 173 "Lexer.mll"
                         ( T_ID )
-# 2702 "Lexer.ml"
+# 2701 "Lexer.ml"
 
   | 69 ->
-# 175 "Lexer.mll"
+# 174 "Lexer.mll"
                         ( T_CID )
-# 2707 "Lexer.ml"
+# 2706 "Lexer.ml"
 
   | 70 ->
-# 176 "Lexer.mll"
-                        ( T_CHAR )
-# 2712 "Lexer.ml"
+# 175 "Lexer.mll"
+                        ( T_CONSTCHAR )
+# 2711 "Lexer.ml"
 
   | 71 ->
-# 177 "Lexer.mll"
+# 176 "Lexer.mll"
                         ( T_STRING )
-# 2717 "Lexer.ml"
+# 2716 "Lexer.ml"
 
   | 72 ->
-# 178 "Lexer.mll"
+# 177 "Lexer.mll"
                         ( lexer lexbuf )
-# 2722 "Lexer.ml"
+# 2721 "Lexer.ml"
 
   | 73 ->
-# 179 "Lexer.mll"
+# 178 "Lexer.mll"
                         ( print_endline "comments start"; comments 0 lexbuf )
-# 2727 "Lexer.ml"
+# 2726 "Lexer.ml"
 
   | 74 ->
 let
-# 180 "Lexer.mll"
+# 179 "Lexer.mll"
          chr
-# 2733 "Lexer.ml"
+# 2732 "Lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 180 "Lexer.mll"
+# 179 "Lexer.mll"
                         ( print_error lexbuf chr ; lexer lexbuf )
-# 2737 "Lexer.ml"
+# 2736 "Lexer.ml"
 
   | 75 ->
-# 181 "Lexer.mll"
+# 180 "Lexer.mll"
                         ( T_EOF )
-# 2742 "Lexer.ml"
+# 2741 "Lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state
 
@@ -2747,40 +2746,40 @@ and comments level lexbuf =
 and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 184 "Lexer.mll"
+# 183 "Lexer.mll"
                         ( Printf.printf "comments (%d) end\n" level;
 	                      if level = 0 then lexer lexbuf
 	                        else comments (level-1) lexbuf
 	                    )
-# 2756 "Lexer.ml"
+# 2755 "Lexer.ml"
 
   | 1 ->
-# 188 "Lexer.mll"
+# 187 "Lexer.mll"
                         ( Printf.printf "comments (%d) start\n" (level+1);
                           comments (level+1) lexbuf
 	                    )
-# 2763 "Lexer.ml"
+# 2762 "Lexer.ml"
 
   | 2 ->
-# 191 "Lexer.mll"
+# 190 "Lexer.mll"
                         ( incr_linenum lexbuf ; comments level lexbuf )
-# 2768 "Lexer.ml"
+# 2767 "Lexer.ml"
 
   | 3 ->
-# 192 "Lexer.mll"
+# 191 "Lexer.mll"
                         ( comments level lexbuf  )
-# 2773 "Lexer.ml"
+# 2772 "Lexer.ml"
 
   | 4 ->
-# 193 "Lexer.mll"
+# 192 "Lexer.mll"
                         ( raise ( EOF "File ended before comments were closed") )
-# 2778 "Lexer.ml"
+# 2777 "Lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state
 
 ;;
 
-# 195 "Lexer.mll"
+# 194 "Lexer.mll"
  
  (* 
   let string_of_token token =
@@ -2880,4 +2879,4 @@ let main =
   loop ()
 *)
 
-# 2884 "Lexer.ml"
+# 2883 "Lexer.ml"

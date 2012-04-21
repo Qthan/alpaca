@@ -3,8 +3,7 @@ open Parser
 open Lexing
 
 exception EOF of string
-(*
-
+(*:/
 type token =
     T_ANDDEF
   | T_ARRAY
@@ -120,11 +119,11 @@ rule lexer = parse
   | "else"              { T_ELSE }
   | "end"               { T_END }
   | "false"             { T_FALSE }
-  | "float"             { T_FLOAT }
+  | "float"             { T_FLOATST }
   | "for"               { T_FOR }
   | "if"                { T_IF }
   | "in"                { T_IN }
-  | "int"               { T_INT }
+  | "int"               { T_INTST }
   | "let"               { T_LET }
   | "match"             { T_MATCH }
   | "mod"               { T_MOD }
@@ -173,7 +172,7 @@ rule lexer = parse
   | ":"                 { T_COLON }
   | lowCase+id*         { T_ID }
   | upCase+id*          { T_CID }
-  | '\''constChar '\''  { T_CHAR }
+  | '\''constChar '\''  { T_CONSTCHAR }
   | '\"'[^'\n']* '\"'   { T_STRING }
   | "--"[^'\n']*        { lexer lexbuf } 
   | "(*"                { print_endline "comments start"; comments 0 lexbuf }

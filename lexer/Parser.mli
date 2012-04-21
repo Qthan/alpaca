@@ -1,4 +1,5 @@
 type token =
+  | T_EOF
   | T_ANDDEF
   | T_ARRAY
   | T_BEGIN
@@ -30,11 +31,14 @@ type token =
   | T_FLOAT
   | T_INT
   | T_CHAR
+  | T_CONSTCHAR
   | T_STRING
   | T_FALSE
   | T_TRUE
   | T_BOOL
   | T_UNIT
+  | T_FLOATST
+  | T_INTST
   | T_GIVES
   | T_SEQ
   | T_BAR
@@ -66,7 +70,6 @@ type token =
   | T_RBRACK
   | T_COMA
   | T_COLON
-  | T_EOF
 
 val program :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> unit
