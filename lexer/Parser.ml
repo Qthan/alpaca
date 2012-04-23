@@ -983,13 +983,13 @@ let yyact = [|
     let _1 = (Parsing.peek_val __caml_parser_env 1 : 'stmt_list) in
     Obj.repr(
 # 109 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 988 "Parser.ml"
                : unit))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 113 "Parser.mly"
-                                                             ( () )
+                                                                        ( () )
 # 994 "Parser.ml"
                : 'stmt_list))
 ; (fun __caml_parser_env ->
@@ -997,7 +997,7 @@ let yyact = [|
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'letdef) in
     Obj.repr(
 # 114 "Parser.mly"
-                                                             ( print_endline "stmt_list letdef redused tou stmt_list"; () )
+                                                                        ( () )
 # 1002 "Parser.ml"
                : 'stmt_list))
 ; (fun __caml_parser_env ->
@@ -1005,7 +1005,7 @@ let yyact = [|
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'typedef) in
     Obj.repr(
 # 115 "Parser.mly"
-                                                             ( print_endline "stmt_list typedef redused tou stmt_list"; () )
+                                                                        ( () )
 # 1010 "Parser.ml"
                : 'stmt_list))
 ; (fun __caml_parser_env ->
@@ -1014,25 +1014,25 @@ let yyact = [|
     let _4 = (Parsing.peek_val __caml_parser_env 0 : 'anddef) in
     Obj.repr(
 # 119 "Parser.mly"
-                                                            ( print_endline "T_LET recmb def anddef reduced to  letdef"; () )
+                                                                        ( () )
 # 1019 "Parser.ml"
                : 'letdef))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 123 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 1025 "Parser.ml"
                : 'recmb))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 124 "Parser.mly"
-                                                            ( print_endline "T_REC reduced to ercmb"; () )
+                                                                        ( () )
 # 1031 "Parser.ml"
                : 'recmb))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 128 "Parser.mly"
-                                                            ( print_endline "nothing reduced to anddef "; () )
+                                                                        ( () )
 # 1037 "Parser.ml"
                : 'anddef))
 ; (fun __caml_parser_env ->
@@ -1040,7 +1040,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'def) in
     Obj.repr(
 # 129 "Parser.mly"
-                                                            ( print_endline "anddef T_AND def reduced to anddef"; () )
+                                                                        ( () )
 # 1045 "Parser.ml"
                : 'anddef))
 ; (fun __caml_parser_env ->
@@ -1049,14 +1049,14 @@ let yyact = [|
     let _5 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 133 "Parser.mly"
-                                                             ( print_endline "T_ID parstar colontype T_EQ exp reduced to def"; () )
+                                                                        ( () )
 # 1054 "Parser.ml"
                : 'def))
 ; (fun __caml_parser_env ->
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'colontype) in
     Obj.repr(
 # 134 "Parser.mly"
-                                                             ( print_endline "T_MUTABLE T_ID colontype reduced to def"; () )
+                                                                        ( () )
 # 1061 "Parser.ml"
                : 'def))
 ; (fun __caml_parser_env ->
@@ -1065,20 +1065,20 @@ let yyact = [|
     let _7 = (Parsing.peek_val __caml_parser_env 0 : 'colontype) in
     Obj.repr(
 # 136 "Parser.mly"
-                                                            ( print_endline "T_MUTABLE T_ID expr comaexpr colontype reduced to def"; () )
+                                                                        ( () )
 # 1070 "Parser.ml"
                : 'def))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 140 "Parser.mly"
-                                                            ( print_endline "nothing reduced to parstar"; () )
+                                                                        ( () )
 # 1076 "Parser.ml"
                : 'parstar))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 1 : 'parstar) in
     Obj.repr(
 # 141 "Parser.mly"
-                                                            ( print_endline "T_ID reduced to parstar"; () )
+                                                                        ( () )
 # 1083 "Parser.ml"
                : 'parstar))
 ; (fun __caml_parser_env ->
@@ -1086,20 +1086,20 @@ let yyact = [|
     let _5 = (Parsing.peek_val __caml_parser_env 1 : 'types) in
     Obj.repr(
 # 142 "Parser.mly"
-                                                            ( print_endline "T_LPAR T_ID T_COLON types T_RPAR reduced to parstar"; () )
+                                                                        ( () )
 # 1091 "Parser.ml"
                : 'parstar))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 146 "Parser.mly"
-                                                            ( print_endline "nathing reduced to colontype"; () )
+                                                                        ( () )
 # 1097 "Parser.ml"
                : 'colontype))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'types) in
     Obj.repr(
 # 147 "Parser.mly"
-                                                            ( print_endline "reduced to "; () )
+                                                                        ( () )
 # 1104 "Parser.ml"
                : 'colontype))
 ; (fun __caml_parser_env ->
@@ -1107,13 +1107,13 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'andtdefstar) in
     Obj.repr(
 # 151 "Parser.mly"
-                                                            ( print_endline "reduced to "; () )
+                                                                        ( () )
 # 1112 "Parser.ml"
                : 'typedef))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 155 "Parser.mly"
-                                                            ( print_endline "nathing reduced to andtdefstar"; () )
+                                                                        ( () )
 # 1118 "Parser.ml"
                : 'andtdefstar))
 ; (fun __caml_parser_env ->
@@ -1121,7 +1121,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'tdef) in
     Obj.repr(
 # 156 "Parser.mly"
-                                                            ( print_endline "tdefstar T_AND tdef reduced to andtdefstar "; () )
+                                                                        ( () )
 # 1126 "Parser.ml"
                : 'andtdefstar))
 ; (fun __caml_parser_env ->
@@ -1129,13 +1129,13 @@ let yyact = [|
     let _4 = (Parsing.peek_val __caml_parser_env 0 : 'constrbar) in
     Obj.repr(
 # 159 "Parser.mly"
-                                                            ( print_endline "reduced to "; () )
+                                                                        ( () )
 # 1134 "Parser.ml"
                : 'tdef))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 163 "Parser.mly"
-                                                            ( print_endline "nathing reduced to constrbar"; () )
+                                                                        ( () )
 # 1140 "Parser.ml"
                : 'constrbar))
 ; (fun __caml_parser_env ->
@@ -1143,20 +1143,20 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'constr) in
     Obj.repr(
 # 164 "Parser.mly"
-                                                            ( print_endline "constrbar T_BAR constr reduced to constrbar"; () )
+                                                                        ( () )
 # 1148 "Parser.ml"
                : 'constrbar))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'oftype) in
     Obj.repr(
 # 167 "Parser.mly"
-                                                            ( print_endline "T_ID oftype reduced to constr"; () )
+                                                                        ( () )
 # 1155 "Parser.ml"
                : 'constr))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 170 "Parser.mly"
-                                                            ( print_endline "nathing reduced to oftype"; () )
+                                                                        ( () )
 # 1161 "Parser.ml"
                : 'oftype))
 ; (fun __caml_parser_env ->
@@ -1164,14 +1164,14 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'typeplus) in
     Obj.repr(
 # 171 "Parser.mly"
-                                                            ( print_endline "oftype T_OF typeplus reduced to oftype "; () )
+                                                                        ( () )
 # 1169 "Parser.ml"
                : 'oftype))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 0 : 'types) in
     Obj.repr(
 # 175 "Parser.mly"
-                                                            ( print_endline "type reduced to typeplus"; () )
+                                                                        ( () )
 # 1176 "Parser.ml"
                : 'typeplus))
 ; (fun __caml_parser_env ->
@@ -1179,44 +1179,44 @@ let yyact = [|
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'types) in
     Obj.repr(
 # 176 "Parser.mly"
-                                                            ( print_endline "typeplus types reduced to typeplus"; () )
+                                                                        ( () )
 # 1184 "Parser.ml"
                : 'typeplus))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 180 "Parser.mly"
-                                                           ( print_endline "T_UNIT reduced to type"; () )
+                                                                        ( () )
 # 1190 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 181 "Parser.mly"
-                                                           ( print_endline "T_INTST reduced to type"; () )
+                                                                        ( () )
 # 1196 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 182 "Parser.mly"
-                                                           ( print_endline "T_CHAR reduced to type"; () )
+                                                                        ( () )
 # 1202 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 183 "Parser.mly"
-                                                           ( print_endline "T_BOOL reduced to type"; () )
+                                                                        ( () )
 # 1208 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 184 "Parser.mly"
-                                                           ( print_endline "T_FLOATST reduced to type"; () )
+                                                                        ( () )
 # 1214 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 1 : 'types) in
     Obj.repr(
 # 185 "Parser.mly"
-                                                           ( print_endline "T_LPAR type T_RPAR reduced to type"; () )
+                                                                        ( () )
 # 1221 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
@@ -1224,14 +1224,14 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'types) in
     Obj.repr(
 # 186 "Parser.mly"
-                                                           ( print_endline "types T_GIVES types reduced to type"; () )
+                                                                        ( () )
 # 1229 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 1 : 'types) in
     Obj.repr(
 # 187 "Parser.mly"
-                                                           ( print_endline "types T_REF reduced to type"; () )
+                                                                        ( () )
 # 1236 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
@@ -1239,39 +1239,39 @@ let yyact = [|
     let _4 = (Parsing.peek_val __caml_parser_env 0 : 'types) in
     Obj.repr(
 # 188 "Parser.mly"
-                                                           ( print_endline "T_ARRAY starlist T_OF types reduced to type"; () )
+                                                                        ( () )
 # 1244 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 189 "Parser.mly"
-                                                           ( print_endline "T_ID reduced to type"; () )
+                                                                        ( () )
 # 1250 "Parser.ml"
                : 'types))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 193 "Parser.mly"
-                                                           ( print_endline "nathing reduced to starlist"; () )
+                                                                        ( () )
 # 1256 "Parser.ml"
                : 'starlist))
 ; (fun __caml_parser_env ->
     let _3 = (Parsing.peek_val __caml_parser_env 1 : 'comastar) in
     Obj.repr(
 # 194 "Parser.mly"
-                                                           ( print_endline "T_LBRACK T_TIMES comastar T_RBRACK reduced to starlist"; () )
+                                                                        ( () )
 # 1263 "Parser.ml"
                : 'starlist))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 198 "Parser.mly"
-                                                           ( print_endline "nathing reduced to starlist"; () )
+                                                                        ( () )
 # 1269 "Parser.ml"
                : 'comastar))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 2 : 'comastar) in
     Obj.repr(
 # 199 "Parser.mly"
-                                                           ( print_endline "commastar T_COMA T_TIMES reduced to comastar"; () )
+                                                                        ( () )
 # 1276 "Parser.ml"
                : 'comastar))
 ; (fun __caml_parser_env ->
@@ -1279,7 +1279,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 202 "Parser.mly"
-                                                           ( print_endline "expr T_FPLUS expr reduced to expr"; () )
+                                                                        ( () )
 # 1284 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1287,7 +1287,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 203 "Parser.mly"
-                                                           ( print_endline "expr T_PLUS expr reduced to expr"; () )
+                                                                        ( () )
 # 1292 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1295,7 +1295,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 204 "Parser.mly"
-                                                           ( print_endline "expr T_MINUS expr reduced to expr"; () )
+                                                                        ( () )
 # 1300 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1303,7 +1303,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 205 "Parser.mly"
-                                                           ( print_endline "expr T_FMINUS expr reduced to expr"; () )
+                                                                        ( () )
 # 1308 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1311,7 +1311,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 206 "Parser.mly"
-                                                           ( print_endline "expr T_TIMES expr reduced to expr"; () )
+                                                                        ( () )
 # 1316 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1319,7 +1319,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 207 "Parser.mly"
-                                                           ( print_endline "expr T_FTIMES expr reduced to expr"; () )
+                                                                        ( () )
 # 1324 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1327,7 +1327,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 208 "Parser.mly"
-                                                           ( print_endline "expr T_DIV expr reduced to expr"; () )
+                                                                        ( () )
 # 1332 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1335,7 +1335,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 209 "Parser.mly"
-                                                           ( print_endline "expr T_FDIV expr reduced to expr"; () )
+                                                                        ( () )
 # 1340 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1343,7 +1343,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 210 "Parser.mly"
-                                                           ( print_endline "expr T_MOD expr reduced to expr"; () )
+                                                                        ( () )
 # 1348 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1351,7 +1351,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 211 "Parser.mly"
-                                                           ( print_endline "expr T_POWER expr reduced to expr"; () )
+                                                                        ( () )
 # 1356 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1359,7 +1359,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 212 "Parser.mly"
-                                                           ( print_endline "expr T_SEQ expr reduced to expr"; () )
+                                                                        ( () )
 # 1364 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1367,7 +1367,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 213 "Parser.mly"
-                                                           ( print_endline "expr T_NSEQ expr reduced to expr"; () )
+                                                                        ( () )
 # 1372 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1375,7 +1375,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 214 "Parser.mly"
-                                                           ( print_endline "expr T_L expr reduced to expr"; () )
+                                                                        ( () )
 # 1380 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1383,7 +1383,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 215 "Parser.mly"
-                                                           ( print_endline "expr T_G expr reduced to expr"; () )
+                                                                        ( () )
 # 1388 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1391,7 +1391,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 216 "Parser.mly"
-                                                           ( print_endline "expr T_LE expr reduced to expr"; () )
+                                                                        ( () )
 # 1396 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1399,7 +1399,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 217 "Parser.mly"
-                                                           ( print_endline "expr T_GE expr reduced to expr"; () )
+                                                                        ( () )
 # 1404 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1407,7 +1407,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 218 "Parser.mly"
-                                                           ( print_endline "expr T_EQ expr reduced to expr"; () )
+                                                                        ( () )
 # 1412 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1415,7 +1415,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 219 "Parser.mly"
-                                                           ( print_endline "expr T_NEQ expr reduced to expr"; () )
+                                                                        ( () )
 # 1420 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1423,7 +1423,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 220 "Parser.mly"
-                                                           ( print_endline "expr T_AND expr reduced to expr"; () )
+                                                                        ( () )
 # 1428 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1431,7 +1431,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 221 "Parser.mly"
-                                                           ( print_endline "expr T_OR expr reduced rop expr"; () )
+                                                                        ( () )
 # 1436 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1439,7 +1439,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 222 "Parser.mly"
-                                                           ( print_endline "expr T_SMCOLON expr reduced to expr"; () )
+                                                                        ( () )
 # 1444 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1447,49 +1447,49 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 223 "Parser.mly"
-                                                           ( print_endline "expr T_ASSIGN expr reduced to expr"; () )
+                                                                        ( () )
 # 1452 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 224 "Parser.mly"
-                                                           ( print_endline "T_PLUS unexpr reduced to unexp"; () )
+                                                                        ( () )
 # 1459 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 225 "Parser.mly"
-                                                           ( print_endline "T_FPLUS unexpr reduced to unexp"; () )
+                                                                        ( () )
 # 1466 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 226 "Parser.mly"
-                                                           ( print_endline "T_FMINUS unexprreduced to unexp" ;() )
+                                                                        ( () )
 # 1473 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 227 "Parser.mly"
-                                                           ( print_endline "T_MINUS unexpr reduced to unexp";() )
+                                                                        ( () )
 # 1480 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 228 "Parser.mly"
-                                                           ( print_endline "delete expr reduced to expr"; () )
+                                                                        ( () )
 # 1487 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 1 : 'expr) in
     Obj.repr(
 # 229 "Parser.mly"
-                                                           ( print_endline "begin expr reduced end reduced to expr"; () )
+                                                                        ( () )
 # 1494 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1497,7 +1497,7 @@ let yyact = [|
     let _4 = (Parsing.peek_val __caml_parser_env 1 : 'expr) in
     Obj.repr(
 # 230 "Parser.mly"
-                                                           ( print_endline "WHILE expr DO expr DONE redused to expr"; () )
+                                                                        ( () )
 # 1502 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1507,21 +1507,21 @@ let yyact = [|
     let _8 = (Parsing.peek_val __caml_parser_env 1 : 'expr) in
     Obj.repr(
 # 232 "Parser.mly"
-                                                           ( print_endline "T_FOR T_ID T_SEQ expr count expr T_DO expr reduced to expr"; () )
+                                                                        ( () )
 # 1512 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 1 : 'intmb) in
     Obj.repr(
 # 233 "Parser.mly"
-                                                           ( print_endline "dim intmb id reduced to expr"; () )
+                                                                        ( () )
 # 1519 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'types) in
     Obj.repr(
 # 234 "Parser.mly"
-                                                           ( print_endline "T_NEW types reduced to expr"; () )
+                                                                        ( () )
 # 1526 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1530,7 +1530,7 @@ let yyact = [|
     let _6 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 235 "Parser.mly"
-                                                           ( print_endline "T_IF expr T_THEN expr T_ELSE expr reduced to expr "; () )
+                                                                        ( () )
 # 1535 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1538,7 +1538,7 @@ let yyact = [|
     let _4 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 236 "Parser.mly"
-                                                           ( print_endline "T_IF expr T_THEN expr reduced to expr "; () )
+                                                                        ( () )
 # 1543 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1546,7 +1546,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 237 "Parser.mly"
-                                                           ( print_endline "letdef T_IN expr reduced to expr "; () )
+                                                                        ( () )
 # 1551 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
@@ -1555,96 +1555,96 @@ let yyact = [|
     let _5 = (Parsing.peek_val __caml_parser_env 1 : 'clausestar) in
     Obj.repr(
 # 238 "Parser.mly"
-                                                           ( print_endline "T_MATCH expr T_WITH clause clausestar T_END reduced to expr"; () )
+                                                                        ( () )
 # 1560 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'atomstar) in
     Obj.repr(
 # 239 "Parser.mly"
-                                                           ( print_endline "cid bigexpr reduced to bigexpr"; () )
+                                                                        ( () )
 # 1567 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'atomstar) in
     Obj.repr(
 # 240 "Parser.mly"
-                                                           ( print_endline "id bigexpr reduced to bigexpr"; () )
+                                                                        ( () )
 # 1574 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 0 : 'atom) in
     Obj.repr(
 # 241 "Parser.mly"
-                                                           ( print_endline "atom reduced to expr"; () )
+                                                                        ( () )
 # 1581 "Parser.ml"
                : 'expr))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 245 "Parser.mly"
-                                                           ( print_endline "int reduced to atom";() )
+                                                                        ( () )
 # 1587 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 246 "Parser.mly"
-                                                           ( print_endline "float reduced to app"; () )
+                                                                        ( () )
 # 1593 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 247 "Parser.mly"
-                                                           ( print_endline "float reduced to app"; () )
+                                                                        ( () )
 # 1599 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 248 "Parser.mly"
-                                                           ( print_endline "string reduced to app"; () )
+                                                                        ( () )
 # 1605 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 249 "Parser.mly"
-                                                           ( print_endline "true reduced to atom"; () )
+                                                                        ( () )
 # 1611 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 250 "Parser.mly"
-                                                           ( print_endline "false reduced to app"; () )
+                                                                        ( () )
 # 1617 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 251 "Parser.mly"
-                                                           ( print_endline "unit reduced to app"; () )
+                                                                        ( () )
 # 1623 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 252 "Parser.mly"
-                                                           ( print_endline "cid reduced to atom"; () )
+                                                                        ( () )
 # 1629 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 253 "Parser.mly"
-                                                           ( print_endline "id reduced to atom"; () )
+                                                                        ( () )
 # 1635 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'atom) in
     Obj.repr(
 # 254 "Parser.mly"
-                                                           ( print_endline "T_NOT atom reduced to atom"; () )
+                                                                        ( () )
 # 1642 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'atom) in
     Obj.repr(
 # 255 "Parser.mly"
-                                                           ( print_endline "T_BANK atom reduced to atom"; () )
+                                                                        ( () )
 # 1649 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
@@ -1652,20 +1652,20 @@ let yyact = [|
     let _4 = (Parsing.peek_val __caml_parser_env 1 : 'comaexpr) in
     Obj.repr(
 # 256 "Parser.mly"
-                                                           ( print_endline "id lbrack expr comaexpr rbrac reduced to atom"; () )
+                                                                        ( () )
 # 1657 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 1 : 'expr) in
     Obj.repr(
 # 257 "Parser.mly"
-                                                           ( print_endline "lpar expr rpar reduced to atom"; () )
+                                                                        ( () )
 # 1664 "Parser.ml"
                : 'atom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 261 "Parser.mly"
-                                                           ( print_endline "nothing reduced to comaexpr"; () )
+                                                                        ( () )
 # 1670 "Parser.ml"
                : 'comaexpr))
 ; (fun __caml_parser_env ->
@@ -1673,14 +1673,14 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 262 "Parser.mly"
-                                                           ( print_endline "comaexpr tcoma bigexpr reduced to comaexpr"; () )
+                                                                        ( () )
 # 1678 "Parser.ml"
                : 'comaexpr))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 0 : 'atom) in
     Obj.repr(
 # 267 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 1685 "Parser.ml"
                : 'atomstar))
 ; (fun __caml_parser_env ->
@@ -1688,37 +1688,37 @@ let yyact = [|
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'atomstar) in
     Obj.repr(
 # 268 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 1693 "Parser.ml"
                : 'atomstar))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 273 "Parser.mly"
-                                                            ( print_endline "T_TO reduced to count "; () )
+                                                                        ( () )
 # 1699 "Parser.ml"
                : 'count))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 274 "Parser.mly"
-                                                            ( print_endline "T_DOWNTO reduced to count"; () )
+                                                                        ( () )
 # 1705 "Parser.ml"
                : 'count))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 278 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 1711 "Parser.ml"
                : 'intmb))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 279 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 1717 "Parser.ml"
                : 'intmb))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 283 "Parser.mly"
-                                                            ( () )
+                                                                        ( () )
 # 1723 "Parser.ml"
                : 'clausestar))
 ; (fun __caml_parser_env ->
@@ -1726,7 +1726,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'clause) in
     Obj.repr(
 # 284 "Parser.mly"
-                                                            ( print_endline "clausestar T_BAR clause reduced to clausestar"; () )
+                                                                        ( () )
 # 1731 "Parser.ml"
                : 'clausestar))
 ; (fun __caml_parser_env ->
@@ -1734,79 +1734,79 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'expr) in
     Obj.repr(
 # 288 "Parser.mly"
-                                                            ( print_endline "Patern T_GIVES EXPR reduced to clause"; () )
+                                                                        ( () )
 # 1739 "Parser.ml"
                : 'clause))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 0 : 'pattom) in
     Obj.repr(
 # 292 "Parser.mly"
-                                                            ( print_endline "Patom Redused to pattern"; ())
+                                                                        ( () )
 # 1746 "Parser.ml"
                : 'pattern))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'patternstar) in
     Obj.repr(
 # 293 "Parser.mly"
-                                                            ( print_endline "T_ID patternstar reduced to pattern"; () )
+                                                                        ( () )
 # 1753 "Parser.ml"
                : 'pattern))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 1 : 'sign) in
     Obj.repr(
 # 297 "Parser.mly"
-                                                            ( print_endline "sign T_INT reduced to pattern"; () )
+                                                                        ( () )
 # 1760 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 1 : 'fsign) in
     Obj.repr(
 # 298 "Parser.mly"
-                                                            ( print_endline "sign T_FLOAT reduced to pattern"; () )
+                                                                        ( () )
 # 1767 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 299 "Parser.mly"
-                                                            ( print_endline "T_CONSTCHAR reduced to pattern"; () )
+                                                                        ( () )
 # 1773 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 300 "Parser.mly"
-                                                            ( print_endline "T_TRUE reduced to pattern"; () )
+                                                                        ( () )
 # 1779 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 301 "Parser.mly"
-                                                            ( print_endline "T_FALSE reduced to pattern"; () )
+                                                                        ( () )
 # 1785 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 302 "Parser.mly"
-                                                            ( print_endline "T_ID reduced to pattern"; () )
+                                                                        ( () )
 # 1791 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 303 "Parser.mly"
-                                                             ( print_endline "T_CID reduced to pattern"; () )
+                                                                        ( () )
 # 1797 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     let _2 = (Parsing.peek_val __caml_parser_env 1 : 'pattern) in
     Obj.repr(
 # 304 "Parser.mly"
-                                                            ( print_endline "T_LPAR pattern T_RPAR reduced to pattern"; () )
+                                                                        ( () )
 # 1804 "Parser.ml"
                : 'pattom))
 ; (fun __caml_parser_env ->
     let _1 = (Parsing.peek_val __caml_parser_env 0 : 'pattom) in
     Obj.repr(
 # 308 "Parser.mly"
-                                                            ( print_endline "Pattom reduced to patternstar"; () )
+                                                                        ( () )
 # 1811 "Parser.ml"
                : 'patternstar))
 ; (fun __caml_parser_env ->
@@ -1814,31 +1814,31 @@ let yyact = [|
     let _2 = (Parsing.peek_val __caml_parser_env 0 : 'pattom) in
     Obj.repr(
 # 309 "Parser.mly"
-                                                            ( print_endline"patternstar pattom reduced to patternstar"; () )
+                                                                        ( () )
 # 1819 "Parser.ml"
                : 'patternstar))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 313 "Parser.mly"
-                                                            ( print_endline "T_PLUS reduced to sign"; () )
+                                                                        ( () )
 # 1825 "Parser.ml"
                : 'sign))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 314 "Parser.mly"
-                                                            ( print_endline "T_MINUS reduced to sign"; () )
+                                                                        ( () )
 # 1831 "Parser.ml"
                : 'sign))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 319 "Parser.mly"
-                                                             ( print_endline "T_FPLUS reduced to sign"; () )
+                                                                        ( () )
 # 1837 "Parser.ml"
                : 'fsign))
 ; (fun __caml_parser_env ->
     Obj.repr(
 # 320 "Parser.mly"
-                                                             ( print_endline "T_FMINUS reduced to sign"; () )
+                                                                        ( () )
 # 1843 "Parser.ml"
                : 'fsign))
 (* Entry program *)
