@@ -132,8 +132,7 @@ anddef:
 def:
             | T_ID parstar colontype T_SEQ expr                         { () }
             | T_MUTABLE T_ID colontype                                  { () }
-            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK  colontype   
-                                                                        { () }
+            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK  colontype { () }
             ;
 
 parstar:
@@ -228,8 +227,7 @@ expr:
             | T_DELETE expr                                             { () } 
             | T_BEGIN expr T_END                                        { () }
             | T_WHILE expr T_DO expr T_DONE                             { () }
-            | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE 
-                                                                        { () }
+            | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE         { () }
             | T_DIM intmb T_ID                                          { () }
             | T_NEW types                                               { () }
             | T_IF expr T_THEN expr T_ELSE expr                         { () }
