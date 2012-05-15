@@ -1,7 +1,7 @@
 %{
-    open Ast
     open Printf
     open Types
+    open Ast
 %}
 %token T_EOF
 
@@ -129,7 +129,8 @@
 %type <ast_pattom> pattom 
 %%
 
-program     : stmt_list T_EOF                                           { printf "%a\n" pp_run $1 }
+program     : stmt_list T_EOF                                           {  walk_program $1 }
+    
             ;
 
 stmt_list: 

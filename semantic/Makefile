@@ -11,7 +11,8 @@ EXEFILE=gracec$(EXE)
 MLFILES=Hashcons.ml Identifier.ml Error.ml Types.ml Symbol.ml \
   Lexer.ml Parser.ml  Main.ml Ast.ml
 MLIFILES=Hashcons.mli Identifier.mli Error.mli Types.mli Symbol.mli \
-  Parser.mli Lexer.mli Ast.mli
+   Ast.mli Parser.mli Lexer.mli
+
 CMOFILES=$(patsubst %.ml,%.cmo,$(MLFILES))
 CMIFILES=$(patsubst %.ml,%.cmi,$(MLFILES))
 CMXFILES=$(patsubst %.ml,%.cmx,$(MLFILES))
@@ -31,7 +32,7 @@ INCLUDES=
 
 default: Llama 
 
-Llama: $(filter-out Lexer.cmo Parser.cmo,$(CMOFILES))
+Llama: $(CMOFILES)
 	$(OCAMLC) -o $@ $^
 
 extend.cmo: extend.ml
@@ -60,19 +61,13 @@ Parser.ml Parser.mli: Parser.mly
 Lexer.ml: Lexer.mll
 	ocamllex Lexer.mll
 
-Ast.mli: Ast.ml
-	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+# Ast.mli: Ast.ml
+	 # $(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
 
 -include .depend
 
 depend: $(MLFILES) $(MLIFILES) extend.cmo
-	$(OCAMLDEP) $(CAMLP5_FLAGS) $(INCLUDES) \
-          $(filter-out extend.cmo,$^) > .depend
-
-depend-symbtest: Hashcons.ml Identifier.ml Error.ml Types.ml Symbol.ml \
-                  Hashcons.mli Identifier.mli Error.mli Types.mli \
-                 Symbol.mli extend.cmo
 	$(OCAMLDEP) $(CAMLP5_FLAGS) $(INCLUDES) \
           $(filter-out extend.cmo,$^) > .depend
 

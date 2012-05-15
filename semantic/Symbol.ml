@@ -21,7 +21,8 @@ type scope = {
   sco_parent : scope option;
   sco_nesting : int;
   mutable sco_entries : entry list;
-  mutable sco_negofs : int
+  mutable sco_negofs : int;
+  mutable sco_hidden : bool
 }
 
 and variable_info = {
@@ -70,7 +71,8 @@ let the_outer_scope = {
   sco_parent = None;
   sco_nesting = 0;
   sco_entries = [];
-  sco_negofs = start_negative_offset
+  sco_negofs = start_negative_offset;
+  sco_hidden = false
 }
 
 let no_entry id = {
@@ -94,7 +96,8 @@ let openScope () =
     sco_parent = Some !currentScope;
     sco_nesting = !currentScope.sco_nesting + 1;
     sco_entries = [];
-    sco_negofs = start_negative_offset
+    sco_negofs = start_negative_offset;
+    sco_hidden = false
   } in
   currentScope := sco
 
@@ -107,6 +110,9 @@ let closeScope () =
       currentScope := scp
   | None ->
       internal "cannot close the outer scope!"
+
+let hideScope sco flag =
+  sco.sco_hidden <- flag
 
 exception Failure_NewEntry of entry
 
@@ -143,7 +149,16 @@ let lookupEntry id how err =
         else
           raise Not_found
     | LOOKUP_ALL_SCOPES ->
-        H.find !tab id in
+        let rec walk es =
+          match es with
+          | [] ->
+              raise Not_found
+          | e :: es ->
+              if not e.entry_scope.sco_hidden then
+                e
+              else
+                walk es in
+        walk (H.find_all !tab id) in
   if err then
     try
       lookup ()
@@ -216,8 +231,10 @@ let newParameter id typ mode f err =
                   else if p.entry_id != id then
                     error "Parameter name mismatch in redeclaration \
                            of function %a" pretty_id f.entry_id
-                  else
+                  else begin
                     H.add !tab id p;
+                    !currentScope.sco_entries <- p :: !currentScope.sco_entries
+                  end;
                   p
               | _ ->
                   internal "I found a parameter that is not a parameter!";

@@ -1,5 +1,3 @@
-open Ast
-open Symbol
 
 let main =
   let cin =

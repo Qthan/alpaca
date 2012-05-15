@@ -11,7 +11,8 @@ type scope = {
   sco_parent : scope option;
   sco_nesting : int;
   mutable sco_entries : entry list;
-  mutable sco_negofs : int
+  mutable sco_negofs : int;
+  mutable sco_hidden : bool
 }
 
 and variable_info = {                         (******* Μεταβλητή *******)
@@ -60,6 +61,7 @@ val tempNumber : int ref                  (* Αρίθμηση των temporaries  *)
 val initSymbolTable  : int -> unit
 val openScope        : unit -> unit
 val closeScope       : unit -> unit
+val hideScope        : scope -> bool -> unit
 val newVariable      : Identifier.id -> Types.typ -> bool -> entry
 val newFunction      : Identifier.id -> bool -> entry
 val newParameter     : Identifier.id -> Types.typ -> pass_mode ->
