@@ -7,8 +7,8 @@ let main =
   in
   let lexbuf = Lexing.from_channel cin in
     try
-      Parser.program Lexer.lexer lexbuf ;
-        exit 0
+      Parser.program Lexer.lexer lexbuf;
+      exit 0
     with Parsing.Parse_error ->
       Printf.eprintf "Line %d: syntax error\n"
         (lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum);

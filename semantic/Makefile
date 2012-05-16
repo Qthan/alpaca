@@ -9,7 +9,7 @@ endif
 
 EXEFILE=gracec$(EXE)
 MLFILES=Hashcons.ml Identifier.ml Error.ml Types.ml Symbol.ml \
-  Lexer.ml Parser.ml  Main.ml Ast.ml
+  Lexer.ml Ast.ml Parser.ml Main.ml
 MLIFILES=Hashcons.mli Identifier.mli Error.mli Types.mli Symbol.mli \
    Ast.mli Parser.mli Lexer.mli
 
@@ -60,9 +60,6 @@ Parser.ml Parser.mli: Parser.mly
 
 Lexer.ml: Lexer.mll
 	ocamllex Lexer.mll
-
-# Ast.mli: Ast.ml
-	 # $(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
 
 -include .depend

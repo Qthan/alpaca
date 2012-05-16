@@ -129,7 +129,7 @@
 %type <ast_pattom> pattom 
 %%
 
-program     : stmt_list T_EOF                                           {  walk_program $1 }
+program     : stmt_list T_EOF                                           { walk_program $1 }
     
             ;
 
