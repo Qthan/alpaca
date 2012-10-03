@@ -26,15 +26,15 @@ type token =
   | T_TYPE
   | T_WHILE
   | T_WITH
-  | T_ID
-  | T_CID
-  | T_FLOAT
-  | T_INT
+  | T_ID of (string)
+  | T_CID of (string)
+  | T_FLOAT of (float)
+  | T_INT of (int)
   | T_CHAR
-  | T_CONSTCHAR
-  | T_STRING
-  | T_FALSE
-  | T_TRUE
+  | T_CONSTCHAR of (char)
+  | T_STRING of (string)
+  | T_FALSE of (bool)
+  | T_TRUE of (bool)
   | T_BOOL
   | T_UNIT
   | T_FLOATST
