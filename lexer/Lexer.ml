@@ -2293,12 +2293,12 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 2 ->
 # 33 "Lexer.mll"
-                        ( T_INT )
+                        ( T_INT (int_of_string (lexeme lexbuf)) )
 # 2298 "Lexer.ml"
 
   | 3 ->
 # 35 "Lexer.mll"
-                        ( T_FLOAT )
+                        ( T_FLOAT (float_of_string (lexeme lexbuf)) )
 # 2303 "Lexer.ml"
 
   | 4 ->
@@ -2363,7 +2363,7 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 16 ->
 # 48 "Lexer.mll"
-                        ( T_FALSE )
+                        ( T_FALSE false)
 # 2368 "Lexer.ml"
 
   | 17 ->
@@ -2448,7 +2448,7 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 33 ->
 # 65 "Lexer.mll"
-                        ( T_TRUE )
+                        ( T_TRUE true)
 # 2453 "Lexer.ml"
 
   | 34 ->
@@ -2623,46 +2623,46 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 68 ->
 # 100 "Lexer.mll"
-                        ( T_ID )
+                        ( T_ID (lexeme lexbuf) )
 # 2628 "Lexer.ml"
 
   | 69 ->
-# 101 "Lexer.mll"
-                        ( T_CID )
+# 102 "Lexer.mll"
+                        ( T_CID (lexeme lexbuf) )
 # 2633 "Lexer.ml"
 
   | 70 ->
-# 102 "Lexer.mll"
-                        ( T_CONSTCHAR )
+# 104 "Lexer.mll"
+                        ( T_CONSTCHAR (lexeme lexbuf).[0] )
 # 2638 "Lexer.ml"
 
   | 71 ->
-# 103 "Lexer.mll"
-                        ( T_STRING )
+# 105 "Lexer.mll"
+                        ( T_STRING (lexeme lexbuf) )
 # 2643 "Lexer.ml"
 
   | 72 ->
-# 104 "Lexer.mll"
+# 106 "Lexer.mll"
                         ( lexer lexbuf )
 # 2648 "Lexer.ml"
 
   | 73 ->
-# 105 "Lexer.mll"
+# 107 "Lexer.mll"
                         (  comments 0 lexbuf )
 # 2653 "Lexer.ml"
 
   | 74 ->
 let
-# 106 "Lexer.mll"
+# 108 "Lexer.mll"
          chr
 # 2659 "Lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 106 "Lexer.mll"
+# 108 "Lexer.mll"
                         ( print_error lexbuf chr ; lexer lexbuf )
 # 2663 "Lexer.ml"
 
   | 75 ->
-# 107 "Lexer.mll"
+# 109 "Lexer.mll"
                         ( T_EOF )
 # 2668 "Lexer.ml"
 
@@ -2673,7 +2673,7 @@ and comments level lexbuf =
 and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 110 "Lexer.mll"
+# 112 "Lexer.mll"
                         ( 
 	                      if level = 0 then lexer lexbuf
 	                        else comments (level-1) lexbuf
@@ -2681,24 +2681,24 @@ and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
 # 2682 "Lexer.ml"
 
   | 1 ->
-# 114 "Lexer.mll"
+# 116 "Lexer.mll"
                         ( 
                           comments (level+1) lexbuf
 	                    )
 # 2689 "Lexer.ml"
 
   | 2 ->
-# 117 "Lexer.mll"
+# 119 "Lexer.mll"
                         ( incr_linenum lexbuf ; comments level lexbuf )
 # 2694 "Lexer.ml"
 
   | 3 ->
-# 118 "Lexer.mll"
+# 120 "Lexer.mll"
                         ( comments level lexbuf  )
 # 2699 "Lexer.ml"
 
   | 4 ->
-# 119 "Lexer.mll"
+# 121 "Lexer.mll"
                         ( raise ( EOF "File ended before comments were closed") )
 # 2704 "Lexer.ml"
 

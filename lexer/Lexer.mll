@@ -30,9 +30,9 @@ let constChar = ( [^ '\\' '\"' '\''] ) | ( '\\'( ( ['n' 't' 'r' '0' '\\' '\'' '\
 rule lexer = parse
   | white               { lexer lexbuf }
   | ['\n']              { incr_linenum lexbuf; lexer lexbuf  (*; EOL*) }
-  | digit+              { T_INT } 
+  | digit+              { T_INT (int_of_string (lexeme lexbuf)) } 
   | digit+( '.'digit+('e'['-''+']?digit+)? ) 
-                        { T_FLOAT }
+                        { T_FLOAT (float_of_string (lexeme lexbuf)) }
   | "and"               { T_ANDDEF }
   | "array"             { T_ARRAY }
   | "begin"             { T_BEGIN } 
@@ -45,7 +45,7 @@ rule lexer = parse
   | "downto"            { T_DOWNTO }
   | "else"              { T_ELSE }
   | "end"               { T_END }
-  | "false"             { T_FALSE }
+  | "false"             { T_FALSE false}
   | "float"             { T_FLOATST }
   | "for"               { T_FOR }
   | "if"                { T_IF }
@@ -62,7 +62,7 @@ rule lexer = parse
   | "ref"               { T_REF }
   | "then"              { T_THEN }
   | "to"                { T_TO }
-  | "true"              { T_TRUE }
+  | "true"              { T_TRUE true}
   | "type"              { T_TYPE }
   | "unit"              { T_UNIT }
   | "while"             { T_WHILE }
@@ -97,10 +97,12 @@ rule lexer = parse
   | "]"                 { T_RBRACK }
   | ","                 { T_COMA }
   | ":"                 { T_COLON }
-  | lowCase+id*         { T_ID }
-  | upCase+id*          { T_CID }
-  | '\''constChar '\''  { T_CONSTCHAR }
-  | '\"'[^'\n']* '\"'   { T_STRING }
+  | lowCase+id*         { T_ID (lexeme lexbuf) }
+  | upCase+id* 
+                        { T_CID (lexeme lexbuf) }
+  | '\''constChar '\''   
+                        { T_CONSTCHAR (lexeme lexbuf).[0] }
+  | '\"'[^'\n']* '\"'   { T_STRING (lexeme lexbuf) }
   | "--"[^'\n']*        { lexer lexbuf } 
   | "(*"                {  comments 0 lexbuf }
   | _ as chr            { print_error lexbuf chr ; lexer lexbuf }
