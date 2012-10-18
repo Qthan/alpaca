@@ -51,8 +51,8 @@ and walk_def t = match t with
           match l with
             | []            -> printf "too many problems\n";
             | (id, ty)::[]  -> 
-                  let p = newVariable (id_make id) ty true in
-                    ignore p;
+                  let p = newVariable (id_make id) ty true in (*probably needs newscope*)
+                    ignore p; 
                     hideScope !currentScope true;
                     walk_expr e;
                     hideScope !currentScope false;
@@ -326,8 +326,8 @@ and walk_expr t = match t with
     | E_Cid (id, l)     -> ()
     | E_Match (e, l)    -> 
         begin 
-          walk_expr e
-          (* walk_clause l *)
+          walk_expr e;
+          walk_clause_list l
         end
     | E_Letin (l, e)    -> 
         begin
@@ -355,7 +355,8 @@ and walk_expr_list t = match t with
           walk_expr_list t
         end
 
-and walk_atom t = match t with 
+
+and walk_atom t = match t.atom with 
     | A_Num n           -> ()
     | A_Dec f           -> ()
     | A_Chr c           -> ()
@@ -367,6 +368,60 @@ and walk_atom t = match t with
     | A_Bank a          -> walk_atom a
     | A_Array (a, b)    -> let s1 = lookupEntry (id_make a) LOOKUP_ALL_SCOPES true in ignore s1
     | A_Expr a          -> walk_expr a
+
+
+and walk_clause_list t = match t with
+    | []                -> () 
+    | h::t              -> 
+        begin
+          walk_clause h;
+          walk_clause_list t 
+        end
+
+and walk_clause t = match t with 
+  | Clause(p,e)         -> 
+      begin
+        walk_pattern p;
+        walk_expr e
+      end
+
+and walk_pattern p = match p with
+    | Pa_Atom a         -> walk_pattom a
+    | Pa_Cid (cid, l)   -> ()(*to be done*)
+
+and walk_pattom t = match t with
+    | P_Sign(op, num)   ->
+        begin
+          match op with 
+            | P_Plus        -> ()
+            | P_Minus       -> ()
+        end
+    | P_Fsign(op, num)  ->
+        begin
+          match op with 
+            | P_Fplus       -> ()
+            | P_Fminus      -> ()
+        end
+    | P_Num n           -> ()
+    | P_Float f         -> ()
+    | P_Chr c           -> ()
+    | P_Bool b          -> ()
+    | P_Id id           -> let s1 = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in ignore s1
+    | P_Cid cid         -> () (*to be done*)
+    | P_Pattern p       -> walk_pattern p
+
+and walk_pattom_list t = match t with
+    | []                -> ()
+    | h::t              -> 
+        begin
+          walk_pattom h;
+          walk_pattom_list t
+        end
+
+
+
+
+
 (*
 check_types t = match t with
   | (A_Num n , A_Num n)     -> true

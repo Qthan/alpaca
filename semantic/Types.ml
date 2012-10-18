@@ -29,7 +29,12 @@ type intmb =
     | Yesnum of int
     | Nonum
 
-type ast_atom =
+type ast_atom_node = {
+  atom_type: typ;
+  atom: ast_atom
+}
+
+and ast_atom =
     | A_Num of int
     | A_Dec of float
     | A_Chr of string
@@ -41,7 +46,12 @@ type ast_atom =
     | A_Bank of ast_atom
     | A_Array of string * ast_expr list
     | A_Expr of ast_expr
-    
+
+and ast_expr_node = {
+  mutable expr_type: typ;
+  expr: ast_expr
+}
+
 and ast_expr =
     | E_Binop of ast_expr * binop * ast_expr
     | E_Unop of unop * ast_expr
