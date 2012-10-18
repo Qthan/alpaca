@@ -1,0 +1,5637 @@
+   0  $accept : %entry% $end
+
+   1  program : stmt_list T_EOF
+
+   2  stmt_list :
+   3            | stmt_list letdef
+   4            | stmt_list typedef
+
+   5  letdef : T_LET recmb def anddef
+
+   6  recmb :
+   7        | T_REC
+
+   8  anddef :
+   9         | anddef T_ANDDEF def
+
+  10  def : T_ID parstar colontype T_SEQ expr
+  11      | T_MUTABLE T_ID colontype
+  12      | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK colontype
+
+  13  parstar :
+  14          | parstar T_ID
+  15          | parstar T_LPAR T_ID T_COLON types T_RPAR
+
+  16  colontype :
+  17            | T_COLON types
+
+  18  typedef : T_TYPE tdef andtdefstar
+
+  19  andtdefstar :
+  20              | andtdefstar T_ANDDEF tdef
+
+  21  tdef : T_ID T_SEQ constr constrbar
+
+  22  constrbar :
+  23            | constrbar T_BAR constr
+
+  24  constr : T_CID oftype
+
+  25  oftype :
+  26         | oftype T_OF typeplus
+
+  27  typeplus : types
+  28           | typeplus types
+
+  29  types : T_UNIT
+  30        | T_INTST
+  31        | T_CHAR
+  32        | T_BOOL
+  33        | T_FLOATST
+  34        | T_LPAR types T_RPAR
+  35        | types T_GIVES types
+  36        | types T_REF
+  37        | T_ARRAY starlist T_OF types
+  38        | T_ID
+
+  39  starlist :
+  40           | T_LBRACK T_TIMES comastar T_RBRACK
+
+  41  comastar :
+  42           | comastar T_COMA T_TIMES
+
+  43  expr : expr T_FPLUS expr
+  44       | expr T_PLUS expr
+  45       | expr T_MINUS expr
+  46       | expr T_FMINUS expr
+  47       | expr T_TIMES expr
+  48       | expr T_FTIMES expr
+  49       | expr T_DIV expr
+  50       | expr T_FDIV expr
+  51       | expr T_MOD expr
+  52       | expr T_POWER expr
+  53       | expr T_SEQ expr
+  54       | expr T_NSEQ expr
+  55       | expr T_L expr
+  56       | expr T_G expr
+  57       | expr T_LE expr
+  58       | expr T_GE expr
+  59       | expr T_EQ expr
+  60       | expr T_NEQ expr
+  61       | expr T_AND expr
+  62       | expr T_OR expr
+  63       | expr T_SMCOLON expr
+  64       | expr T_ASSIGN expr
+  65       | T_PLUS expr
+  66       | T_FPLUS expr
+  67       | T_FMINUS expr
+  68       | T_MINUS expr
+  69       | T_DELETE expr
+  70       | T_BEGIN expr T_END
+  71       | T_WHILE expr T_DO expr T_DONE
+  72       | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE
+  73       | T_DIM intmb T_ID
+  74       | T_NEW types
+  75       | T_IF expr T_THEN expr T_ELSE expr
+  76       | T_IF expr T_THEN expr
+  77       | letdef T_IN expr
+  78       | T_MATCH expr T_WITH clause clausestar T_END
+  79       | T_CID atomstar
+  80       | T_ID atomstar
+  81       | atom
+
+  82  atom : T_INT
+  83       | T_FLOAT
+  84       | T_CONSTCHAR
+  85       | T_STRING
+  86       | T_TRUE
+  87       | T_FALSE
+  88       | T_LPAR T_RPAR
+  89       | T_CID
+  90       | T_ID
+  91       | T_NOT atom
+  92       | T_BANK atom
+  93       | T_ID T_LBRACK expr comaexpr T_RBRACK
+  94       | T_LPAR expr T_RPAR
+
+  95  comaexpr :
+  96           | comaexpr T_COMA expr
+
+  97  atomstar : atom
+  98           | atom atomstar
+
+  99  count : T_TO
+ 100        | T_DOWNTO
+
+ 101  intmb :
+ 102        | T_INT
+
+ 103  clausestar :
+ 104             | clausestar T_BAR clause
+
+ 105  clause : pattern T_GIVES expr
+
+ 106  pattern : pattom
+ 107          | T_CID patternstar
+
+ 108  pattom : sign T_INT
+ 109         | fsign T_FLOAT
+ 110         | T_CONSTCHAR
+ 111         | T_TRUE
+ 112         | T_FALSE
+ 113         | T_ID
+ 114         | T_CID
+ 115         | T_LPAR pattern T_RPAR
+
+ 116  patternstar : pattom
+ 117              | patternstar pattom
+
+ 118  sign : T_PLUS
+ 119       | T_MINUS
+
+ 120  fsign : T_FPLUS
+ 121        | T_FMINUS
+
+ 122  %entry% : '\001' program
+
+state 0
+	$accept : . %entry% $end  (0)
+
+	'\001'  shift 1
+	.  error
+
+	%entry%  goto 2
+
+
+state 1
+	%entry% : '\001' . program  (122)
+	stmt_list : .  (2)
+
+	.  reduce 2
+
+	program  goto 3
+	stmt_list  goto 4
+
+
+state 2
+	$accept : %entry% . $end  (0)
+
+	$end  accept
+
+
+state 3
+	%entry% : '\001' program .  (122)
+
+	.  reduce 122
+
+
+state 4
+	program : stmt_list . T_EOF  (1)
+	stmt_list : stmt_list . letdef  (3)
+	stmt_list : stmt_list . typedef  (4)
+
+	T_EOF  shift 5
+	T_LET  shift 6
+	T_TYPE  shift 7
+	.  error
+
+	letdef  goto 8
+	typedef  goto 9
+
+
+state 5
+	program : stmt_list T_EOF .  (1)
+
+	.  reduce 1
+
+
+state 6
+	letdef : T_LET . recmb def anddef  (5)
+	recmb : .  (6)
+
+	T_REC  shift 10
+	T_MUTABLE  reduce 6
+	T_ID  reduce 6
+
+	recmb  goto 11
+
+
+state 7
+	typedef : T_TYPE . tdef andtdefstar  (18)
+
+	T_ID  shift 12
+	.  error
+
+	tdef  goto 13
+
+
+state 8
+	stmt_list : stmt_list letdef .  (3)
+
+	.  reduce 3
+
+
+state 9
+	stmt_list : stmt_list typedef .  (4)
+
+	.  reduce 4
+
+
+state 10
+	recmb : T_REC .  (7)
+
+	.  reduce 7
+
+
+state 11
+	letdef : T_LET recmb . def anddef  (5)
+
+	T_MUTABLE  shift 14
+	T_ID  shift 15
+	.  error
+
+	def  goto 16
+
+
+state 12
+	tdef : T_ID . T_SEQ constr constrbar  (21)
+
+	T_SEQ  shift 17
+	.  error
+
+
+state 13
+	typedef : T_TYPE tdef . andtdefstar  (18)
+	andtdefstar : .  (19)
+
+	.  reduce 19
+
+	andtdefstar  goto 18
+
+
+state 14
+	def : T_MUTABLE . T_ID colontype  (11)
+	def : T_MUTABLE . T_ID T_LBRACK expr comaexpr T_RBRACK colontype  (12)
+
+	T_ID  shift 19
+	.  error
+
+
+state 15
+	def : T_ID . parstar colontype T_SEQ expr  (10)
+	parstar : .  (13)
+
+	.  reduce 13
+
+	parstar  goto 20
+
+
+state 16
+	letdef : T_LET recmb def . anddef  (5)
+	anddef : .  (8)
+
+	.  reduce 8
+
+	anddef  goto 21
+
+
+state 17
+	tdef : T_ID T_SEQ . constr constrbar  (21)
+
+	T_CID  shift 22
+	.  error
+
+	constr  goto 23
+
+
+state 18
+	typedef : T_TYPE tdef andtdefstar .  (18)
+	andtdefstar : andtdefstar . T_ANDDEF tdef  (20)
+
+	T_ANDDEF  shift 24
+	T_EOF  reduce 18
+	T_LET  reduce 18
+	T_TYPE  reduce 18
+
+
+state 19
+	def : T_MUTABLE T_ID . colontype  (11)
+	def : T_MUTABLE T_ID . T_LBRACK expr comaexpr T_RBRACK colontype  (12)
+	colontype : .  (16)
+
+	T_LBRACK  shift 25
+	T_COLON  shift 26
+	T_EOF  reduce 16
+	T_ANDDEF  reduce 16
+	T_IN  reduce 16
+	T_LET  reduce 16
+	T_TYPE  reduce 16
+
+	colontype  goto 27
+
+
+state 20
+	def : T_ID parstar . colontype T_SEQ expr  (10)
+	parstar : parstar . T_ID  (14)
+	parstar : parstar . T_LPAR T_ID T_COLON types T_RPAR  (15)
+	colontype : .  (16)
+
+	T_ID  shift 28
+	T_LPAR  shift 29
+	T_COLON  shift 26
+	T_SEQ  reduce 16
+
+	colontype  goto 30
+
+
+state 21
+	letdef : T_LET recmb def anddef .  (5)
+	anddef : anddef . T_ANDDEF def  (9)
+
+	T_ANDDEF  shift 31
+	T_EOF  reduce 5
+	T_IN  reduce 5
+	T_LET  reduce 5
+	T_TYPE  reduce 5
+
+
+state 22
+	constr : T_CID . oftype  (24)
+	oftype : .  (25)
+
+	.  reduce 25
+
+	oftype  goto 32
+
+
+state 23
+	tdef : T_ID T_SEQ constr . constrbar  (21)
+	constrbar : .  (22)
+
+	.  reduce 22
+
+	constrbar  goto 33
+
+
+state 24
+	andtdefstar : andtdefstar T_ANDDEF . tdef  (20)
+
+	T_ID  shift 12
+	.  error
+
+	tdef  goto 34
+
+
+state 25
+	def : T_MUTABLE T_ID T_LBRACK . expr comaexpr T_RBRACK colontype  (12)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 59
+	atom  goto 60
+
+
+state 26
+	colontype : T_COLON . types  (17)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 69
+
+
+state 27
+	def : T_MUTABLE T_ID colontype .  (11)
+
+	.  reduce 11
+
+
+state 28
+	parstar : parstar T_ID .  (14)
+
+	.  reduce 14
+
+
+state 29
+	parstar : parstar T_LPAR . T_ID T_COLON types T_RPAR  (15)
+
+	T_ID  shift 70
+	.  error
+
+
+state 30
+	def : T_ID parstar colontype . T_SEQ expr  (10)
+
+	T_SEQ  shift 71
+	.  error
+
+
+state 31
+	anddef : anddef T_ANDDEF . def  (9)
+
+	T_MUTABLE  shift 14
+	T_ID  shift 15
+	.  error
+
+	def  goto 72
+
+
+state 32
+	constr : T_CID oftype .  (24)
+	oftype : oftype . T_OF typeplus  (26)
+
+	T_OF  shift 73
+	T_EOF  reduce 24
+	T_ANDDEF  reduce 24
+	T_LET  reduce 24
+	T_TYPE  reduce 24
+	T_BAR  reduce 24
+
+
+state 33
+	tdef : T_ID T_SEQ constr constrbar .  (21)
+	constrbar : constrbar . T_BAR constr  (23)
+
+	T_BAR  shift 74
+	T_EOF  reduce 21
+	T_ANDDEF  reduce 21
+	T_LET  reduce 21
+	T_TYPE  reduce 21
+
+
+state 34
+	andtdefstar : andtdefstar T_ANDDEF tdef .  (20)
+
+	.  reduce 20
+
+
+state 35
+	expr : T_BEGIN . expr T_END  (70)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 75
+	atom  goto 60
+
+
+state 36
+	expr : T_DELETE . expr  (69)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 76
+	atom  goto 60
+
+
+state 37
+	expr : T_DIM . intmb T_ID  (73)
+	intmb : .  (101)
+
+	T_INT  shift 77
+	T_ID  reduce 101
+
+	intmb  goto 78
+
+
+state 38
+	expr : T_FOR . T_ID T_SEQ expr count expr T_DO expr T_DONE  (72)
+
+	T_ID  shift 79
+	.  error
+
+
+state 39
+	expr : T_IF . expr T_THEN expr T_ELSE expr  (75)
+	expr : T_IF . expr T_THEN expr  (76)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 80
+	atom  goto 60
+
+
+state 40
+	expr : T_MATCH . expr T_WITH clause clausestar T_END  (78)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 81
+	atom  goto 60
+
+
+state 41
+	expr : T_NEW . types  (74)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 82
+
+
+state 42
+	atom : T_NOT . atom  (91)
+
+	T_NOT  shift 42
+	T_ID  shift 83
+	T_CID  shift 84
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	atom  goto 85
+
+
+state 43
+	expr : T_WHILE . expr T_DO expr T_DONE  (71)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 86
+	atom  goto 60
+
+
+state 44
+	expr : T_ID . atomstar  (80)
+	atom : T_ID .  (90)
+	atom : T_ID . T_LBRACK expr comaexpr T_RBRACK  (93)
+
+	T_NOT  shift 42
+	T_ID  shift 83
+	T_CID  shift 84
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	T_LBRACK  shift 87
+	T_EOF  reduce 90
+	T_ANDDEF  reduce 90
+	T_DO  reduce 90
+	T_DONE  reduce 90
+	T_DOWNTO  reduce 90
+	T_ELSE  reduce 90
+	T_END  reduce 90
+	T_IN  reduce 90
+	T_LET  reduce 90
+	T_THEN  reduce 90
+	T_TO  reduce 90
+	T_TYPE  reduce 90
+	T_WITH  reduce 90
+	T_SEQ  reduce 90
+	T_BAR  reduce 90
+	T_PLUS  reduce 90
+	T_MINUS  reduce 90
+	T_TIMES  reduce 90
+	T_DIV  reduce 90
+	T_MOD  reduce 90
+	T_FPLUS  reduce 90
+	T_FMINUS  reduce 90
+	T_FTIMES  reduce 90
+	T_FDIV  reduce 90
+	T_POWER  reduce 90
+	T_SMCOLON  reduce 90
+	T_AND  reduce 90
+	T_OR  reduce 90
+	T_NSEQ  reduce 90
+	T_L  reduce 90
+	T_G  reduce 90
+	T_LE  reduce 90
+	T_GE  reduce 90
+	T_EQ  reduce 90
+	T_NEQ  reduce 90
+	T_ASSIGN  reduce 90
+	T_RPAR  reduce 90
+	T_RBRACK  reduce 90
+	T_COMA  reduce 90
+
+	atomstar  goto 88
+	atom  goto 89
+
+
+state 45
+	expr : T_CID . atomstar  (79)
+	atom : T_CID .  (89)
+
+	T_NOT  shift 42
+	T_ID  shift 83
+	T_CID  shift 84
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	T_EOF  reduce 89
+	T_ANDDEF  reduce 89
+	T_DO  reduce 89
+	T_DONE  reduce 89
+	T_DOWNTO  reduce 89
+	T_ELSE  reduce 89
+	T_END  reduce 89
+	T_IN  reduce 89
+	T_LET  reduce 89
+	T_THEN  reduce 89
+	T_TO  reduce 89
+	T_TYPE  reduce 89
+	T_WITH  reduce 89
+	T_SEQ  reduce 89
+	T_BAR  reduce 89
+	T_PLUS  reduce 89
+	T_MINUS  reduce 89
+	T_TIMES  reduce 89
+	T_DIV  reduce 89
+	T_MOD  reduce 89
+	T_FPLUS  reduce 89
+	T_FMINUS  reduce 89
+	T_FTIMES  reduce 89
+	T_FDIV  reduce 89
+	T_POWER  reduce 89
+	T_SMCOLON  reduce 89
+	T_AND  reduce 89
+	T_OR  reduce 89
+	T_NSEQ  reduce 89
+	T_L  reduce 89
+	T_G  reduce 89
+	T_LE  reduce 89
+	T_GE  reduce 89
+	T_EQ  reduce 89
+	T_NEQ  reduce 89
+	T_ASSIGN  reduce 89
+	T_RPAR  reduce 89
+	T_RBRACK  reduce 89
+	T_COMA  reduce 89
+
+	atomstar  goto 90
+	atom  goto 89
+
+
+state 46
+	atom : T_FLOAT .  (83)
+
+	.  reduce 83
+
+
+state 47
+	atom : T_INT .  (82)
+
+	.  reduce 82
+
+
+state 48
+	atom : T_CONSTCHAR .  (84)
+
+	.  reduce 84
+
+
+state 49
+	atom : T_STRING .  (85)
+
+	.  reduce 85
+
+
+state 50
+	atom : T_FALSE .  (87)
+
+	.  reduce 87
+
+
+state 51
+	atom : T_TRUE .  (86)
+
+	.  reduce 86
+
+
+state 52
+	expr : T_PLUS . expr  (65)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 91
+	atom  goto 60
+
+
+state 53
+	expr : T_MINUS . expr  (68)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 92
+	atom  goto 60
+
+
+state 54
+	expr : T_FPLUS . expr  (66)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 93
+	atom  goto 60
+
+
+state 55
+	expr : T_FMINUS . expr  (67)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 94
+	atom  goto 60
+
+
+state 56
+	atom : T_BANK . atom  (92)
+
+	T_NOT  shift 42
+	T_ID  shift 83
+	T_CID  shift 84
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	atom  goto 95
+
+
+state 57
+	atom : T_LPAR . T_RPAR  (88)
+	atom : T_LPAR . expr T_RPAR  (94)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	T_RPAR  shift 96
+	.  error
+
+	letdef  goto 58
+	expr  goto 97
+	atom  goto 60
+
+
+state 58
+	expr : letdef . T_IN expr  (77)
+
+	T_IN  shift 98
+	.  error
+
+
+state 59
+	def : T_MUTABLE T_ID T_LBRACK expr . comaexpr T_RBRACK colontype  (12)
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	comaexpr : .  (95)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_RBRACK  reduce 95
+	T_COMA  reduce 95
+
+	comaexpr  goto 121
+
+
+state 60
+	expr : atom .  (81)
+
+	.  reduce 81
+
+
+state 61
+	types : T_ARRAY . starlist T_OF types  (37)
+	starlist : .  (39)
+
+	T_LBRACK  shift 122
+	T_OF  reduce 39
+
+	starlist  goto 123
+
+
+state 62
+	types : T_ID .  (38)
+
+	.  reduce 38
+
+
+state 63
+	types : T_CHAR .  (31)
+
+	.  reduce 31
+
+
+state 64
+	types : T_BOOL .  (32)
+
+	.  reduce 32
+
+
+state 65
+	types : T_UNIT .  (29)
+
+	.  reduce 29
+
+
+state 66
+	types : T_FLOATST .  (33)
+
+	.  reduce 33
+
+
+state 67
+	types : T_INTST .  (30)
+
+	.  reduce 30
+
+
+state 68
+	types : T_LPAR . types T_RPAR  (34)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 124
+
+
+state 69
+	colontype : T_COLON types .  (17)
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_EOF  reduce 17
+	T_ANDDEF  reduce 17
+	T_IN  reduce 17
+	T_LET  reduce 17
+	T_TYPE  reduce 17
+	T_SEQ  reduce 17
+
+
+state 70
+	parstar : parstar T_LPAR T_ID . T_COLON types T_RPAR  (15)
+
+	T_COLON  shift 127
+	.  error
+
+
+state 71
+	def : T_ID parstar colontype T_SEQ . expr  (10)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 128
+	atom  goto 60
+
+
+state 72
+	anddef : anddef T_ANDDEF def .  (9)
+
+	.  reduce 9
+
+
+state 73
+	oftype : oftype T_OF . typeplus  (26)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 129
+	typeplus  goto 130
+
+
+state 74
+	constrbar : constrbar T_BAR . constr  (23)
+
+	T_CID  shift 22
+	.  error
+
+	constr  goto 131
+
+
+state 75
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_BEGIN expr . T_END  (70)
+
+	T_END  shift 132
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 76
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_DELETE expr .  (69)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 69
+	T_ANDDEF  reduce 69
+	T_DO  reduce 69
+	T_DONE  reduce 69
+	T_DOWNTO  reduce 69
+	T_ELSE  reduce 69
+	T_END  reduce 69
+	T_IN  reduce 69
+	T_LET  reduce 69
+	T_THEN  reduce 69
+	T_TO  reduce 69
+	T_TYPE  reduce 69
+	T_WITH  reduce 69
+	T_BAR  reduce 69
+	T_SMCOLON  reduce 69
+	T_AND  reduce 69
+	T_OR  reduce 69
+	T_RPAR  reduce 69
+	T_RBRACK  reduce 69
+	T_COMA  reduce 69
+
+
+state 77
+	intmb : T_INT .  (102)
+
+	.  reduce 102
+
+
+state 78
+	expr : T_DIM intmb . T_ID  (73)
+
+	T_ID  shift 133
+	.  error
+
+
+state 79
+	expr : T_FOR T_ID . T_SEQ expr count expr T_DO expr T_DONE  (72)
+
+	T_SEQ  shift 134
+	.  error
+
+
+state 80
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_IF expr . T_THEN expr T_ELSE expr  (75)
+	expr : T_IF expr . T_THEN expr  (76)
+
+	T_THEN  shift 135
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 81
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_MATCH expr . T_WITH clause clausestar T_END  (78)
+
+	T_WITH  shift 136
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 82
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+	expr : T_NEW types .  (74)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_EOF  reduce 74
+	T_ANDDEF  reduce 74
+	T_DO  reduce 74
+	T_DONE  reduce 74
+	T_DOWNTO  reduce 74
+	T_ELSE  reduce 74
+	T_END  reduce 74
+	T_IN  reduce 74
+	T_LET  reduce 74
+	T_THEN  reduce 74
+	T_TO  reduce 74
+	T_TYPE  reduce 74
+	T_WITH  reduce 74
+	T_SEQ  reduce 74
+	T_BAR  reduce 74
+	T_PLUS  reduce 74
+	T_MINUS  reduce 74
+	T_TIMES  reduce 74
+	T_DIV  reduce 74
+	T_MOD  reduce 74
+	T_FPLUS  reduce 74
+	T_FMINUS  reduce 74
+	T_FTIMES  reduce 74
+	T_FDIV  reduce 74
+	T_POWER  reduce 74
+	T_SMCOLON  reduce 74
+	T_AND  reduce 74
+	T_OR  reduce 74
+	T_NSEQ  reduce 74
+	T_L  reduce 74
+	T_G  reduce 74
+	T_LE  reduce 74
+	T_GE  reduce 74
+	T_EQ  reduce 74
+	T_NEQ  reduce 74
+	T_ASSIGN  reduce 74
+	T_RPAR  reduce 74
+	T_RBRACK  reduce 74
+	T_COMA  reduce 74
+
+
+state 83
+	atom : T_ID .  (90)
+	atom : T_ID . T_LBRACK expr comaexpr T_RBRACK  (93)
+
+	T_LBRACK  shift 87
+	T_EOF  reduce 90
+	T_ANDDEF  reduce 90
+	T_DO  reduce 90
+	T_DONE  reduce 90
+	T_DOWNTO  reduce 90
+	T_ELSE  reduce 90
+	T_END  reduce 90
+	T_IN  reduce 90
+	T_LET  reduce 90
+	T_NOT  reduce 90
+	T_THEN  reduce 90
+	T_TO  reduce 90
+	T_TYPE  reduce 90
+	T_WITH  reduce 90
+	T_ID  reduce 90
+	T_CID  reduce 90
+	T_FLOAT  reduce 90
+	T_INT  reduce 90
+	T_CONSTCHAR  reduce 90
+	T_STRING  reduce 90
+	T_FALSE  reduce 90
+	T_TRUE  reduce 90
+	T_SEQ  reduce 90
+	T_BAR  reduce 90
+	T_PLUS  reduce 90
+	T_MINUS  reduce 90
+	T_TIMES  reduce 90
+	T_DIV  reduce 90
+	T_MOD  reduce 90
+	T_FPLUS  reduce 90
+	T_FMINUS  reduce 90
+	T_FTIMES  reduce 90
+	T_FDIV  reduce 90
+	T_POWER  reduce 90
+	T_BANK  reduce 90
+	T_SMCOLON  reduce 90
+	T_AND  reduce 90
+	T_OR  reduce 90
+	T_NSEQ  reduce 90
+	T_L  reduce 90
+	T_G  reduce 90
+	T_LE  reduce 90
+	T_GE  reduce 90
+	T_EQ  reduce 90
+	T_NEQ  reduce 90
+	T_ASSIGN  reduce 90
+	T_LPAR  reduce 90
+	T_RPAR  reduce 90
+	T_RBRACK  reduce 90
+	T_COMA  reduce 90
+
+
+state 84
+	atom : T_CID .  (89)
+
+	.  reduce 89
+
+
+state 85
+	atom : T_NOT atom .  (91)
+
+	.  reduce 91
+
+
+state 86
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_WHILE expr . T_DO expr T_DONE  (71)
+
+	T_DO  shift 137
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 87
+	atom : T_ID T_LBRACK . expr comaexpr T_RBRACK  (93)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 138
+	atom  goto 60
+
+
+state 88
+	expr : T_ID atomstar .  (80)
+
+	.  reduce 80
+
+
+state 89
+	atomstar : atom .  (97)
+	atomstar : atom . atomstar  (98)
+
+	T_NOT  shift 42
+	T_ID  shift 83
+	T_CID  shift 84
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	T_EOF  reduce 97
+	T_ANDDEF  reduce 97
+	T_DO  reduce 97
+	T_DONE  reduce 97
+	T_DOWNTO  reduce 97
+	T_ELSE  reduce 97
+	T_END  reduce 97
+	T_IN  reduce 97
+	T_LET  reduce 97
+	T_THEN  reduce 97
+	T_TO  reduce 97
+	T_TYPE  reduce 97
+	T_WITH  reduce 97
+	T_SEQ  reduce 97
+	T_BAR  reduce 97
+	T_PLUS  reduce 97
+	T_MINUS  reduce 97
+	T_TIMES  reduce 97
+	T_DIV  reduce 97
+	T_MOD  reduce 97
+	T_FPLUS  reduce 97
+	T_FMINUS  reduce 97
+	T_FTIMES  reduce 97
+	T_FDIV  reduce 97
+	T_POWER  reduce 97
+	T_SMCOLON  reduce 97
+	T_AND  reduce 97
+	T_OR  reduce 97
+	T_NSEQ  reduce 97
+	T_L  reduce 97
+	T_G  reduce 97
+	T_LE  reduce 97
+	T_GE  reduce 97
+	T_EQ  reduce 97
+	T_NEQ  reduce 97
+	T_ASSIGN  reduce 97
+	T_RPAR  reduce 97
+	T_RBRACK  reduce 97
+	T_COMA  reduce 97
+
+	atomstar  goto 139
+	atom  goto 89
+
+
+state 90
+	expr : T_CID atomstar .  (79)
+
+	.  reduce 79
+
+
+state 91
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_PLUS expr .  (65)
+
+	.  reduce 65
+
+
+state 92
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_MINUS expr .  (68)
+
+	.  reduce 68
+
+
+state 93
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_FPLUS expr .  (66)
+
+	.  reduce 66
+
+
+state 94
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_FMINUS expr .  (67)
+
+	.  reduce 67
+
+
+state 95
+	atom : T_BANK atom .  (92)
+
+	.  reduce 92
+
+
+state 96
+	atom : T_LPAR T_RPAR .  (88)
+
+	.  reduce 88
+
+
+state 97
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	atom : T_LPAR expr . T_RPAR  (94)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_RPAR  shift 140
+	.  error
+
+
+state 98
+	expr : letdef T_IN . expr  (77)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 141
+	atom  goto 60
+
+
+state 99
+	expr : expr T_SEQ . expr  (53)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 142
+	atom  goto 60
+
+
+state 100
+	expr : expr T_PLUS . expr  (44)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 143
+	atom  goto 60
+
+
+state 101
+	expr : expr T_MINUS . expr  (45)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 144
+	atom  goto 60
+
+
+state 102
+	expr : expr T_TIMES . expr  (47)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 145
+	atom  goto 60
+
+
+state 103
+	expr : expr T_DIV . expr  (49)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 146
+	atom  goto 60
+
+
+state 104
+	expr : expr T_MOD . expr  (51)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 147
+	atom  goto 60
+
+
+state 105
+	expr : expr T_FPLUS . expr  (43)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 148
+	atom  goto 60
+
+
+state 106
+	expr : expr T_FMINUS . expr  (46)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 149
+	atom  goto 60
+
+
+state 107
+	expr : expr T_FTIMES . expr  (48)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 150
+	atom  goto 60
+
+
+state 108
+	expr : expr T_FDIV . expr  (50)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 151
+	atom  goto 60
+
+
+state 109
+	expr : expr T_POWER . expr  (52)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 152
+	atom  goto 60
+
+
+state 110
+	expr : expr T_SMCOLON . expr  (63)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 153
+	atom  goto 60
+
+
+state 111
+	expr : expr T_AND . expr  (61)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 154
+	atom  goto 60
+
+
+state 112
+	expr : expr T_OR . expr  (62)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 155
+	atom  goto 60
+
+
+state 113
+	expr : expr T_NSEQ . expr  (54)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 156
+	atom  goto 60
+
+
+state 114
+	expr : expr T_L . expr  (55)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 157
+	atom  goto 60
+
+
+state 115
+	expr : expr T_G . expr  (56)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 158
+	atom  goto 60
+
+
+state 116
+	expr : expr T_LE . expr  (57)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 159
+	atom  goto 60
+
+
+state 117
+	expr : expr T_GE . expr  (58)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 160
+	atom  goto 60
+
+
+state 118
+	expr : expr T_EQ . expr  (59)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 161
+	atom  goto 60
+
+
+state 119
+	expr : expr T_NEQ . expr  (60)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 162
+	atom  goto 60
+
+
+state 120
+	expr : expr T_ASSIGN . expr  (64)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 163
+	atom  goto 60
+
+
+state 121
+	def : T_MUTABLE T_ID T_LBRACK expr comaexpr . T_RBRACK colontype  (12)
+	comaexpr : comaexpr . T_COMA expr  (96)
+
+	T_RBRACK  shift 164
+	T_COMA  shift 165
+	.  error
+
+
+state 122
+	starlist : T_LBRACK . T_TIMES comastar T_RBRACK  (40)
+
+	T_TIMES  shift 166
+	.  error
+
+
+state 123
+	types : T_ARRAY starlist . T_OF types  (37)
+
+	T_OF  shift 167
+	.  error
+
+
+state 124
+	types : T_LPAR types . T_RPAR  (34)
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_RPAR  shift 168
+	.  error
+
+
+state 125
+	types : types T_REF .  (36)
+
+	.  reduce 36
+
+
+state 126
+	types : types T_GIVES . types  (35)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 169
+
+
+state 127
+	parstar : parstar T_LPAR T_ID T_COLON . types T_RPAR  (15)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 170
+
+
+state 128
+	def : T_ID parstar colontype T_SEQ expr .  (10)
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 10
+	T_ANDDEF  reduce 10
+	T_IN  reduce 10
+	T_LET  reduce 10
+	T_TYPE  reduce 10
+
+
+state 129
+	typeplus : types .  (27)
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_EOF  reduce 27
+	T_ANDDEF  reduce 27
+	T_ARRAY  reduce 27
+	T_LET  reduce 27
+	T_OF  reduce 27
+	T_TYPE  reduce 27
+	T_ID  reduce 27
+	T_CHAR  reduce 27
+	T_BOOL  reduce 27
+	T_UNIT  reduce 27
+	T_FLOATST  reduce 27
+	T_INTST  reduce 27
+	T_BAR  reduce 27
+	T_LPAR  reduce 27
+
+
+state 130
+	oftype : oftype T_OF typeplus .  (26)
+	typeplus : typeplus . types  (28)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	T_EOF  reduce 26
+	T_ANDDEF  reduce 26
+	T_LET  reduce 26
+	T_OF  reduce 26
+	T_TYPE  reduce 26
+	T_BAR  reduce 26
+
+	types  goto 171
+
+
+state 131
+	constrbar : constrbar T_BAR constr .  (23)
+
+	.  reduce 23
+
+
+state 132
+	expr : T_BEGIN expr T_END .  (70)
+
+	.  reduce 70
+
+
+state 133
+	expr : T_DIM intmb T_ID .  (73)
+
+	.  reduce 73
+
+
+state 134
+	expr : T_FOR T_ID T_SEQ . expr count expr T_DO expr T_DONE  (72)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 172
+	atom  goto 60
+
+
+state 135
+	expr : T_IF expr T_THEN . expr T_ELSE expr  (75)
+	expr : T_IF expr T_THEN . expr  (76)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 173
+	atom  goto 60
+
+
+state 136
+	expr : T_MATCH expr T_WITH . clause clausestar T_END  (78)
+
+	T_ID  shift 174
+	T_CID  shift 175
+	T_CONSTCHAR  shift 176
+	T_FALSE  shift 177
+	T_TRUE  shift 178
+	T_PLUS  shift 179
+	T_MINUS  shift 180
+	T_FPLUS  shift 181
+	T_FMINUS  shift 182
+	T_LPAR  shift 183
+	.  error
+
+	clause  goto 184
+	pattern  goto 185
+	pattom  goto 186
+	sign  goto 187
+	fsign  goto 188
+
+
+state 137
+	expr : T_WHILE expr T_DO . expr T_DONE  (71)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 189
+	atom  goto 60
+
+
+state 138
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	atom : T_ID T_LBRACK expr . comaexpr T_RBRACK  (93)
+	comaexpr : .  (95)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_RBRACK  reduce 95
+	T_COMA  reduce 95
+
+	comaexpr  goto 190
+
+
+state 139
+	atomstar : atom atomstar .  (98)
+
+	.  reduce 98
+
+
+state 140
+	atom : T_LPAR expr T_RPAR .  (94)
+
+	.  reduce 94
+
+
+state 141
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : letdef T_IN expr .  (77)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 77
+	T_ANDDEF  reduce 77
+	T_DO  reduce 77
+	T_DONE  reduce 77
+	T_DOWNTO  reduce 77
+	T_ELSE  reduce 77
+	T_END  reduce 77
+	T_IN  reduce 77
+	T_LET  reduce 77
+	T_THEN  reduce 77
+	T_TO  reduce 77
+	T_TYPE  reduce 77
+	T_WITH  reduce 77
+	T_BAR  reduce 77
+	T_RPAR  reduce 77
+	T_RBRACK  reduce 77
+	T_COMA  reduce 77
+
+
+state 142
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr T_SEQ expr .  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 53
+	T_ANDDEF  reduce 53
+	T_DO  reduce 53
+	T_DONE  reduce 53
+	T_DOWNTO  reduce 53
+	T_ELSE  reduce 53
+	T_END  reduce 53
+	T_IN  reduce 53
+	T_LET  reduce 53
+	T_THEN  reduce 53
+	T_TO  reduce 53
+	T_TYPE  reduce 53
+	T_WITH  reduce 53
+	T_BAR  reduce 53
+	T_SMCOLON  reduce 53
+	T_AND  reduce 53
+	T_OR  reduce 53
+	T_RPAR  reduce 53
+	T_RBRACK  reduce 53
+	T_COMA  reduce 53
+
+
+state 143
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr T_PLUS expr .  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 44
+	T_ANDDEF  reduce 44
+	T_DO  reduce 44
+	T_DONE  reduce 44
+	T_DOWNTO  reduce 44
+	T_ELSE  reduce 44
+	T_END  reduce 44
+	T_IN  reduce 44
+	T_LET  reduce 44
+	T_THEN  reduce 44
+	T_TO  reduce 44
+	T_TYPE  reduce 44
+	T_WITH  reduce 44
+	T_SEQ  reduce 44
+	T_BAR  reduce 44
+	T_PLUS  reduce 44
+	T_MINUS  reduce 44
+	T_FPLUS  reduce 44
+	T_FMINUS  reduce 44
+	T_SMCOLON  reduce 44
+	T_AND  reduce 44
+	T_OR  reduce 44
+	T_NSEQ  reduce 44
+	T_L  reduce 44
+	T_G  reduce 44
+	T_LE  reduce 44
+	T_GE  reduce 44
+	T_EQ  reduce 44
+	T_NEQ  reduce 44
+	T_ASSIGN  reduce 44
+	T_RPAR  reduce 44
+	T_RBRACK  reduce 44
+	T_COMA  reduce 44
+
+
+state 144
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr T_MINUS expr .  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 45
+	T_ANDDEF  reduce 45
+	T_DO  reduce 45
+	T_DONE  reduce 45
+	T_DOWNTO  reduce 45
+	T_ELSE  reduce 45
+	T_END  reduce 45
+	T_IN  reduce 45
+	T_LET  reduce 45
+	T_THEN  reduce 45
+	T_TO  reduce 45
+	T_TYPE  reduce 45
+	T_WITH  reduce 45
+	T_SEQ  reduce 45
+	T_BAR  reduce 45
+	T_PLUS  reduce 45
+	T_MINUS  reduce 45
+	T_FPLUS  reduce 45
+	T_FMINUS  reduce 45
+	T_SMCOLON  reduce 45
+	T_AND  reduce 45
+	T_OR  reduce 45
+	T_NSEQ  reduce 45
+	T_L  reduce 45
+	T_G  reduce 45
+	T_LE  reduce 45
+	T_GE  reduce 45
+	T_EQ  reduce 45
+	T_NEQ  reduce 45
+	T_ASSIGN  reduce 45
+	T_RPAR  reduce 45
+	T_RBRACK  reduce 45
+	T_COMA  reduce 45
+
+
+state 145
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr T_TIMES expr .  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_POWER  shift 109
+	T_EOF  reduce 47
+	T_ANDDEF  reduce 47
+	T_DO  reduce 47
+	T_DONE  reduce 47
+	T_DOWNTO  reduce 47
+	T_ELSE  reduce 47
+	T_END  reduce 47
+	T_IN  reduce 47
+	T_LET  reduce 47
+	T_THEN  reduce 47
+	T_TO  reduce 47
+	T_TYPE  reduce 47
+	T_WITH  reduce 47
+	T_SEQ  reduce 47
+	T_BAR  reduce 47
+	T_PLUS  reduce 47
+	T_MINUS  reduce 47
+	T_TIMES  reduce 47
+	T_DIV  reduce 47
+	T_MOD  reduce 47
+	T_FPLUS  reduce 47
+	T_FMINUS  reduce 47
+	T_FTIMES  reduce 47
+	T_FDIV  reduce 47
+	T_SMCOLON  reduce 47
+	T_AND  reduce 47
+	T_OR  reduce 47
+	T_NSEQ  reduce 47
+	T_L  reduce 47
+	T_G  reduce 47
+	T_LE  reduce 47
+	T_GE  reduce 47
+	T_EQ  reduce 47
+	T_NEQ  reduce 47
+	T_ASSIGN  reduce 47
+	T_RPAR  reduce 47
+	T_RBRACK  reduce 47
+	T_COMA  reduce 47
+
+
+state 146
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr T_DIV expr .  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_POWER  shift 109
+	T_EOF  reduce 49
+	T_ANDDEF  reduce 49
+	T_DO  reduce 49
+	T_DONE  reduce 49
+	T_DOWNTO  reduce 49
+	T_ELSE  reduce 49
+	T_END  reduce 49
+	T_IN  reduce 49
+	T_LET  reduce 49
+	T_THEN  reduce 49
+	T_TO  reduce 49
+	T_TYPE  reduce 49
+	T_WITH  reduce 49
+	T_SEQ  reduce 49
+	T_BAR  reduce 49
+	T_PLUS  reduce 49
+	T_MINUS  reduce 49
+	T_TIMES  reduce 49
+	T_DIV  reduce 49
+	T_MOD  reduce 49
+	T_FPLUS  reduce 49
+	T_FMINUS  reduce 49
+	T_FTIMES  reduce 49
+	T_FDIV  reduce 49
+	T_SMCOLON  reduce 49
+	T_AND  reduce 49
+	T_OR  reduce 49
+	T_NSEQ  reduce 49
+	T_L  reduce 49
+	T_G  reduce 49
+	T_LE  reduce 49
+	T_GE  reduce 49
+	T_EQ  reduce 49
+	T_NEQ  reduce 49
+	T_ASSIGN  reduce 49
+	T_RPAR  reduce 49
+	T_RBRACK  reduce 49
+	T_COMA  reduce 49
+
+
+state 147
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr T_MOD expr .  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_POWER  shift 109
+	T_EOF  reduce 51
+	T_ANDDEF  reduce 51
+	T_DO  reduce 51
+	T_DONE  reduce 51
+	T_DOWNTO  reduce 51
+	T_ELSE  reduce 51
+	T_END  reduce 51
+	T_IN  reduce 51
+	T_LET  reduce 51
+	T_THEN  reduce 51
+	T_TO  reduce 51
+	T_TYPE  reduce 51
+	T_WITH  reduce 51
+	T_SEQ  reduce 51
+	T_BAR  reduce 51
+	T_PLUS  reduce 51
+	T_MINUS  reduce 51
+	T_TIMES  reduce 51
+	T_DIV  reduce 51
+	T_MOD  reduce 51
+	T_FPLUS  reduce 51
+	T_FMINUS  reduce 51
+	T_FTIMES  reduce 51
+	T_FDIV  reduce 51
+	T_SMCOLON  reduce 51
+	T_AND  reduce 51
+	T_OR  reduce 51
+	T_NSEQ  reduce 51
+	T_L  reduce 51
+	T_G  reduce 51
+	T_LE  reduce 51
+	T_GE  reduce 51
+	T_EQ  reduce 51
+	T_NEQ  reduce 51
+	T_ASSIGN  reduce 51
+	T_RPAR  reduce 51
+	T_RBRACK  reduce 51
+	T_COMA  reduce 51
+
+
+state 148
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr T_FPLUS expr .  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 43
+	T_ANDDEF  reduce 43
+	T_DO  reduce 43
+	T_DONE  reduce 43
+	T_DOWNTO  reduce 43
+	T_ELSE  reduce 43
+	T_END  reduce 43
+	T_IN  reduce 43
+	T_LET  reduce 43
+	T_THEN  reduce 43
+	T_TO  reduce 43
+	T_TYPE  reduce 43
+	T_WITH  reduce 43
+	T_SEQ  reduce 43
+	T_BAR  reduce 43
+	T_PLUS  reduce 43
+	T_MINUS  reduce 43
+	T_FPLUS  reduce 43
+	T_FMINUS  reduce 43
+	T_SMCOLON  reduce 43
+	T_AND  reduce 43
+	T_OR  reduce 43
+	T_NSEQ  reduce 43
+	T_L  reduce 43
+	T_G  reduce 43
+	T_LE  reduce 43
+	T_GE  reduce 43
+	T_EQ  reduce 43
+	T_NEQ  reduce 43
+	T_ASSIGN  reduce 43
+	T_RPAR  reduce 43
+	T_RBRACK  reduce 43
+	T_COMA  reduce 43
+
+
+state 149
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr T_FMINUS expr .  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 46
+	T_ANDDEF  reduce 46
+	T_DO  reduce 46
+	T_DONE  reduce 46
+	T_DOWNTO  reduce 46
+	T_ELSE  reduce 46
+	T_END  reduce 46
+	T_IN  reduce 46
+	T_LET  reduce 46
+	T_THEN  reduce 46
+	T_TO  reduce 46
+	T_TYPE  reduce 46
+	T_WITH  reduce 46
+	T_SEQ  reduce 46
+	T_BAR  reduce 46
+	T_PLUS  reduce 46
+	T_MINUS  reduce 46
+	T_FPLUS  reduce 46
+	T_FMINUS  reduce 46
+	T_SMCOLON  reduce 46
+	T_AND  reduce 46
+	T_OR  reduce 46
+	T_NSEQ  reduce 46
+	T_L  reduce 46
+	T_G  reduce 46
+	T_LE  reduce 46
+	T_GE  reduce 46
+	T_EQ  reduce 46
+	T_NEQ  reduce 46
+	T_ASSIGN  reduce 46
+	T_RPAR  reduce 46
+	T_RBRACK  reduce 46
+	T_COMA  reduce 46
+
+
+state 150
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr T_FTIMES expr .  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_POWER  shift 109
+	T_EOF  reduce 48
+	T_ANDDEF  reduce 48
+	T_DO  reduce 48
+	T_DONE  reduce 48
+	T_DOWNTO  reduce 48
+	T_ELSE  reduce 48
+	T_END  reduce 48
+	T_IN  reduce 48
+	T_LET  reduce 48
+	T_THEN  reduce 48
+	T_TO  reduce 48
+	T_TYPE  reduce 48
+	T_WITH  reduce 48
+	T_SEQ  reduce 48
+	T_BAR  reduce 48
+	T_PLUS  reduce 48
+	T_MINUS  reduce 48
+	T_TIMES  reduce 48
+	T_DIV  reduce 48
+	T_MOD  reduce 48
+	T_FPLUS  reduce 48
+	T_FMINUS  reduce 48
+	T_FTIMES  reduce 48
+	T_FDIV  reduce 48
+	T_SMCOLON  reduce 48
+	T_AND  reduce 48
+	T_OR  reduce 48
+	T_NSEQ  reduce 48
+	T_L  reduce 48
+	T_G  reduce 48
+	T_LE  reduce 48
+	T_GE  reduce 48
+	T_EQ  reduce 48
+	T_NEQ  reduce 48
+	T_ASSIGN  reduce 48
+	T_RPAR  reduce 48
+	T_RBRACK  reduce 48
+	T_COMA  reduce 48
+
+
+state 151
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr T_FDIV expr .  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_POWER  shift 109
+	T_EOF  reduce 50
+	T_ANDDEF  reduce 50
+	T_DO  reduce 50
+	T_DONE  reduce 50
+	T_DOWNTO  reduce 50
+	T_ELSE  reduce 50
+	T_END  reduce 50
+	T_IN  reduce 50
+	T_LET  reduce 50
+	T_THEN  reduce 50
+	T_TO  reduce 50
+	T_TYPE  reduce 50
+	T_WITH  reduce 50
+	T_SEQ  reduce 50
+	T_BAR  reduce 50
+	T_PLUS  reduce 50
+	T_MINUS  reduce 50
+	T_TIMES  reduce 50
+	T_DIV  reduce 50
+	T_MOD  reduce 50
+	T_FPLUS  reduce 50
+	T_FMINUS  reduce 50
+	T_FTIMES  reduce 50
+	T_FDIV  reduce 50
+	T_SMCOLON  reduce 50
+	T_AND  reduce 50
+	T_OR  reduce 50
+	T_NSEQ  reduce 50
+	T_L  reduce 50
+	T_G  reduce 50
+	T_LE  reduce 50
+	T_GE  reduce 50
+	T_EQ  reduce 50
+	T_NEQ  reduce 50
+	T_ASSIGN  reduce 50
+	T_RPAR  reduce 50
+	T_RBRACK  reduce 50
+	T_COMA  reduce 50
+
+
+state 152
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr T_POWER expr .  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_POWER  shift 109
+	T_EOF  reduce 52
+	T_ANDDEF  reduce 52
+	T_DO  reduce 52
+	T_DONE  reduce 52
+	T_DOWNTO  reduce 52
+	T_ELSE  reduce 52
+	T_END  reduce 52
+	T_IN  reduce 52
+	T_LET  reduce 52
+	T_THEN  reduce 52
+	T_TO  reduce 52
+	T_TYPE  reduce 52
+	T_WITH  reduce 52
+	T_SEQ  reduce 52
+	T_BAR  reduce 52
+	T_PLUS  reduce 52
+	T_MINUS  reduce 52
+	T_TIMES  reduce 52
+	T_DIV  reduce 52
+	T_MOD  reduce 52
+	T_FPLUS  reduce 52
+	T_FMINUS  reduce 52
+	T_FTIMES  reduce 52
+	T_FDIV  reduce 52
+	T_SMCOLON  reduce 52
+	T_AND  reduce 52
+	T_OR  reduce 52
+	T_NSEQ  reduce 52
+	T_L  reduce 52
+	T_G  reduce 52
+	T_LE  reduce 52
+	T_GE  reduce 52
+	T_EQ  reduce 52
+	T_NEQ  reduce 52
+	T_ASSIGN  reduce 52
+	T_RPAR  reduce 52
+	T_RBRACK  reduce 52
+	T_COMA  reduce 52
+
+
+state 153
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr T_SMCOLON expr .  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 63
+	T_ANDDEF  reduce 63
+	T_DO  reduce 63
+	T_DONE  reduce 63
+	T_DOWNTO  reduce 63
+	T_ELSE  reduce 63
+	T_END  reduce 63
+	T_IN  reduce 63
+	T_LET  reduce 63
+	T_THEN  reduce 63
+	T_TO  reduce 63
+	T_TYPE  reduce 63
+	T_WITH  reduce 63
+	T_BAR  reduce 63
+	T_SMCOLON  reduce 63
+	T_RPAR  reduce 63
+	T_RBRACK  reduce 63
+	T_COMA  reduce 63
+
+
+state 154
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr T_AND expr .  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 61
+	T_ANDDEF  reduce 61
+	T_DO  reduce 61
+	T_DONE  reduce 61
+	T_DOWNTO  reduce 61
+	T_ELSE  reduce 61
+	T_END  reduce 61
+	T_IN  reduce 61
+	T_LET  reduce 61
+	T_THEN  reduce 61
+	T_TO  reduce 61
+	T_TYPE  reduce 61
+	T_WITH  reduce 61
+	T_BAR  reduce 61
+	T_SMCOLON  reduce 61
+	T_AND  reduce 61
+	T_OR  reduce 61
+	T_RPAR  reduce 61
+	T_RBRACK  reduce 61
+	T_COMA  reduce 61
+
+
+state 155
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr T_OR expr .  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_AND  shift 111
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 62
+	T_ANDDEF  reduce 62
+	T_DO  reduce 62
+	T_DONE  reduce 62
+	T_DOWNTO  reduce 62
+	T_ELSE  reduce 62
+	T_END  reduce 62
+	T_IN  reduce 62
+	T_LET  reduce 62
+	T_THEN  reduce 62
+	T_TO  reduce 62
+	T_TYPE  reduce 62
+	T_WITH  reduce 62
+	T_BAR  reduce 62
+	T_SMCOLON  reduce 62
+	T_OR  reduce 62
+	T_RPAR  reduce 62
+	T_RBRACK  reduce 62
+	T_COMA  reduce 62
+
+
+state 156
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr T_NSEQ expr .  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 54
+	T_ANDDEF  reduce 54
+	T_DO  reduce 54
+	T_DONE  reduce 54
+	T_DOWNTO  reduce 54
+	T_ELSE  reduce 54
+	T_END  reduce 54
+	T_IN  reduce 54
+	T_LET  reduce 54
+	T_THEN  reduce 54
+	T_TO  reduce 54
+	T_TYPE  reduce 54
+	T_WITH  reduce 54
+	T_BAR  reduce 54
+	T_SMCOLON  reduce 54
+	T_AND  reduce 54
+	T_OR  reduce 54
+	T_RPAR  reduce 54
+	T_RBRACK  reduce 54
+	T_COMA  reduce 54
+
+
+state 157
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr T_L expr .  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 55
+	T_ANDDEF  reduce 55
+	T_DO  reduce 55
+	T_DONE  reduce 55
+	T_DOWNTO  reduce 55
+	T_ELSE  reduce 55
+	T_END  reduce 55
+	T_IN  reduce 55
+	T_LET  reduce 55
+	T_THEN  reduce 55
+	T_TO  reduce 55
+	T_TYPE  reduce 55
+	T_WITH  reduce 55
+	T_BAR  reduce 55
+	T_SMCOLON  reduce 55
+	T_AND  reduce 55
+	T_OR  reduce 55
+	T_RPAR  reduce 55
+	T_RBRACK  reduce 55
+	T_COMA  reduce 55
+
+
+state 158
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr T_G expr .  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 56
+	T_ANDDEF  reduce 56
+	T_DO  reduce 56
+	T_DONE  reduce 56
+	T_DOWNTO  reduce 56
+	T_ELSE  reduce 56
+	T_END  reduce 56
+	T_IN  reduce 56
+	T_LET  reduce 56
+	T_THEN  reduce 56
+	T_TO  reduce 56
+	T_TYPE  reduce 56
+	T_WITH  reduce 56
+	T_BAR  reduce 56
+	T_SMCOLON  reduce 56
+	T_AND  reduce 56
+	T_OR  reduce 56
+	T_RPAR  reduce 56
+	T_RBRACK  reduce 56
+	T_COMA  reduce 56
+
+
+state 159
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr T_LE expr .  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 57
+	T_ANDDEF  reduce 57
+	T_DO  reduce 57
+	T_DONE  reduce 57
+	T_DOWNTO  reduce 57
+	T_ELSE  reduce 57
+	T_END  reduce 57
+	T_IN  reduce 57
+	T_LET  reduce 57
+	T_THEN  reduce 57
+	T_TO  reduce 57
+	T_TYPE  reduce 57
+	T_WITH  reduce 57
+	T_BAR  reduce 57
+	T_SMCOLON  reduce 57
+	T_AND  reduce 57
+	T_OR  reduce 57
+	T_RPAR  reduce 57
+	T_RBRACK  reduce 57
+	T_COMA  reduce 57
+
+
+state 160
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr T_GE expr .  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 58
+	T_ANDDEF  reduce 58
+	T_DO  reduce 58
+	T_DONE  reduce 58
+	T_DOWNTO  reduce 58
+	T_ELSE  reduce 58
+	T_END  reduce 58
+	T_IN  reduce 58
+	T_LET  reduce 58
+	T_THEN  reduce 58
+	T_TO  reduce 58
+	T_TYPE  reduce 58
+	T_WITH  reduce 58
+	T_BAR  reduce 58
+	T_SMCOLON  reduce 58
+	T_AND  reduce 58
+	T_OR  reduce 58
+	T_RPAR  reduce 58
+	T_RBRACK  reduce 58
+	T_COMA  reduce 58
+
+
+state 161
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr T_EQ expr .  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 59
+	T_ANDDEF  reduce 59
+	T_DO  reduce 59
+	T_DONE  reduce 59
+	T_DOWNTO  reduce 59
+	T_ELSE  reduce 59
+	T_END  reduce 59
+	T_IN  reduce 59
+	T_LET  reduce 59
+	T_THEN  reduce 59
+	T_TO  reduce 59
+	T_TYPE  reduce 59
+	T_WITH  reduce 59
+	T_BAR  reduce 59
+	T_SMCOLON  reduce 59
+	T_AND  reduce 59
+	T_OR  reduce 59
+	T_RPAR  reduce 59
+	T_RBRACK  reduce 59
+	T_COMA  reduce 59
+
+
+state 162
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr T_NEQ expr .  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 60
+	T_ANDDEF  reduce 60
+	T_DO  reduce 60
+	T_DONE  reduce 60
+	T_DOWNTO  reduce 60
+	T_ELSE  reduce 60
+	T_END  reduce 60
+	T_IN  reduce 60
+	T_LET  reduce 60
+	T_THEN  reduce 60
+	T_TO  reduce 60
+	T_TYPE  reduce 60
+	T_WITH  reduce 60
+	T_BAR  reduce 60
+	T_SMCOLON  reduce 60
+	T_AND  reduce 60
+	T_OR  reduce 60
+	T_RPAR  reduce 60
+	T_RBRACK  reduce 60
+	T_COMA  reduce 60
+
+
+state 163
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : expr T_ASSIGN expr .  (64)
+
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_EOF  reduce 64
+	T_ANDDEF  reduce 64
+	T_DO  reduce 64
+	T_DONE  reduce 64
+	T_DOWNTO  reduce 64
+	T_ELSE  reduce 64
+	T_END  reduce 64
+	T_IN  reduce 64
+	T_LET  reduce 64
+	T_THEN  reduce 64
+	T_TO  reduce 64
+	T_TYPE  reduce 64
+	T_WITH  reduce 64
+	T_BAR  reduce 64
+	T_SMCOLON  reduce 64
+	T_AND  reduce 64
+	T_OR  reduce 64
+	T_RPAR  reduce 64
+	T_RBRACK  reduce 64
+	T_COMA  reduce 64
+
+
+state 164
+	def : T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK . colontype  (12)
+	colontype : .  (16)
+
+	T_COLON  shift 26
+	T_EOF  reduce 16
+	T_ANDDEF  reduce 16
+	T_IN  reduce 16
+	T_LET  reduce 16
+	T_TYPE  reduce 16
+
+	colontype  goto 191
+
+
+state 165
+	comaexpr : comaexpr T_COMA . expr  (96)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 192
+	atom  goto 60
+
+
+state 166
+	starlist : T_LBRACK T_TIMES . comastar T_RBRACK  (40)
+	comastar : .  (41)
+
+	.  reduce 41
+
+	comastar  goto 193
+
+
+state 167
+	types : T_ARRAY starlist T_OF . types  (37)
+
+	T_ARRAY  shift 61
+	T_ID  shift 62
+	T_CHAR  shift 63
+	T_BOOL  shift 64
+	T_UNIT  shift 65
+	T_FLOATST  shift 66
+	T_INTST  shift 67
+	T_LPAR  shift 68
+	.  error
+
+	types  goto 194
+
+
+state 168
+	types : T_LPAR types T_RPAR .  (34)
+
+	.  reduce 34
+
+
+state 169
+	types : types . T_GIVES types  (35)
+	types : types T_GIVES types .  (35)
+	types : types . T_REF  (36)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_EOF  reduce 35
+	T_ANDDEF  reduce 35
+	T_ARRAY  reduce 35
+	T_DO  reduce 35
+	T_DONE  reduce 35
+	T_DOWNTO  reduce 35
+	T_ELSE  reduce 35
+	T_END  reduce 35
+	T_IN  reduce 35
+	T_LET  reduce 35
+	T_OF  reduce 35
+	T_THEN  reduce 35
+	T_TO  reduce 35
+	T_TYPE  reduce 35
+	T_WITH  reduce 35
+	T_ID  reduce 35
+	T_CHAR  reduce 35
+	T_BOOL  reduce 35
+	T_UNIT  reduce 35
+	T_FLOATST  reduce 35
+	T_INTST  reduce 35
+	T_SEQ  reduce 35
+	T_BAR  reduce 35
+	T_PLUS  reduce 35
+	T_MINUS  reduce 35
+	T_TIMES  reduce 35
+	T_DIV  reduce 35
+	T_MOD  reduce 35
+	T_FPLUS  reduce 35
+	T_FMINUS  reduce 35
+	T_FTIMES  reduce 35
+	T_FDIV  reduce 35
+	T_POWER  reduce 35
+	T_SMCOLON  reduce 35
+	T_AND  reduce 35
+	T_OR  reduce 35
+	T_NSEQ  reduce 35
+	T_L  reduce 35
+	T_G  reduce 35
+	T_LE  reduce 35
+	T_GE  reduce 35
+	T_EQ  reduce 35
+	T_NEQ  reduce 35
+	T_ASSIGN  reduce 35
+	T_LPAR  reduce 35
+	T_RPAR  reduce 35
+	T_RBRACK  reduce 35
+	T_COMA  reduce 35
+
+
+state 170
+	parstar : parstar T_LPAR T_ID T_COLON types . T_RPAR  (15)
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_RPAR  shift 195
+	.  error
+
+
+state 171
+	typeplus : typeplus types .  (28)
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+
+	T_REF  shift 125
+	T_GIVES  shift 126
+	T_EOF  reduce 28
+	T_ANDDEF  reduce 28
+	T_ARRAY  reduce 28
+	T_LET  reduce 28
+	T_OF  reduce 28
+	T_TYPE  reduce 28
+	T_ID  reduce 28
+	T_CHAR  reduce 28
+	T_BOOL  reduce 28
+	T_UNIT  reduce 28
+	T_FLOATST  reduce 28
+	T_INTST  reduce 28
+	T_BAR  reduce 28
+	T_LPAR  reduce 28
+
+
+state 172
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_FOR T_ID T_SEQ expr . count expr T_DO expr T_DONE  (72)
+
+	T_DOWNTO  shift 196
+	T_TO  shift 197
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+	count  goto 198
+
+
+state 173
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_IF expr T_THEN expr . T_ELSE expr  (75)
+	expr : T_IF expr T_THEN expr .  (76)
+
+	T_ELSE  shift 199
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 76
+	T_ANDDEF  reduce 76
+	T_DO  reduce 76
+	T_DONE  reduce 76
+	T_DOWNTO  reduce 76
+	T_END  reduce 76
+	T_IN  reduce 76
+	T_LET  reduce 76
+	T_THEN  reduce 76
+	T_TO  reduce 76
+	T_TYPE  reduce 76
+	T_WITH  reduce 76
+	T_BAR  reduce 76
+	T_RPAR  reduce 76
+	T_RBRACK  reduce 76
+	T_COMA  reduce 76
+
+
+state 174
+	pattom : T_ID .  (113)
+
+	.  reduce 113
+
+
+state 175
+	pattern : T_CID . patternstar  (107)
+	pattom : T_CID .  (114)
+
+	T_ID  shift 174
+	T_CID  shift 200
+	T_CONSTCHAR  shift 176
+	T_FALSE  shift 177
+	T_TRUE  shift 178
+	T_PLUS  shift 179
+	T_MINUS  shift 180
+	T_FPLUS  shift 181
+	T_FMINUS  shift 182
+	T_LPAR  shift 183
+	T_GIVES  reduce 114
+	T_RPAR  reduce 114
+
+	pattom  goto 201
+	patternstar  goto 202
+	sign  goto 187
+	fsign  goto 188
+
+
+state 176
+	pattom : T_CONSTCHAR .  (110)
+
+	.  reduce 110
+
+
+state 177
+	pattom : T_FALSE .  (112)
+
+	.  reduce 112
+
+
+state 178
+	pattom : T_TRUE .  (111)
+
+	.  reduce 111
+
+
+state 179
+	sign : T_PLUS .  (118)
+
+	.  reduce 118
+
+
+state 180
+	sign : T_MINUS .  (119)
+
+	.  reduce 119
+
+
+state 181
+	fsign : T_FPLUS .  (120)
+
+	.  reduce 120
+
+
+state 182
+	fsign : T_FMINUS .  (121)
+
+	.  reduce 121
+
+
+state 183
+	pattom : T_LPAR . pattern T_RPAR  (115)
+
+	T_ID  shift 174
+	T_CID  shift 175
+	T_CONSTCHAR  shift 176
+	T_FALSE  shift 177
+	T_TRUE  shift 178
+	T_PLUS  shift 179
+	T_MINUS  shift 180
+	T_FPLUS  shift 181
+	T_FMINUS  shift 182
+	T_LPAR  shift 183
+	.  error
+
+	pattern  goto 203
+	pattom  goto 186
+	sign  goto 187
+	fsign  goto 188
+
+
+state 184
+	expr : T_MATCH expr T_WITH clause . clausestar T_END  (78)
+	clausestar : .  (103)
+
+	.  reduce 103
+
+	clausestar  goto 204
+
+
+state 185
+	clause : pattern . T_GIVES expr  (105)
+
+	T_GIVES  shift 205
+	.  error
+
+
+state 186
+	pattern : pattom .  (106)
+
+	.  reduce 106
+
+
+state 187
+	pattom : sign . T_INT  (108)
+
+	T_INT  shift 206
+	.  error
+
+
+state 188
+	pattom : fsign . T_FLOAT  (109)
+
+	T_FLOAT  shift 207
+	.  error
+
+
+state 189
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_WHILE expr T_DO expr . T_DONE  (71)
+
+	T_DONE  shift 208
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 190
+	atom : T_ID T_LBRACK expr comaexpr . T_RBRACK  (93)
+	comaexpr : comaexpr . T_COMA expr  (96)
+
+	T_RBRACK  shift 209
+	T_COMA  shift 165
+	.  error
+
+
+state 191
+	def : T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK colontype .  (12)
+
+	.  reduce 12
+
+
+state 192
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	comaexpr : comaexpr T_COMA expr .  (96)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_RBRACK  reduce 96
+	T_COMA  reduce 96
+
+
+state 193
+	starlist : T_LBRACK T_TIMES comastar . T_RBRACK  (40)
+	comastar : comastar . T_COMA T_TIMES  (42)
+
+	T_RBRACK  shift 210
+	T_COMA  shift 211
+	.  error
+
+
+state 194
+	types : types . T_GIVES types  (35)
+	types : types . T_REF  (36)
+	types : T_ARRAY starlist T_OF types .  (37)
+
+	.  reduce 37
+
+
+state 195
+	parstar : parstar T_LPAR T_ID T_COLON types T_RPAR .  (15)
+
+	.  reduce 15
+
+
+state 196
+	count : T_DOWNTO .  (100)
+
+	.  reduce 100
+
+
+state 197
+	count : T_TO .  (99)
+
+	.  reduce 99
+
+
+state 198
+	expr : T_FOR T_ID T_SEQ expr count . expr T_DO expr T_DONE  (72)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 212
+	atom  goto 60
+
+
+state 199
+	expr : T_IF expr T_THEN expr T_ELSE . expr  (75)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 213
+	atom  goto 60
+
+
+state 200
+	pattom : T_CID .  (114)
+
+	.  reduce 114
+
+
+state 201
+	patternstar : pattom .  (116)
+
+	.  reduce 116
+
+
+state 202
+	pattern : T_CID patternstar .  (107)
+	patternstar : patternstar . pattom  (117)
+
+	T_ID  shift 174
+	T_CID  shift 200
+	T_CONSTCHAR  shift 176
+	T_FALSE  shift 177
+	T_TRUE  shift 178
+	T_PLUS  shift 179
+	T_MINUS  shift 180
+	T_FPLUS  shift 181
+	T_FMINUS  shift 182
+	T_LPAR  shift 183
+	T_GIVES  reduce 107
+	T_RPAR  reduce 107
+
+	pattom  goto 214
+	sign  goto 187
+	fsign  goto 188
+
+
+state 203
+	pattom : T_LPAR pattern . T_RPAR  (115)
+
+	T_RPAR  shift 215
+	.  error
+
+
+state 204
+	expr : T_MATCH expr T_WITH clause clausestar . T_END  (78)
+	clausestar : clausestar . T_BAR clause  (104)
+
+	T_END  shift 216
+	T_BAR  shift 217
+	.  error
+
+
+state 205
+	clause : pattern T_GIVES . expr  (105)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 218
+	atom  goto 60
+
+
+state 206
+	pattom : sign T_INT .  (108)
+
+	.  reduce 108
+
+
+state 207
+	pattom : fsign T_FLOAT .  (109)
+
+	.  reduce 109
+
+
+state 208
+	expr : T_WHILE expr T_DO expr T_DONE .  (71)
+
+	.  reduce 71
+
+
+state 209
+	atom : T_ID T_LBRACK expr comaexpr T_RBRACK .  (93)
+
+	.  reduce 93
+
+
+state 210
+	starlist : T_LBRACK T_TIMES comastar T_RBRACK .  (40)
+
+	.  reduce 40
+
+
+state 211
+	comastar : comastar T_COMA . T_TIMES  (42)
+
+	T_TIMES  shift 219
+	.  error
+
+
+state 212
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_FOR T_ID T_SEQ expr count expr . T_DO expr T_DONE  (72)
+
+	T_DO  shift 220
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 213
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_IF expr T_THEN expr T_ELSE expr .  (75)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_EOF  reduce 75
+	T_ANDDEF  reduce 75
+	T_DO  reduce 75
+	T_DONE  reduce 75
+	T_DOWNTO  reduce 75
+	T_ELSE  reduce 75
+	T_END  reduce 75
+	T_IN  reduce 75
+	T_LET  reduce 75
+	T_THEN  reduce 75
+	T_TO  reduce 75
+	T_TYPE  reduce 75
+	T_WITH  reduce 75
+	T_BAR  reduce 75
+	T_RPAR  reduce 75
+	T_RBRACK  reduce 75
+	T_COMA  reduce 75
+
+
+state 214
+	patternstar : patternstar pattom .  (117)
+
+	.  reduce 117
+
+
+state 215
+	pattom : T_LPAR pattern T_RPAR .  (115)
+
+	.  reduce 115
+
+
+state 216
+	expr : T_MATCH expr T_WITH clause clausestar T_END .  (78)
+
+	.  reduce 78
+
+
+state 217
+	clausestar : clausestar T_BAR . clause  (104)
+
+	T_ID  shift 174
+	T_CID  shift 175
+	T_CONSTCHAR  shift 176
+	T_FALSE  shift 177
+	T_TRUE  shift 178
+	T_PLUS  shift 179
+	T_MINUS  shift 180
+	T_FPLUS  shift 181
+	T_FMINUS  shift 182
+	T_LPAR  shift 183
+	.  error
+
+	clause  goto 221
+	pattern  goto 185
+	pattom  goto 186
+	sign  goto 187
+	fsign  goto 188
+
+
+state 218
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	clause : pattern T_GIVES expr .  (105)
+
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	T_END  reduce 105
+	T_BAR  reduce 105
+
+
+state 219
+	comastar : comastar T_COMA T_TIMES .  (42)
+
+	.  reduce 42
+
+
+state 220
+	expr : T_FOR T_ID T_SEQ expr count expr T_DO . expr T_DONE  (72)
+
+	T_BEGIN  shift 35
+	T_DELETE  shift 36
+	T_DIM  shift 37
+	T_FOR  shift 38
+	T_IF  shift 39
+	T_LET  shift 6
+	T_MATCH  shift 40
+	T_NEW  shift 41
+	T_NOT  shift 42
+	T_WHILE  shift 43
+	T_ID  shift 44
+	T_CID  shift 45
+	T_FLOAT  shift 46
+	T_INT  shift 47
+	T_CONSTCHAR  shift 48
+	T_STRING  shift 49
+	T_FALSE  shift 50
+	T_TRUE  shift 51
+	T_PLUS  shift 52
+	T_MINUS  shift 53
+	T_FPLUS  shift 54
+	T_FMINUS  shift 55
+	T_BANK  shift 56
+	T_LPAR  shift 57
+	.  error
+
+	letdef  goto 58
+	expr  goto 222
+	atom  goto 60
+
+
+state 221
+	clausestar : clausestar T_BAR clause .  (104)
+
+	.  reduce 104
+
+
+state 222
+	expr : expr . T_FPLUS expr  (43)
+	expr : expr . T_PLUS expr  (44)
+	expr : expr . T_MINUS expr  (45)
+	expr : expr . T_FMINUS expr  (46)
+	expr : expr . T_TIMES expr  (47)
+	expr : expr . T_FTIMES expr  (48)
+	expr : expr . T_DIV expr  (49)
+	expr : expr . T_FDIV expr  (50)
+	expr : expr . T_MOD expr  (51)
+	expr : expr . T_POWER expr  (52)
+	expr : expr . T_SEQ expr  (53)
+	expr : expr . T_NSEQ expr  (54)
+	expr : expr . T_L expr  (55)
+	expr : expr . T_G expr  (56)
+	expr : expr . T_LE expr  (57)
+	expr : expr . T_GE expr  (58)
+	expr : expr . T_EQ expr  (59)
+	expr : expr . T_NEQ expr  (60)
+	expr : expr . T_AND expr  (61)
+	expr : expr . T_OR expr  (62)
+	expr : expr . T_SMCOLON expr  (63)
+	expr : expr . T_ASSIGN expr  (64)
+	expr : T_FOR T_ID T_SEQ expr count expr T_DO expr . T_DONE  (72)
+
+	T_DONE  shift 223
+	T_SEQ  shift 99
+	T_PLUS  shift 100
+	T_MINUS  shift 101
+	T_TIMES  shift 102
+	T_DIV  shift 103
+	T_MOD  shift 104
+	T_FPLUS  shift 105
+	T_FMINUS  shift 106
+	T_FTIMES  shift 107
+	T_FDIV  shift 108
+	T_POWER  shift 109
+	T_SMCOLON  shift 110
+	T_AND  shift 111
+	T_OR  shift 112
+	T_NSEQ  shift 113
+	T_L  shift 114
+	T_G  shift 115
+	T_LE  shift 116
+	T_GE  shift 117
+	T_EQ  shift 118
+	T_NEQ  shift 119
+	T_ASSIGN  shift 120
+	.  error
+
+
+state 223
+	expr : T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE .  (72)
+
+	.  reduce 72
+
+
+76 terminals, 33 nonterminals
+123 grammar rules, 224 states

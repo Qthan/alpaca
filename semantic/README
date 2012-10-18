@@ -1,0 +1,13 @@
+To make the symbol table demo program:
+
+   make depend-symbtest
+   make symbtest                or symbtest.exe (if in Windows)
+
+To make your compiler:
+
+   1. Add your lexer (Lexer.mll, Lexer.mli) and parser (Parser.mly) files
+   2. Add any other files that you have and add them to the Makefile
+   3. Finally:
+
+   make depend
+   make
