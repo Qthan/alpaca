@@ -185,8 +185,8 @@ let newFunction id err =
     match e.entry_info with
     | ENTRY_function inf when inf.function_isForward ->
         inf.function_isForward <- false;
-        inf.function_pstatus <- PARDEF_CHECK;
-        inf.function_redeflist <- inf.function_paramlist;
+        (* inf.function_pstatus <- PARDEF_CHECK; *)
+        (* inf.function_redeflist <- inf.function_paramlist; *)
         e
     | _ ->
         if err then

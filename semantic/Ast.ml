@@ -4,6 +4,7 @@ open Identifier
 open Types
 open Format
 open Symbtest
+open Error
 
 
 let rec walk_program ls =
@@ -58,16 +59,18 @@ and walk_def t = match t with
                     (* printState "Before opening" "After opening" (openScope()); *)
                     ignore p;
                     printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
+                    printState "Before opening" "After opening" (hideScope !currentScope) (true);
                     walk_expr e;
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
             | (id, ty)::tl  ->
                   let p = newFunction (id_make id) true in 
                     (* printState "Before opening" "After opening" (openScope()); *)
-                    walk_par_list tl p;
-                    endFunctionHeader p ty;
                     printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                     printState "Before opening" "After opening" (openScope) ();
-                    show_par_to_expr tl;
+                    walk_par_list tl p;
+                    endFunctionHeader p ty;
+                    (* printState "Before opening" "After opening" (openScope) (); *)
+                    (* show_par_to_expr tl; *)
                     walk_expr e;
                     printState "Before closing" "Afterclosing" (closeScope) ();
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
@@ -95,20 +98,12 @@ and walk_recdef_f t = match t with
                   let p = newVariable (id_make id) ty true in
                     ignore p;
             | (id, ty)::tl  -> 
-                  let p = newFunction (id_make id) true in 
-                    walk_par_list tl p;
-                    endFunctionHeader p ty
+                let p = newFunction (id_make id) true in
+                  forwardFunction p;
+
         end
-    | D_Mut (id, t)     -> 
-        begin
-          let p = newVariable (id_make id) t true in
-            ignore p;
-        end
-    | D_Arr (id, t, l)  -> 
-        begin
-          let p = newVariable (id_make id) (T_Arr (t, List.length l)) true in
-            ignore p;
-        end
+    | D_Mut (id, t)     -> error "too many problems\n";
+    | D_Arr (id, t, l)  -> error "too many problems\n";
 
 and walk_recdef t = match t with
     | D_Var (l, e)      -> 
@@ -120,26 +115,16 @@ and walk_recdef t = match t with
                     walk_expr e;
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
             | (id, ty)::tl  -> 
+                let p = newFunction (id_make id) true in 
                     printState "Before opening" "After opening" (openScope) ();
-                    show_par_to_expr tl;
+                    walk_par_list tl p;
+                    endFunctionHeader p ty;
                     walk_expr e;
                     printState "Before closing" "Afterclosing" (closeScope) ();
         end
-    | D_Mut (id, t)     -> ()
-    | D_Arr (id, t, l)  -> 
-        begin
-            walk_expr_list l
-        end
+    | D_Mut (id, t)     -> error "too many problems\n";
+    | D_Arr (id, t, l)  -> error "too many problems\n";
           
-and show_par_to_expr l = match l with
-    | []                -> ()
-    | (hid, ht)::t      -> 
-        begin
-          let p = newVariable (id_make hid) ht true in
-            ignore p;
-            show_par_to_expr t
-        end
-
 and walk_par_list l p = match l with
     | []                -> ()
     | (hid,ht)::tl      -> 
@@ -368,7 +353,7 @@ and walk_atom t = match t with
     | A_Str str         -> ()
     | A_Bool b          -> ()
     | A_Const con       -> ()
-    | A_Var v           -> let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in ignore s1
+    | A_Var v           -> let s1 = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in ignore s1
     | A_Par             -> ()
     | A_Bank a          -> walk_atom a
     | A_Array (a, b)    -> let s1 = lookupEntry (id_make a) LOOKUP_ALL_SCOPES true in ignore s1

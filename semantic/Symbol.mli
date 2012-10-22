@@ -39,7 +39,7 @@ and temporary_info = {                        (** Προσωρινή μεταβλητή **)
   temporary_type   : Types.typ;               (* Τύπος                 *)
   temporary_offset : int                      (* Offset στο Ε.Δ.       *)
 }
-
+                       
 and entry_info = ENTRY_none
                | ENTRY_variable of variable_info
                | ENTRY_function of function_info

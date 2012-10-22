@@ -41,7 +41,7 @@ let printSymbolTable () =
       fprintf ppf "scope: ";
       let entry ppf e =
         if (scp.sco_hidden) then 
-          fprintf ppf "Hidden!!\n"
+          fprintf ppf "Hidden!!"
         else
           begin
             fprintf ppf "%a" pretty_id e.entry_id;
