@@ -244,19 +244,20 @@ and walk_expr cnstr exp = match exp with
                                 let tyy = match y.entry_info with
                                   | ENTRY_Parameter par_info -> par_info.parameter_type
                                   | _ -> error "Internal error"
-                let typ, constr = walk_params_list [] ys in
-                  T_Arrow(tyy,typ), constr
-                                  | x::xs, y::ys -> 
-                                      let tyx, constrx = walk_atom x in
-                                      let tyy = match y.entry_info with
-                                        | ENTRY_Parameter par_info -> par_info.parameter_type
-                                        | _ -> error "Internal error"
-                                      in 
-                                      let typ, cnstr = walk_params_list xs ys in
-                                        typ, (tyx,tyy)::cnstr
                                 in
-                                  walk_params_list l (func.function_paramlist) 
-                            | _ -> error "Not a function" 
+                                let typ, constr = walk_params_list [] ys in
+                                  T_Arrow(tyy,typ), constr
+                            | x::xs, y::ys -> 
+                                let tyx, constrx = walk_atom x in
+                                let tyy = match y.entry_info with
+                                  | ENTRY_Parameter par_info -> par_info.parameter_type
+                                  | _ -> error "Internal error"
+                                in 
+                                let typ, cnstr = walk_params_list xs ys in
+                                  typ, (tyx,tyy)::cnstr
+                        in
+                          walk_params_list l (func.function_paramlist) 
+                    | _ -> error "Not a function" 
               end
           | E_Cid (id, l)     -> ()
           | E_Match (e, l)    -> 
