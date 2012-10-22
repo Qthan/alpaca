@@ -1,2 +1,2 @@
 let x = 4
-let add z w = z + w
+let y = let x = 2 in x + 2

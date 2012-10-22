@@ -336,10 +336,10 @@ and walk_expr t = match t with
         end
     | E_Letin (l, e)    -> 
         begin
-          printState "Before opening" "After opening" (openScope) ();
+          printState "Before opening letin" "After opening letin" (openScope) ();
           walk_stmt l;
           walk_expr e;
-          printState "Before closing" "Afterclosing" (closeScope) ()
+          printState "Before closing letin" "Afterclosing letin" (closeScope) ()
         end
     | E_New t           -> ()
     | E_Atom a          -> walk_atom a

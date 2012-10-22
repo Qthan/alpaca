@@ -39,11 +39,11 @@ let printSymbolTable () =
   let rec walk ppf scp =
     if scp.sco_nesting <> 0 then begin
       fprintf ppf "scope: ";
-      if (scp.sco_hidden) then 
-        fprintf ppf "Hidden!!\n" 
-      else
-        begin
-          let entry ppf e =
+      let entry ppf e =
+        if (scp.sco_hidden) then 
+          fprintf ppf "Hidden!!\n"
+        else
+          begin
             fprintf ppf "%a" pretty_id e.entry_id;
             match e.entry_info with
               | ENTRY_none ->
@@ -77,23 +77,24 @@ let printSymbolTable () =
                     fprintf ppf "[%d]" inf.parameter_offset
               | ENTRY_temporary inf ->
                   if show_offsets then
-                    fprintf ppf "[%d]" inf.temporary_offset in
-          let rec entries ppf es =
-            match es with
-              | [e] ->
-                  fprintf ppf "%a" entry e
-              | e :: es ->
-                  fprintf ppf "%a, %a" entry e entries es;
-              | [] ->
-                  () in
-            match scp.sco_parent with
-              | Some scpar ->
-                  fprintf ppf "%a\n%a"
-                    entries scp.sco_entries
-                    walk scpar
-              | None ->
-                  fprintf ppf "<impossible>\n"
-        end 
+                    fprintf ppf "[%d]" inf.temporary_offset
+          end
+      in
+      let rec entries ppf es =
+        match es with
+          | [e] ->
+              fprintf ppf "%a" entry e
+          | e :: es ->
+              fprintf ppf "%a, %a" entry e entries es;
+          | [] ->
+              () in
+        match scp.sco_parent with
+          | Some scpar ->
+              fprintf ppf "%a\n%a"
+                entries scp.sco_entries
+                walk scpar
+          | None ->
+              fprintf ppf "<impossible>\n"
     end 
   in
   let scope ppf scp =
