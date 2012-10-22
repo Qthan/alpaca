@@ -2278,7 +2278,7 @@ let __ocaml_lex_tables = {
 }
 
 let rec lexer lexbuf =
-    __ocaml_lex_lexer_rec lexbuf 0
+  __ocaml_lex_lexer_rec lexbuf 0
 and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
@@ -2684,7 +2684,7 @@ let
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state
 
 and comments level lexbuf =
-    __ocaml_lex_comments_rec level lexbuf 162
+  __ocaml_lex_comments_rec level lexbuf 162
 and __ocaml_lex_comments_rec level lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
