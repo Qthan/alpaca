@@ -33,64 +33,69 @@ let pretty_mode ppf mode =
   match mode with
     | PASS_BY_REFERENCE ->
         fprintf ppf "reference "
-    | _ ->
-        ()
+    | _ -> ()
 
 let printSymbolTable () =
   let rec walk ppf scp =
     if scp.sco_nesting <> 0 then begin
       fprintf ppf "scope: ";
-      let entry ppf e =
-        fprintf ppf "%a" pretty_id e.entry_id;
-        match e.entry_info with
-          | ENTRY_none ->
-              fprintf ppf "<none>"
-          | ENTRY_variable inf ->
-              if show_offsets then
-                fprintf ppf "[%d]" inf.variable_offset
-          | ENTRY_function inf ->
-              let param ppf e =
-                match e.entry_info with
-                  | ENTRY_parameter inf ->
-                      fprintf ppf "%a%a : %a"
-                        pretty_mode inf.parameter_mode
-                        pretty_id e.entry_id
-                        pretty_typ inf.parameter_type
-                  | _ ->
-                      fprintf ppf "<invalid>" in
-              let rec params ppf ps =
-                match ps with
-                  | [p] ->
-                      fprintf ppf "%a" param p
-                  | p :: ps ->
-                      fprintf ppf "%a; %a" param p params ps;
-                  | [] ->
-                      () in
-                fprintf ppf "(%a) : %a"
-                  params inf.function_paramlist
-                  pretty_typ inf.function_result
-          | ENTRY_parameter inf ->
-              if show_offsets then
-                fprintf ppf "[%d]" inf.parameter_offset
-          | ENTRY_temporary inf ->
-              if show_offsets then
-                fprintf ppf "[%d]" inf.temporary_offset in
-      let rec entries ppf es =
-        match es with
-          | [e] ->
-              fprintf ppf "%a" entry e
-          | e :: es ->
-              fprintf ppf "%a, %a" entry e entries es;
-          | [] ->
-              () in
-        match scp.sco_parent with
-          | Some scpar ->
-              fprintf ppf "%a\n%a"
-                entries scp.sco_entries
-                walk scpar
-          | None ->
-              fprintf ppf "<impossible>\n"
-    end in
+      if (scp.sco_hidden) then 
+        fprintf ppf "Hidden!!\n" 
+      else
+        begin
+          let entry ppf e =
+            fprintf ppf "%a" pretty_id e.entry_id;
+            match e.entry_info with
+              | ENTRY_none ->
+                  fprintf ppf "<none>"
+              | ENTRY_variable inf ->
+                  if show_offsets then
+                    fprintf ppf "[%d]" inf.variable_offset
+              | ENTRY_function inf ->
+                  let param ppf e =
+                    match e.entry_info with
+                      | ENTRY_parameter inf ->
+                          fprintf ppf "%a%a : %a"
+                            pretty_mode inf.parameter_mode
+                            pretty_id e.entry_id
+                            pretty_typ inf.parameter_type
+                      | _ ->
+                          fprintf ppf "<invalid>" in
+                  let rec params ppf ps =
+                    match ps with
+                      | [p] ->
+                          fprintf ppf "%a" param p
+                      | p :: ps ->
+                          fprintf ppf "%a; %a" param p params ps;
+                      | [] ->
+                          () in
+                    fprintf ppf "(%a) : %a"
+                      params inf.function_paramlist
+                      pretty_typ inf.function_result
+              | ENTRY_parameter inf ->
+                  if show_offsets then
+                    fprintf ppf "[%d]" inf.parameter_offset
+              | ENTRY_temporary inf ->
+                  if show_offsets then
+                    fprintf ppf "[%d]" inf.temporary_offset in
+          let rec entries ppf es =
+            match es with
+              | [e] ->
+                  fprintf ppf "%a" entry e
+              | e :: es ->
+                  fprintf ppf "%a, %a" entry e entries es;
+              | [] ->
+                  () in
+            match scp.sco_parent with
+              | Some scpar ->
+                  fprintf ppf "%a\n%a"
+                    entries scp.sco_entries
+                    walk scpar
+              | None ->
+                  fprintf ppf "<impossible>\n"
+        end 
+    end 
+  in
   let scope ppf scp =
     if scp.sco_nesting == 0 then
       fprintf ppf "no scope\n"
@@ -101,12 +106,11 @@ let printSymbolTable () =
 
 let printState s1 s2 action arg =
   let ps s =Printf.printf "%s\n" s in
-  flush_all();
-  ps s1;
-  printSymbolTable ();
-  action arg;
-  ps s2;
-  printSymbolTable ();
+    ps s1;
+    printSymbolTable ();
+    action arg;
+    ps s2;
+    printSymbolTable ();
 ;;
 
 

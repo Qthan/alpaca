@@ -1,1 +1,2 @@
-let x = 4 
+let x = 4
+let add z w = z + w
