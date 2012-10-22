@@ -10,7 +10,7 @@ type binop =
 type unop =
     | U_Plus | U_Fplus
     | U_Minus| U_Fminus
-    | U_Del
+    | U_Del | U_New
     | U_Not
 
 type sign =
@@ -66,7 +66,6 @@ and ast_expr =
     | E_Cid of string * ast_atom list
     | E_Match of ast_expr * ast_clause list
     | E_Letin of ast_stmt * ast_expr
-    | E_New of typ
 
 and ast_clause =
       Clause of ast_pattern * ast_expr
@@ -102,20 +101,22 @@ and typ =
     | T_Chr
     | T_Bool
     | T_Float
-    | T_Notype
-    | T_Gives of typ * typ
+    | T_Notype             (* probably not needed *)
+    | T_Arrow of typ * typ (*was T_GIVES*)
     | T_Ref of typ
-    | T_Arr of typ * int
+    | T_Array of typ * int
+    | T_Fresh of int        (* --NEW-- fresh type variable *)
+    | T_Times of typ * typ  (* --NEW-- tuples *)
     | T_Id of string
 
 let rec sizeOfType t =
    match t with
    | T_Int            -> 2
    (*| TYPE_byte           -> 1*)
-   | T_Arr (et, sz) -> sz * sizeOfType et
+   | T_Array (et, sz) -> sz * sizeOfType et
    | _                   -> 0
 
 let rec equalType t1 t2 =
    match t1, t2 with
-   | T_Arr (et1, sz1), T_Arr (et2, sz2) -> equalType et1 et2
+   | T_Array (et1, sz1), T_Array (et2, sz2) -> equalType et1 et2
    | _                                            -> t1 = t2

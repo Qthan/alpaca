@@ -197,9 +197,9 @@ types:
             | T_LPAR types T_RPAR                                       { $2 }
             | types T_GIVES types                                       { T_Gives ($1, $3) }
             | types T_REF                                               { T_Ref ($1) }
-            | T_ARRAY T_OF types %prec ARR                              { T_Arr ($3, 0) }
+            | T_ARRAY T_OF types %prec ARR                              { T_Array ($3, 0) }
             | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                     
-                                                                        { T_Arr ($7, $4+1) }
+                                                                        { T_Array ($7, $4+1) }
             | T_ID                                                      { T_Id ($1) }
             ;
          
@@ -237,11 +237,11 @@ expr:
             | T_MINUS expr %prec UN                                     { { expr_type = $2.typ; expr = E_Unop (U_Minus, $2) } }
             | T_NOT expr %prec UN                                       { { expr_type = $2.typ; expr = E_Unop (U_Not, $2 ) }}
             | T_DELETE expr %prec UN                                    { { expr_type = $2.typ; expr = E_Unop (U_Del, $2) } }
+            | T_NEW types                                               { E_Unop(T_New, $2) }           (** Changed **)
             | T_BEGIN expr T_END                                        { { expr_type = $2.typ; expr = E_Block ($2) }}
             | T_WHILE expr T_DO expr T_DONE                             { { expr_type = T_Unit; expr = E_While ($2, $4) }}
             | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE         { { expr_type = T_Unit; expr = E_For ($2, $4, $5, $6, $8) }}
             | T_DIM intmb T_ID                                          { E_Dim ($2, $3) }
-            | T_NEW types                                               { E_New ($2) }
             | T_IF expr T_THEN expr T_ELSE expr                         { E_Ifthelse ($2, $4, $6) }
             | T_IF expr T_THEN expr                                     { E_Ifthe ($2, $4) }
             | letdef T_IN expr                                          { E_Letin ($1, $3) }
@@ -255,7 +255,7 @@ atom:
             | T_INT                                                     { { atom_type = T_Int; atom = A_Num $1 } }
             | T_FLOAT                                                   { { atom_type = T_Float; atom = A_Dec $1 } }
             | T_CONSTCHAR                                               { { atom_type = T_Chr; atom = A_Chr $1 } }
-            | T_STRING                                                  { { atom_type = T_Arr (T_Chr, 1) ; atom = A_Str $1 } }
+            | T_STRING                                                  { { atom_type = T_Array (T_Chr, 1) ; atom = A_Str $1 } }
             | T_TRUE                                                    { { atom_type = T_Bool; atom = A_Bool $1 } }
             | T_FALSE                                                   { { atom_type = T_Bool; atom = A_Bool $1 } }
             | T_LPAR T_RPAR                                             { { atom_type = T_Unit; atom = A_Par } }
