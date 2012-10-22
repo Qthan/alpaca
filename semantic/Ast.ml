@@ -356,7 +356,7 @@ and walk_expr_list t = match t with
         end
 
 
-and walk_atom t = match t.atom with 
+and walk_atom t = match t with 
     | A_Num n           -> ()
     | A_Dec f           -> ()
     | A_Chr c           -> ()

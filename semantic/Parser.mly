@@ -116,10 +116,10 @@
 %type <typ list> typeplus
 %type <typ> types 
 %type <int> comastar
-%type <ast_expr_node> expr
-%type <ast_atom_node> atom
-%type <ast_expr_node list> comaexpr
-%type <ast_atom_node list> atomstar
+%type <ast_expr> expr
+%type <ast_atom> atom
+%type <ast_expr list> comaexpr
+%type <ast_atom list> atomstar
 %type <count> count
 %type <intmb> intmb
 %type <ast_clause> clause
