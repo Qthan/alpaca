@@ -17,10 +17,10 @@ and walk_stmt_list ls = match ls with
     | []                -> ()
     | h::t              ->
         begin
-          printState "Before opening" "After opening" (openScope());
+          printState "Before opening" "After opening" (openScope) ();
           walk_stmt h;
           walk_stmt_list t;
-          printState "Before closing" "Afterclosing" (closeScope());
+          printState "Before closing" "Afterclosing" (closeScope) ();
         end
 
 and walk_stmt t = match t with
@@ -57,20 +57,20 @@ and walk_def t = match t with
                   let p = newVariable (id_make id) ty true in (*probably needs newscope*)
                     (* printState "Before opening" "After opening" (openScope()); *)
                     ignore p;
-                    printState "Before hiding" "After hiding" (hideScope !currentScope true);
+                    printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                     walk_expr e;
-                    printState "Before unhiding" "After unhiding" (hideScope !currentScope false);
+                    printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
             | (id, ty)::tl  ->
                   let p = newFunction (id_make id) true in 
                     (* printState "Before opening" "After opening" (openScope()); *)
                     walk_par_list tl p;
                     endFunctionHeader p ty;
-                    printState "Before hiding" "After hiding" (hideScope !currentScope true);
-                    printState "Before opening" "After opening" (openScope());
+                    printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
+                    printState "Before opening" "After opening" (openScope) ();
                     show_par_to_expr tl;
                     walk_expr e;
-                    printState "Before closing" "Afterclosing" (closeScope());
-                    printState "Before unhiding" "After unhiding" (hideScope !currentScope false);
+                    printState "Before closing" "Afterclosing" (closeScope) ();
+                    printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
         end
     | D_Mut (id, t) -> 
         begin
@@ -81,9 +81,9 @@ and walk_def t = match t with
         begin
           let p = newVariable (id_make id) (T_Arr (t, List.length l)) true in
             ignore p;
-            printState "Before hiding" "After hiding" (hideScope !currentScope true);
+            printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
             walk_expr_list l;
-            printState "Before unhiding" "After unhiding" (hideScope !currentScope false)
+            printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
         end
 
 and walk_recdef_f t = match t with
@@ -116,14 +116,14 @@ and walk_recdef t = match t with
           match l with
             | []            -> printf "too many problems\n";
             | (id, ty)::[]  -> 
-                    printState "Before hiding" "After hiding" (hideScope !currentScope true);
+                    printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                     walk_expr e;
-                    printState "Before unhiding" "After unhiding" (hideScope !currentScope false)
+                    printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
             | (id, ty)::tl  -> 
-                    printState "Before opening" "After opening" (openScope());
+                    printState "Before opening" "After opening" (openScope) ();
                     show_par_to_expr tl;
                     walk_expr e;
-                    printState "Before closing" "Afterclosing" (closeScope());
+                    printState "Before closing" "Afterclosing" (closeScope) ();
         end
     | D_Mut (id, t)     -> ()
     | D_Arr (id, t, l)  -> 
@@ -285,23 +285,23 @@ and walk_expr t = match t with
           match cnt with
             | To            -> 
                 begin
-                  printState "Before opening" "After opening" (openScope());
+                  printState "Before opening" "After opening" (openScope) ();
                   let i = newVariable (id_make id) T_Int true in
                     ignore i ;
                   walk_expr e1 ;
                   walk_expr e2 ;
                   walk_expr e3 ;
-                  printState "Before closing" "Afterclosing" (closeScope())
+                  printState "Before closing" "Afterclosing" (closeScope) ();
                 end
             | Downto        -> 
                 begin
-                  printState "Before opening" "After opening" (openScope());
+                  printState "Before opening" "After opening" (openScope) ();
                   let i = newVariable (id_make id) T_Int true in
                     ignore i ;
                   walk_expr e1 ;
                   walk_expr e2 ;
                   walk_expr e3 ;
-                  printState "Before closing" "Afterclosing" (closeScope())
+                  printState "Before closing" "Afterclosing" (closeScope) ();
                 end
         end
     | E_Dim (a, b)      -> 
@@ -336,10 +336,10 @@ and walk_expr t = match t with
         end
     | E_Letin (l, e)    -> 
         begin
-          printState "Before opening" "After opening" (openScope());
+          printState "Before opening" "After opening" (openScope) ();
           walk_stmt l;
           walk_expr e;
-          printState "Before closing" "Afterclosing" (closeScope())
+          printState "Before closing" "Afterclosing" (closeScope) ()
         end
     | E_New t           -> ()
     | E_Atom a          -> walk_atom a

@@ -99,16 +99,14 @@ let printSymbolTable () =
     printf "%a----------------------------------------\n"
       scope !currentScope
 
-let printState s1 s2 action =
-  let ps1 =Printf.printf "%s\n" s1 in
-  let ps2 =Printf.printf "%s\n" s2 in
-  ignore ps1;
+let printState s1 s2 action arg =
+  let ps s =Printf.printf "%s\n" s in
+  flush_all();
+  ps s1;
   printSymbolTable ();
-  flush_all ();
-  action;
-  ignore ps2;
+  action arg;
+  ps s2;
   printSymbolTable ();
-  flush_all ()
 ;;
 
 
