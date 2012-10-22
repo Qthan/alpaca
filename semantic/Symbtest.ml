@@ -21,13 +21,13 @@ let rec pretty_typ ppf typ =
     | T_Notype ->
         fprintf ppf "undefined"
     | T_Gives (a,b) ->
-        fprintf ppf "%a -> %a" (pretty_typ ppf a) (pretty_typ ppf b)
+        fprintf ppf "%a -> %a" pretty_typ a pretty_typ b
     | T_Ref a -> 
-        fprintf ppf "%a ref" (pretty_typ ppf a)
+        fprintf ppf "%a ref" pretty_typ  a
     | T_Arr (a,n) -> 
-        fprintf ppf "%a array %d" (pretty_typ ppf a) (pretty_typ ppf n)
-    | T_Cid str ->
-        fprintf ppf "Cid %s"    
+        fprintf ppf "%a array %d" pretty_typ a (n)
+    | T_Id str ->
+        fprintf ppf "Cid %s" (str)
 
 let pretty_mode ppf mode =
   match mode with
@@ -98,6 +98,19 @@ let printSymbolTable () =
       walk ppf scp in
     printf "%a----------------------------------------\n"
       scope !currentScope
+
+let printState s1 s2 action =
+  let ps1 =Printf.printf "%s\n" s1 in
+  let ps2 =Printf.printf "%s\n" s2 in
+  ignore ps1;
+  printSymbolTable ();
+  flush_all ();
+  action;
+  ignore ps2;
+  printSymbolTable ();
+  flush_all ()
+;;
+
 
 (* Κύριο πρόγραμμα επίδειξης του πίνακα συμβόλων *)
 

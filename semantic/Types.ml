@@ -96,7 +96,7 @@ and typ =
     | T_Gives of typ * typ
     | T_Ref of typ
     | T_Arr of typ * int
-    | T_Cid of string
+    | T_Id of string
 
 let rec sizeOfType t =
    match t with

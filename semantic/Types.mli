@@ -26,7 +26,7 @@ type sign = P_Plus | P_Minus
 type fsign = P_Fplus | P_Fminus
 type count = To | Downto
 type intmb = Yesnum of int | Nonum
-type ast_atom =
+and ast_atom =
     A_Num of int
   | A_Dec of float
   | A_Chr of string

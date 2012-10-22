@@ -129,7 +129,7 @@
 %type <ast_pattom> pattom 
 %%
 
-program     : stmt_list T_EOF                                      { walk_program $1 }
+program     : stmt_list T_EOF                                           { walk_program (List.rev($1)) }
             ;
 
 stmt_list: 
@@ -139,8 +139,8 @@ stmt_list:
             ;
 
 letdef:
-            | T_LET def anddef                                          { S_Let ($2::$3) }
-            | T_LET T_REC def anddef                                    { S_Rec ($3::$4) }
+            | T_LET def anddef                                          { S_Let ($2::(List.rev($3))) }
+            | T_LET T_REC def anddef                                    { S_Rec ($3::(List.rev($4))) }
             ;
 
 anddef:
@@ -149,8 +149,8 @@ anddef:
             ;
 
 def:
-            | T_ID parstar  T_SEQ expr                                  { D_Var (($1, T_Notype)::$2, $4) }
-            | T_ID parstar T_COLON types T_SEQ expr                     { D_Var (($1, $4)::$2, $6) }
+            | T_ID parstar  T_SEQ expr                                  { D_Var (($1, T_Notype)::(List.rev($2)), $4) }
+            | T_ID parstar T_COLON types T_SEQ expr                     { D_Var (($1, $4)::(List.rev($2)), $6) }
             | T_MUTABLE T_ID                                            { D_Mut (($2, T_Notype)) }
             | T_MUTABLE T_ID T_COLON types                              { D_Mut (($2, $4)) }
             | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { D_Arr ($2, T_Notype, ($4::$5)) }
@@ -165,16 +165,16 @@ parstar:
             ;
 
 typedef:
-            | T_TYPE T_ID T_SEQ T_CID  constrbar andtdefstar            { S_Type (($2, ($4, [T_Notype])::$5)::$6) }
+            | T_TYPE T_ID T_SEQ T_CID  constrbar andtdefstar            { S_Type(($2, ($4, [T_Notype])::(List.rev($5)))::(List.rev($6))) }
             | T_TYPE T_ID T_SEQ T_CID T_OF typeplus constrbar andtdefstar
-                                                                        { S_Type(($2, ($4, $6)::$7)::$8) }
+                                                                        { S_Type(($2,($4, (List.rev($6)))::(List.rev($7)))::(List.rev($8))) }
             ;
 
 andtdefstar:
             | /* nothing */                                             { [] }
-            | andtdefstar T_ANDDEF T_ID T_SEQ T_CID  constrbar          { ($3, ($5, [T_Notype])::$6)::$1 }
+            | andtdefstar T_ANDDEF T_ID T_SEQ T_CID  constrbar          { ($3, ($5, [T_Notype])::(List.rev($6)))::$1 }
             | andtdefstar T_ANDDEF T_ID T_SEQ T_CID T_OF typeplus constrbar    
-                                                                        { ($3, ($5, $7)::$8)::$1 }
+                                                                        { ($3, ($5, List.rev($7))::(List.rev($8)))::$1 }
             ;                                                            
 
 constrbar:
@@ -245,7 +245,7 @@ expr:
             | T_IF expr T_THEN expr T_ELSE expr                         { E_Ifthelse ($2, $4, $6) }
             | T_IF expr T_THEN expr                                     { E_Ifthe ($2, $4) }
             | letdef T_IN expr                                          { E_Letin ($1, $3) }
-            | T_MATCH expr T_WITH clause clausestar T_END               { E_Match ($2, $4::$5) } 
+            | T_MATCH expr T_WITH clause clausestar T_END               { E_Match ($2, $4::(List.rev($5))) } 
             | T_CID atomstar                                            { E_Cid ($1, $2) } 
             | T_ID atomstar                                             { E_Id ($1, $2) }
             | atom                                                      { E_Atom ($1) } 
@@ -297,7 +297,7 @@ clause:
 
 pattern:
             | pattom                                                    { Pa_Atom $1 }
-            | T_CID pattomstar                                          { Pa_Cid ($1, $2) }
+            | T_CID pattomstar                                          { Pa_Cid ($1, List.rev($2)) }
             ;
 
 pattom:

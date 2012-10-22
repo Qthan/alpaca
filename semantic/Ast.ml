@@ -3,10 +3,13 @@ open Symbol
 open Identifier
 open Types
 open Format
+open Symbtest
+
 
 let rec walk_program ls =
   begin 
     initSymbolTable 256;
+    (* printSymbolTable (); *)
     walk_stmt_list ls
   end
 
@@ -14,10 +17,10 @@ and walk_stmt_list ls = match ls with
     | []                -> ()
     | h::t              ->
         begin
-          openScope();
+          printState "Before opening" "After opening" (openScope());
           walk_stmt h;
           walk_stmt_list t;
-          closeScope();
+          printState "Before closing" "Afterclosing" (closeScope());
         end
 
 and walk_stmt t = match t with
@@ -52,40 +55,42 @@ and walk_def t = match t with
             | []            -> printf "too many problems\n";
             | (id, ty)::[]  -> 
                   let p = newVariable (id_make id) ty true in (*probably needs newscope*)
-                    ignore p; 
-                    hideScope !currentScope true;
+                    (* printState "Before opening" "After opening" (openScope()); *)
+                    ignore p;
+                    printState "Before hiding" "After hiding" (hideScope !currentScope true);
                     walk_expr e;
-                    hideScope !currentScope false;
-            | (id, ty)::tl  -> 
+                    printState "Before unhiding" "After unhiding" (hideScope !currentScope false);
+            | (id, ty)::tl  ->
                   let p = newFunction (id_make id) true in 
+                    (* printState "Before opening" "After opening" (openScope()); *)
                     walk_par_list tl p;
                     endFunctionHeader p ty;
-                    hideScope !currentScope true;
-                    openScope();
-                    expr_par tl;
+                    printState "Before hiding" "After hiding" (hideScope !currentScope true);
+                    printState "Before opening" "After opening" (openScope());
+                    show_par_to_expr tl;
                     walk_expr e;
-                    closeScope();
-                    hideScope !currentScope false
+                    printState "Before closing" "Afterclosing" (closeScope());
+                    printState "Before unhiding" "After unhiding" (hideScope !currentScope false);
         end
-    | D_Mut (id, t)     -> 
+    | D_Mut (id, t) -> 
         begin
           let p = newVariable (id_make id) t true in
             ignore p;
         end
-    | D_Arr (id, t, l)  -> 
+    | D_Arr (id, t, l) -> 
         begin
           let p = newVariable (id_make id) (T_Arr (t, List.length l)) true in
             ignore p;
-            hideScope !currentScope true;
+            printState "Before hiding" "After hiding" (hideScope !currentScope true);
             walk_expr_list l;
-            hideScope !currentScope false
+            printState "Before unhiding" "After unhiding" (hideScope !currentScope false)
         end
 
 and walk_recdef_f t = match t with
     | D_Var (l, e)      ->
         begin 
           match l with
-            | []            -> printf "too many problems\n";
+            | [] -> printf "too many problems\n";
             | (id, ty)::[]  -> 
                   let p = newVariable (id_make id) ty true in
                     ignore p;
@@ -111,14 +116,14 @@ and walk_recdef t = match t with
           match l with
             | []            -> printf "too many problems\n";
             | (id, ty)::[]  -> 
-                    hideScope !currentScope true;
+                    printState "Before hiding" "After hiding" (hideScope !currentScope true);
                     walk_expr e;
-                    hideScope !currentScope false
+                    printState "Before unhiding" "After unhiding" (hideScope !currentScope false)
             | (id, ty)::tl  -> 
-                    openScope();
-                    expr_par tl;
+                    printState "Before opening" "After opening" (openScope());
+                    show_par_to_expr tl;
                     walk_expr e;
-                    closeScope();
+                    printState "Before closing" "Afterclosing" (closeScope());
         end
     | D_Mut (id, t)     -> ()
     | D_Arr (id, t, l)  -> 
@@ -126,13 +131,13 @@ and walk_recdef t = match t with
             walk_expr_list l
         end
           
-and expr_par l = match l with
+and show_par_to_expr l = match l with
     | []                -> ()
     | (hid, ht)::t      -> 
         begin
           let p = newVariable (id_make hid) ht true in
             ignore p;
-            expr_par t
+            show_par_to_expr t
         end
 
 and walk_par_list l p = match l with
@@ -280,23 +285,23 @@ and walk_expr t = match t with
           match cnt with
             | To            -> 
                 begin
-                  openScope();
+                  printState "Before opening" "After opening" (openScope());
                   let i = newVariable (id_make id) T_Int true in
                     ignore i ;
                   walk_expr e1 ;
                   walk_expr e2 ;
                   walk_expr e3 ;
-                  closeScope()
+                  printState "Before closing" "Afterclosing" (closeScope())
                 end
             | Downto        -> 
                 begin
-                  openScope();
+                  printState "Before opening" "After opening" (openScope());
                   let i = newVariable (id_make id) T_Int true in
                     ignore i ;
                   walk_expr e1 ;
                   walk_expr e2 ;
                   walk_expr e3 ;
-                  closeScope()
+                  printState "Before closing" "Afterclosing" (closeScope())
                 end
         end
     | E_Dim (a, b)      -> 
@@ -331,10 +336,10 @@ and walk_expr t = match t with
         end
     | E_Letin (l, e)    -> 
         begin
-          openScope();
+          printState "Before opening" "After opening" (openScope());
           walk_stmt l;
           walk_expr e;
-          closeScope()
+          printState "Before closing" "Afterclosing" (closeScope())
         end
     | E_New t           -> ()
     | E_Atom a          -> walk_atom a
