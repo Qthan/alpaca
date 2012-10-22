@@ -236,7 +236,7 @@ and walk_expr cnstr exp = match exp with
                 let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
                   match id_entry.entry_info with
                     | ENTRY_function func -> 
-                        let walk_params_list param func_param acc =
+                        let walk_params_list param func_param =
                           match param, func_param  with
                             | [], []  -> func.function_result, []
                             | x::xs, [] -> error "Too many arguments"
@@ -259,7 +259,7 @@ and walk_expr cnstr exp = match exp with
                           walk_params_list l (func.function_paramlist) 
                     | _ -> error "Not a function" 
               end
-          | E_Cid (id, l)     -> ()
+          (*  TODO | E_Cid (id, l)     -> () ****)
           | E_Match (e, l)    -> 
               begin 
                 walk_expr e;
