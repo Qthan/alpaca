@@ -50,8 +50,8 @@ and ast_expr =
     | E_For of string * ast_expr * count * ast_expr * ast_expr
     | E_Atom of ast_atom
     | E_Dim of intmb * string
-    | E_Ifthelse of ast_expr * ast_expr * ast_expr
-    | E_Ifthe of ast_expr * ast_expr
+    | E_Ifthenelse of ast_expr * ast_expr * ast_expr
+    | E_Ifthen of ast_expr * ast_expr
     | E_Id of string * ast_atom list
     | E_Cid of string * ast_atom list
     | E_Match of ast_expr * ast_clause list
@@ -90,6 +90,7 @@ and typ =
     | T_Unit 
     | T_Int
     | T_Chr
+    | T_Str
     | T_Bool
     | T_Float
     | T_Notype

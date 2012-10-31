@@ -242,8 +242,8 @@ expr:
             | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE         { E_For ($2, $4, $5, $6, $8) }
             | T_DIM intmb T_ID                                          { E_Dim ($2, $3) }
             | T_NEW types                                               { E_New ($2) }
-            | T_IF expr T_THEN expr T_ELSE expr                         { E_Ifthelse ($2, $4, $6) }
-            | T_IF expr T_THEN expr                                     { E_Ifthe ($2, $4) }
+            | T_IF expr T_THEN expr T_ELSE expr                         { E_Ifthenelse ($2, $4, $6) }
+            | T_IF expr T_THEN expr                                     { E_Ifthen ($2, $4) }
             | letdef T_IN expr                                          { E_Letin ($1, $3) }
             | T_MATCH expr T_WITH clause clausestar T_END               { E_Match ($2, $4::(List.rev($5))) } 
             | T_CID atomstar                                            { E_Cid ($1, $2) } 
