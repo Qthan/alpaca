@@ -96,7 +96,7 @@ and walk_recdef t = match t with
             | []            -> printf "too many problems\n";
             | (id, ty)::[]  -> 
                     printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
-                    let (typ, constr) = walk_expr ein 
+                    let (typ, constr) = walk_expr e in 
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
             | (id, ty)::tl  -> 
                 let p = newFunction (id_make id) true in 
@@ -119,7 +119,7 @@ and walk_par_list l p = match l with
             end
 
 and walk_expr exp = match exp with 
-  | E_Binop (exp1, op, exp1) -> 
+  | E_Binop (exp1, op, exp2) -> 
       begin 
         match op with 
           | Plus | Minus | Times | Div | Mod  -> 
@@ -162,7 +162,7 @@ and walk_expr exp = match exp with
                 T_Float, (ty1, T_Float)::cnstr1
           | U_Del         -> 
               let ty1, cnstr1 = walk_expr exp1 in
-                T_Unit, (ty1, T_Ref _)::cnstr1
+                T_Unit, (ty1, T_Ref)::cnstr1
           | U_New         ->
               let ty1, cnstr1 = walk_expr exp1 in
                 (T_Ref ty1), cnstr1              (*Must not be array - need to do that*)
@@ -188,7 +188,7 @@ and walk_expr exp = match exp with
       let idEntry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
         match id_entry.entry_info with
           | ENTRY_variable var -> 
-              if (var.variable_type = T_Arrayay(_,_)) then T_Int, []
+              if (var.variable_type = T_Array ) then T_Int, []
               else error "Must be array"            
           | _ -> error "Must be array"
           | E_Ifthenelse (exp1, exp2, exp3)  -> (*Change ifthelse to ifthenelse*)
@@ -231,14 +231,14 @@ and walk_expr exp = match exp with
           (*  TODO | E_Cid (id, l)     -> () ****)
           | E_Match (e, l)    -> 
               begin 
-                let (constr,typ) = walk_expr e;
+                let (constr,typ) = walk_expr e in
                 walk_clause_list l
               end
           | E_Letin (l, e)    -> 
               begin
                 openScope();
                 walk_stmt l;
-                let (constr,typ) = walk_expr e;
+                let (constr,typ) = walk_expr e in
                 closeScope()
               end
           | E_Atom a          -> walk_atom a
@@ -246,7 +246,7 @@ and walk_expr exp = match exp with
 and walk_atom_list t = match t with
     | []                -> ()
     | h::t              -> 
-          let (constr,typ) = walk_atom h;
+          let (constr,typ) = walk_atom h in
           walk_atom_list t
 
 and walk_expr_list t = match t with

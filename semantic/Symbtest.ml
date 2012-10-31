@@ -12,7 +12,7 @@ let rec pretty_typ ppf typ =
         fprintf ppf "unit"
     | T_Int ->
         fprintf ppf "int"
-    | T_Chr ->
+    | T_Char ->
         fprintf ppf "char"
     | T_Bool ->
         fprintf ppf "bool"

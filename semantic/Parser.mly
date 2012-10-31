@@ -153,9 +153,9 @@ def:
             | T_ID parstar T_COLON types T_SEQ expr                     { D_Var (($1, $4)::(List.rev($2)), $6) }
             | T_MUTABLE T_ID                                            { D_Mut (($2, T_Notype)) }
             | T_MUTABLE T_ID T_COLON types                              { D_Mut (($2, $4)) }
-            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { D_Arrayayay ($2, T_Notype, ($4::$5)) }
+            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { D_Array ($2, T_Notype, ($4::$5)) }
             | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK T_COLON types  
-                                                                        { D_Arrayayay ($2, $8, ($4::$5)) }
+                                                                        { D_Array ($2, $8, ($4::$5)) }
             ;
 
 parstar:
@@ -197,9 +197,9 @@ types:
             | T_LPAR types T_RPAR                                       { $2 }
             | types T_GIVES types                                       { T_Gives ($1, $3) }
             | types T_REF                                               { T_Ref ($1) }
-            | T_ARRAY T_OF types %prec ARR                              { T_Arrayayay ($3, 0) }
+            | T_ARRAY T_OF types %prec ARR                              { T_Array ($3, 0) }
             | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                     
-                                                                        { T_Arrayayay ($7, $4+1) }
+                                                                        { T_Array ($7, $4+1) }
             | T_ID                                                      { T_Id ($1) }
             ;
          

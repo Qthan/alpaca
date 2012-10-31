@@ -89,12 +89,12 @@ and ast_stmt =
 and typ = 
     | T_Unit 
     | T_Int
-    | T_Chr
+    | T_Char
     | T_Str
     | T_Bool
     | T_Float
     | T_Notype
-    | T_Gives of typ * typ
+    | T_Arrow of typ * typ
     | T_Ref of typ
     | T_Array of typ * int
     | T_Id of string
