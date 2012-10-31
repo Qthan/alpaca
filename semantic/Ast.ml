@@ -22,8 +22,7 @@ and walk_stmt_list ls = match ls with
 
 and walk_stmt t = match t with
     | S_Let  l          -> walk_def_list l
-    | S_Rec l           -> 
-          walk_recdef_list l
+    | S_Rec l           -> walk_recdef_list l
     | S_Type l          -> (*walk_typedef_list l*)()
 
 and walk_def_list t = match t with
@@ -43,14 +42,14 @@ and walk_def t = match t with
     | D_Var (l, e)      -> 
         begin 
           match l with
-            | []            -> printf "too many problems\n";
+            | []            -> internal "Definition cannot be empty\n";
             | (id, ty)::[]  -> 
                   let p = newVariable (id_make id) ty true in (*probably needs newscope*)
                     (* printState "Before opening" "After opening" (openScope()); *)
                     ignore p;
                     printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                     printState "Before opening" "After opening" (hideScope !currentScope) (true);
-                    walk_expr e;
+                    let (typ, constr) = walk_expr e in
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
             | (id, ty)::tl  ->
                   let p = newFunction (id_make id) true in 
@@ -61,15 +60,15 @@ and walk_def t = match t with
                     endFunctionHeader p ty;
                     (* printState "Before opening" "After opening" (openScope) (); *)
                     (* show_par_to_expr tl; *)
-                    walk_expr e;
+                    let (typ, constr) = walk_expr e in
                     printState "Before closing" "Afterclosing" (closeScope) ();
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
         end
     | D_Mut (id, t) -> 
           let p = newVariable (id_make id) t true in
             ignore p;
-    | D_Arr (id, t, l) -> 
-          let p = newVariable (id_make id) (T_Arr (t, List.length l)) true in
+    | D_Array (id, t, l) -> 
+          let p = newVariable (id_make id) (T_Array (t, List.length l)) true in
             ignore p;
             printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
             walk_expr_list l;
@@ -86,10 +85,9 @@ and walk_recdef_f t = match t with
             | (id, ty)::tl  -> 
                 let p = newFunction (id_make id) true in
                   forwardFunction p;
-
         end
     | D_Mut (id, t)     -> error "too many problems\n";
-    | D_Arr (id, t, l)  -> error "too many problems\n";
+    | D_Array (id, t, l)  -> error "too many problems\n";
 
 and walk_recdef t = match t with
     | D_Var (l, e)      -> 
@@ -98,18 +96,18 @@ and walk_recdef t = match t with
             | []            -> printf "too many problems\n";
             | (id, ty)::[]  -> 
                     printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
-                    walk_expr e;
+                    let (typ, constr) = walk_expr ein 
                     printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
             | (id, ty)::tl  -> 
                 let p = newFunction (id_make id) true in 
                     printState "Before opening" "After opening" (openScope) ();
                     walk_par_list tl p;
                     endFunctionHeader p ty;
-                    walk_expr e;
+                    let (typ, constr) = walk_expr e in
                     printState "Before closing" "Afterclosing" (closeScope) ();
         end
     | D_Mut (id, t)     -> error "too many problems\n";
-    | D_Arr (id, t, l)  -> error "too many problems\n";
+    | D_Array (id, t, l)  -> error "too many problems\n";
           
 and walk_par_list l p = match l with
     | []                -> ()
@@ -120,7 +118,7 @@ and walk_par_list l p = match l with
             walk_par_list tl p
             end
 
-and walk_expr cnstr exp = match exp with 
+and walk_expr exp = match exp with 
   | E_Binop (exp1, op, exp1) -> 
       begin 
         match op with 
@@ -190,7 +188,7 @@ and walk_expr cnstr exp = match exp with
       let idEntry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
         match id_entry.entry_info with
           | ENTRY_variable var -> 
-              if (var.variable_type = T_Array(_,_)) then T_Int, []
+              if (var.variable_type = T_Arrayay(_,_)) then T_Int, []
               else error "Must be array"            
           | _ -> error "Must be array"
           | E_Ifthenelse (exp1, exp2, exp3)  -> (*Change ifthelse to ifthenelse*)
@@ -217,7 +215,7 @@ and walk_expr cnstr exp = match exp with
                                   | _ -> error "Internal error"
                                 in
                                 let typ, constr = walk_params_list [] ys in
-                                  T_Arrow(tyy,typ), constr
+                                  T_Gives(tyy,typ), constr
                             | x::xs, y::ys -> 
                                 let tyx, constrx = walk_atom x in
                                 let tyy = match y.entry_info with
@@ -233,14 +231,14 @@ and walk_expr cnstr exp = match exp with
           (*  TODO | E_Cid (id, l)     -> () ****)
           | E_Match (e, l)    -> 
               begin 
-                walk_expr e;
+                let (constr,typ) = walk_expr e;
                 walk_clause_list l
               end
           | E_Letin (l, e)    -> 
               begin
                 openScope();
                 walk_stmt l;
-                walk_expr e;
+                let (constr,typ) = walk_expr e;
                 closeScope()
               end
           | E_Atom a          -> walk_atom a
@@ -248,141 +246,143 @@ and walk_expr cnstr exp = match exp with
 and walk_atom_list t = match t with
     | []                -> ()
     | h::t              -> 
-          walk_atom h;
+          let (constr,typ) = walk_atom h;
           walk_atom_list t
 
 and walk_expr_list t = match t with
     | []                -> ()
     | h::t              -> 
-          walk_expr h;
+        let (constr,typ) = walk_expr h in
           walk_expr_list t
 
 
 and walk_atom t = match t with 
-    | A_Num n           -> T_Int, []
-    | A_Dec f           -> T_Float, []
-    | A_Chr c           -> T_Chr,  []
-    | A_Str str         -> T_Arr(T_Chr,1), []
-    | A_Bool b          -> T_Bool, []
-(*  | A_Const con       -> TODO *)
-    | A_Var v           -> 
-        begin
-          let s1 = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in 
-            match s1.entry_info with 
-              | ENTRY_variable var -> var.variable_type, []
-              | ENTRY_function f ->
-                  let rec aux param_list =
-                    match param_list with
-                      | [] -> f.function_result
-                      | (x::xs) ->
+  | A_Num n           -> T_Int, []
+  | A_Dec f           -> T_Float, []
+  | A_Chr c           -> T_Chr,  []
+  | A_Str str         -> T_Array(T_Chr,1), []
+  | A_Bool b          -> T_Bool, []
+  (*  | A_Const con       -> TODO *)
+  | A_Var v           -> 
+      begin
+        let s1 = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in 
+          match s1.entry_info with 
+            | ENTRY_variable var -> var.variable_type, []
+            | ENTRY_function f ->
+                let rec aux param_list =
+                  match param_list with
+                    | [] -> f.function_result
+                    | (x::xs) ->
                         let tyx = match x.entry_info with
                           | ENTRY_Parameter par_info -> par_info.parameter_type
                           | _ -> error "Internal error\n"
                         in
                           T_Gives(tyx,aux xs)
-                  in
-                    ((aux f.param_list), [])
-              | ENTRY_parameter par -> par.parameter_type, []
-    | A_Par             -> T_Unit, []
-    | A_Bank a          -> 
-        begin 
-          let tya, constra = walk_atom a in
+                in
+                  ((aux f.param_list), [])
+            | ENTRY_parameter par -> par.parameter_type, []
+      end
+  | A_Par             -> T_Unit, []
+  | A_Bank a          -> 
+      begin 
+        let tya, constra = walk_atom a in
           match tya with 
             | T_Ref(ty) -> ty, constra
             | _ -> error "Must be a reference\n"
-        end
-    | A_Array (a, b)    -> 
-        let s1 = lookupEntry (id_make a) LOOKUP_ALL_SCOPES true in
-          begin
-            match s1.entry_info with 
-              | ENTRY_variable arr -> 
-                  let tyarr = arr.variable_type in
-                    begin
-                      match tyarr with 
-                        | T_Arr(typ,dim) -> 
-                            let rec walk_array_expr expr_list n acc =
-                              match expr_list,n with
-                                | [],0 -> acc
-                                | [],_ | (x::xs), 0 -> error "array dimensions are %d\n" dim; raise Exit;
-                                | (x::xs), n -> 
-                                    let tyx, constrx = walk_expr x in 
-                                      walk_array_expr xs (n-1) ((tyx,T_Int)::constrx@acc)
-                            in
-                              T_Ref(typ), walk_array_expr b dim []
+      end
+  | A_Array (a, b)    -> 
+      let s1 = lookupEntry (id_make a) LOOKUP_ALL_SCOPES true in
+        begin
+          match s1.entry_info with 
+            | ENTRY_variable arr -> 
+                let tyarr = arr.variable_type in
+                  begin
+                    match tyarr with 
+                      | T_Array(typ,dim) -> 
+                          let rec walk_array_expr expr_list n acc =
+                            match expr_list,n with
+                              | [],0 -> acc
+                              | [],_ | (x::xs), 0 -> error "array dimensions are %d\n" dim; raise Exit;
+                              | (x::xs), n -> 
+                                  let tyx, constrx = walk_expr x in 
+                                    walk_array_expr xs (n-1) ((tyx,T_Int)::constrx@acc)
+                          in
+                            T_Ref(typ), walk_array_expr b dim []
                       | _ -> error "%s must be an array\n" id; raise Exit;
-                    end
-              | _ -> error "%s must be an array\n" id; raise Exit;
-          end
-    | A_Expr a          -> walk_expr a
+                  end
+            | _ -> error "%s must be an array\n" id; raise Exit;
+        end
+  | A_Expr a          -> walk_expr a
 
 
 and walk_clause_list t = match t with
-    | []                -> () 
-    | h::t              -> 
-          walk_clause h;
-          walk_clause_list t 
+  | []                -> () 
+  | h::t              -> 
+      walk_clause h;
+      walk_clause_list t 
 
 and walk_clause t = match t with 
   | Clause(p,e)         -> 
-        walk_pattern p;
-        walk_expr e
+      walk_pattern p;
+      let (constr,typ) = walk_expr e in 
+      ()
 
 and walk_pattern p = match p with
-    | Pa_Atom a         -> walk_pattom a
-    | Pa_Cid (cid, l)   -> ()(*to be done*)
+  | Pa_Atom a         -> walk_pattom a
+  | Pa_Cid (cid, l)   -> ()(*to be done*)
 
 and walk_pattom t = match t with
-    | P_Sign(op, num)   ->
-        begin
-          match op with 
-            | P_Plus        -> ()
-            | P_Minus       -> ()
-        end
-    | P_Fsign(op, num)  ->
-        begin
-          match op with 
-            | P_Fplus       -> ()
-            | P_Fminus      -> ()
-        end
-    | P_Num n           -> ()
-    | P_Float f         -> ()
-    | P_Chr c           -> ()
-    | P_Bool b          -> ()
-    | P_Id id           -> let s1 = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in ignore s1
-    | P_Cid cid         -> () (*to be done*)
-    | P_Pattern p       -> walk_pattern p
+  | P_Sign(op, num)   ->
+      begin
+        match op with 
+          | P_Plus        -> ()
+          | P_Minus       -> ()
+      end
+  | P_Fsign(op, num)  ->
+      begin
+        match op with 
+          | P_Fplus       -> ()
+          | P_Fminus      -> ()
+      end
+  | P_Num n           -> ()
+  | P_Float f         -> ()
+  | P_Chr c           -> ()
+  | P_Bool b          -> ()
+  | P_Id id           -> let s1 = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in ignore s1
+  | P_Cid cid         -> () (*to be done*)
+  | P_Pattern p       -> walk_pattern p
 
 and walk_pattom_list t = match t with
-    | []                -> ()
-    | h::t              -> 
-          walk_pattom h;
-          walk_pattom_list t
+  | []                -> ()
+  | h::t              -> 
+      walk_pattom h;
+      walk_pattom_list t
 
 
 (*
-check_types t = match t with
-  | (A_Num n , A_Num n)     -> true
-  | (A_NUM n, A_Var v)      -> 
-      begin
-        let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in 
-          if s1.entry_info.constructor_type = T_Int then true
-          else false
-      end
-  | (A_Var, A_Num)          -> 
-      begin
-        let s1 = lookupEntry (id_make "con") LOOKUP_CURRENT_SCOPE true in 
-          if s1.entry_info.constructor_type = T_Int then true
-          else false
-      end
-  | (A_Dec n , A_Dec n)     -> true
-  | (A_Dec n, A_Var v)      -> 
-      begin
-        let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in 
-          if s1.entry_info.constructor_type = T_Float then true
-          else false
-      end
-  | (A_Var, A_Dec)          -> 
-      begin
-        let s1 = lookupEntry (id_make "con") LOOKUP_CURRENT_SCOPE true in 
-          if s1.entry_info.constructor_type = T_Float then true
-          else false *)
+ check_types t = match t with
+ | (A_Num n , A_Num n)     -> true
+ | (A_NUM n, A_Var v)      -> 
+ begin
+ let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in 
+ if s1.entry_info.constructor_type = T_Int then true
+ else false
+ end
+ | (A_Var, A_Num)          -> 
+ begin
+ let s1 = lookupEntry (id_make "con") LOOKUP_CURRENT_SCOPE true in 
+ if s1.entry_info.constructor_type = T_Int then true
+ else false
+ end
+ | (A_Dec n , A_Dec n)     -> true
+ | (A_Dec n, A_Var v)      -> 
+ begin
+ let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in 
+ if s1.entry_info.constructor_type = T_Float then true
+ else false
+ end
+ | (A_Var, A_Dec)          -> 
+ begin
+ let s1 = lookupEntry (id_make "con") LOOKUP_CURRENT_SCOPE true in 
+ if s1.entry_info.constructor_type = T_Float then true
+ else false *)

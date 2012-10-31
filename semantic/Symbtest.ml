@@ -20,11 +20,11 @@ let rec pretty_typ ppf typ =
         fprintf ppf "float"
     | T_Notype ->
         fprintf ppf "undefined"
-    | T_Gives (a,b) ->
+    | T_Arrow (a,b) ->
         fprintf ppf "%a -> %a" pretty_typ a pretty_typ b
     | T_Ref a -> 
         fprintf ppf "%a ref" pretty_typ  a
-    | T_Arr (a,n) -> 
+    | T_Array (a,n) -> 
         fprintf ppf "%a array %d" pretty_typ a (n)
     | T_Id str ->
         fprintf ppf "Cid %s" (str)

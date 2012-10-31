@@ -79,7 +79,7 @@ and ast_pattom =
 and ast_def =
     | D_Var of (string * typ) list * ast_expr
     | D_Mut of (string * typ) 
-    | D_Arr of string * typ * ast_expr list
+    | D_Array of string * typ * ast_expr list
 
 and ast_stmt =
     | S_Let of ast_def list
@@ -96,17 +96,17 @@ and typ =
     | T_Notype
     | T_Gives of typ * typ
     | T_Ref of typ
-    | T_Arr of typ * int
+    | T_Array of typ * int
     | T_Id of string
 
 let rec sizeOfType t =
    match t with
    | T_Int            -> 2
    (*| TYPE_byte           -> 1*)
-   | T_Arr (et, sz) -> sz * sizeOfType et
+   | T_Array (et, sz) -> sz * sizeOfType et
    | _                   -> 0
 
 let rec equalType t1 t2 =
    match t1, t2 with
-   | T_Arr (et1, sz1), T_Arr (et2, sz2) -> equalType et1 et2
+   | T_Array (et1, sz1), T_Array (et2, sz2) -> equalType et1 et2
    | _                                            -> t1 = t2

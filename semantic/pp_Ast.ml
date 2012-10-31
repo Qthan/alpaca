@@ -85,15 +85,15 @@ and ast_types =
     | T_Bool
     | T_Float
     | T_Notype
-    | T_Gives of ast_types * ast_types
+    | T_Arrow of ast_types * ast_types
     | T_Ref of ast_types
-    | T_Arr of ast_types * int
+    | T_Array of ast_types * int
     | T_Id of string
 
 and ast_def =
     | D_Var of (string * ast_types) list * ast_expr
     | D_Mut of (string * ast_types) 
-    | D_Arr of string * ast_types * ast_expr list
+    | D_Array of string * ast_types * ast_expr list
 
 and ast_stmt =
     | S_Let of ast_def list
@@ -228,9 +228,9 @@ and pp_types out t = match t with
     | T_Chr             -> fprintf out "chr"
     | T_Bool            -> fprintf out "bool"
     | T_Float           -> fprintf out "float"
-    | T_Gives (t1, t2)  -> fprintf out "gives(%a, %a)" pp_types t1 pp_types t2
+    | T_Arrow (t1, t2)  -> fprintf out "gives(%a, %a)" pp_types t1 pp_types t2
     | T_Ref t           -> fprintf out "ref(%a)" pp_types t
-    | T_Arr (t, d)      -> fprintf out "array[%d] of %a" d pp_types t
+    | T_Array (t, d)      -> fprintf out "array[%d] of %a" d pp_types t
     | T_Id id           -> fprintf out "id(%s)" id
     | T_Notype          -> fprintf out "kalh diaskedash"
 
@@ -242,7 +242,7 @@ and pp_types_list out l = match l with
 and pp_def out t = match t with
     | D_Var (l, e)      -> fprintf out "(%a)=(%a)" pp_par_list l pp_expr e
     | D_Mut (id, t)     -> fprintf out "mutable(%s,%a)" id pp_types t
-    | D_Arr (id, t, l)  -> fprintf out "array(%s,%a,[%a])" id pp_types t pp_expr_list l
+    | D_Array (id, t, l)  -> fprintf out "array(%s,%a,[%a])" id pp_types t pp_expr_list l
 
 and pp_par_list out l = match l with
     | []                -> ()
