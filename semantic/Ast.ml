@@ -186,62 +186,64 @@ and walk_expr exp = match exp with
         let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           match id_entry.entry_info with
             | ENTRY_variable var -> 
-                if (var.variable_type = T_Array ) then T_Int, []
-                else error "Must be array"            
-            | _ -> error "Must be array"
+                begin
+                  match var.variable_type with
+                    | T_Array (_,_) -> (T_Int, [])
+                    | _ -> error "Must be array"; raise Exit;
+                end
+            | _ -> error "Must be array"; raise Exit;
       end
   | E_Ifthenelse (exp1, exp2, exp3)  -> (*Change ifthelse to ifthenelse*)
-      let ty1, cnstr1 = walk_expr exp1 in
-      let ty2, cnstr2 = walk_expr exp2 in
-      let ty3, cnstr3 = walk_expr exp3 in
+      let (ty1, cnstr1) = walk_expr exp1 in
+      let (ty2, cnstr2) = walk_expr exp2 in
+      let (ty3, cnstr3) = walk_expr exp3 in
         ty2,(ty1, T_Bool)::(ty2, ty3)::cnstr1@cnstr2@cnstr3
-  | E_Ifthen (e1, e2)  -> 
-      let ty1, cnstr1 = walk_expr exp1 in
-      let ty2, cnstr2 = walk_expr exp2 in
+  | E_Ifthen (exp1, exp2)  -> 
+      let (ty1, cnstr1) = walk_expr exp1 in
+      let (ty2, cnstr2) = walk_expr exp2 in
         T_Unit, (ty1, T_Bool)::(ty2, T_Unit)::cnstr1@cnstr2
   | E_Id (id, l)      -> 
       begin
         let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           match id_entry.entry_info with
             | ENTRY_function func -> 
-                let walk_params_list param func_param =
+                let rec walk_params_list param func_param =
                   match param, func_param  with
-                    | [], []  -> func.function_result, []
-                    | x::xs, [] -> error "Too many arguments"
+                    | [], []  -> (func.function_result, [])
+                    | x::xs, [] -> error "Too many arguments"; raise Exit;
                     | [], y::ys -> 
                         let tyy = match y.entry_info with
-                          | ENTRY_Parameter par_info -> par_info.parameter_type
-                          | _ -> error "Internal error"
+                          | ENTRY_parameter par_info -> par_info.parameter_type
+                          | _ -> error "Internal error"; raise Exit;
                         in
                         let typ, constr = walk_params_list [] ys in
-                          T_Gives(tyy,typ), constr
+                          (T_Arrow (tyy,typ), constr)
                     | x::xs, y::ys -> 
                         let tyx, constrx = walk_atom x in
                         let tyy = match y.entry_info with
-                          | ENTRY_Parameter par_info -> par_info.parameter_type
-                          | _ -> error "Internal error"
+                          | ENTRY_parameter par_info -> par_info.parameter_type
+                          | _ -> error "Internal error"; raise Exit;
                         in 
                         let typ, cnstr = walk_params_list xs ys in
-                          typ, (tyx,tyy)::cnstr
+                          (typ, (tyx,tyy)::cnstr)
                 in
                   walk_params_list l (func.function_paramlist) 
-            | _ -> error "Not a function" 
+            | _ -> error "Not a function"; raise Exit;
       end
   (*  TODO | E_Cid (id, l)     -> () ****)
   | E_Match (e, l)    -> 
       begin 
-        let (constr,typ) = walk_expr e in
+        let (typ,cnstr) = walk_expr e in
           walk_clause_list l
       end
-  | E_New       ty1  ->
-      T_Ref ty1            (*Must not be array - need to do that*)
+  | E_New ty1         ->
+      (T_Ref ty1, [])           (*Must not be array - need to do that*)
   | E_Letin (l, e)    -> 
-      begin
         openScope();
         walk_stmt l;
-        let (constr,typ) = walk_expr e in
-          closeScope()
-      end
+        let (typ,cnstr) = walk_expr e in
+          closeScope();
+          (T_Notype,[])         (*Shouldn't return unit..*)
   | E_Atom a          -> walk_atom a
 
 and walk_atom_list t = match t with
@@ -260,14 +262,15 @@ and walk_expr_list t = match t with
 and walk_atom t = match t with 
   | A_Num n           -> T_Int, []
   | A_Dec f           -> T_Float, []
-  | A_Chr c           -> T_Chr,  []
-  | A_Str str         -> T_Array(T_Chr,1), []
+  | A_Chr c           -> T_Char,  []
+  | A_Str str         -> T_Array(T_Char,1), []
   | A_Bool b          -> T_Bool, []
   (*  | A_Const con       -> TODO *)
   | A_Var v           -> 
       begin
         let s1 = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in 
-          match s1.entry_info with 
+          match s1.entry_info with
+            | ENTRY_none | ENTRY_temporary _ -> error "Internal error\n"; raise Exit; 
             | ENTRY_variable var -> var.variable_type, []
             | ENTRY_function f ->
                 let rec aux param_list =
@@ -275,12 +278,12 @@ and walk_atom t = match t with
                     | [] -> f.function_result
                     | (x::xs) ->
                         let tyx = match x.entry_info with
-                          | ENTRY_Parameter par_info -> par_info.parameter_type
-                          | _ -> error "Internal error\n"
+                          | ENTRY_parameter par_info -> par_info.parameter_type
+                          | _ -> error "Internal error\n"; raise Exit;
                         in
-                          T_Gives(tyx,aux xs)
+                          T_Arrow(tyx,aux xs)
                 in
-                  ((aux f.param_list), [])
+                  ((aux f.function_paramlist), [])
             | ENTRY_parameter par -> par.parameter_type, []
       end
   | A_Par             -> T_Unit, []
@@ -288,8 +291,8 @@ and walk_atom t = match t with
       begin 
         let tya, constra = walk_atom a in
           match tya with 
-            | T_Ref(ty) -> ty, constra
-            | _ -> error "Must be a reference\n"
+            | T_Ref ty -> (ty, constra)
+            | _ -> error "Must be a reference\n"; raise Exit;
       end
   | A_Array (a, b)    -> 
       let s1 = lookupEntry (id_make a) LOOKUP_ALL_SCOPES true in
@@ -303,15 +306,15 @@ and walk_atom t = match t with
                           let rec walk_array_expr expr_list n acc =
                             match expr_list,n with
                               | [],0 -> acc
-                              | [],_ | (x::xs), 0 -> error "array dimensions are %d\n" dim; raise Exit;
+                              | [],_ | _, 0 -> error "array dimensions are %d\n" dim; raise Exit;
                               | (x::xs), n -> 
                                   let tyx, constrx = walk_expr x in 
                                     walk_array_expr xs (n-1) ((tyx,T_Int)::constrx@acc)
                           in
                             T_Ref(typ), walk_array_expr b dim []
-                      | _ -> error "%s must be an array\n" id; raise Exit;
+                      | _ -> error "must be an array\n"; raise Exit; (*What's wrong with pretty print..*)
                   end
-            | _ -> error "%s must be an array\n" id; raise Exit;
+            | _ -> error "must be an array\n"; raise Exit;
         end
   | A_Expr a          -> walk_expr a
 
