@@ -162,7 +162,7 @@ and walk_expr exp = match exp with
                 T_Float, (ty1, T_Float)::cnstr1
           | U_Del         -> 
               let ty1, cnstr1 = walk_expr exp1 in
-                T_Unit, (ty1, T_Ref)::cnstr1
+                T_Unit, (ty1, T_Ref (T_Notype))::cnstr1   (*argument for T_Ref constructor??*)
           | U_Not         -> 
               let ty1, cnstr1 = walk_expr exp1 in
                 T_Bool, (ty1, T_Bool)::cnstr1
@@ -171,7 +171,7 @@ and walk_expr exp = match exp with
   | E_While (exp1, exp2)    -> 
       let ty1, cnstr1 = walk_expr exp1 in
       let ty2, cnstr2 = walk_expr exp2 in
-        T_Unit, (ty1, T_Bool)::(ty2, T_Unit)::cnstr1@cnsrt2
+        T_Unit, (ty1, T_Bool)::(ty2, T_Unit)::cnstr1@cnstr2
   | E_For (id, exp1, cnt, exp2, exp3) ->
       openScope();
       let i = newVariable (id_make id) T_Int true in
@@ -183,7 +183,7 @@ and walk_expr exp = match exp with
           T_Unit, (ty1, T_Int)::(ty2, T_Int)::(ty3, T_Unit)::cnstr1@cnstr2@cnstr3                             
   | E_Dim (a, id)      ->
       begin
-        let idEntry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
+        let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           match id_entry.entry_info with
             | ENTRY_variable var -> 
                 if (var.variable_type = T_Array ) then T_Int, []
