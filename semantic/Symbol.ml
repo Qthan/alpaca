@@ -237,8 +237,8 @@ let newParameter id typ mode f err =
                   end;
                   p
               | _ ->
-                  internal "I found a parameter that is not a parameter!";
-                  raise Exit
+                  internal "I found a parameter that is not a parameter!"
+                  (* raise Exit *)
             end
           | [] ->
               error "More parameters than expected in redeclaration \
@@ -246,12 +246,12 @@ let newParameter id typ mode f err =
               raise Exit
         end
       | PARDEF_COMPLETE ->
-          internal "Cannot add a parameter to an already defined function";
-          raise Exit
+          internal "Cannot add a parameter to an already defined function"
+          (* raise Exit *)
     end
   | _ ->
-      internal "Cannot add a parameter to a non-function";
-      raise Exit
+      internal "Cannot add a parameter to a non-function"
+      (* raise Exit *)
 
 let newTemporary typ =
   let id = id_make ("$" ^ string_of_int !tempNumber) in
@@ -313,3 +313,4 @@ let getType entry = match entry.entry_info with
   | ENTRY_function func_info -> func_info.function_result
   | ENTRY_variable var -> var.variable_type
   | _ -> internal "not a function or var"
+         (* raise Exit *)

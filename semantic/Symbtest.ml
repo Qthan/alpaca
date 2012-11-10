@@ -16,6 +16,8 @@ let rec pretty_typ ppf typ =
         fprintf ppf "char"
     | T_Bool ->
         fprintf ppf "bool"
+    | T_Str ->
+        fprintf ppf "string"
     | T_Float ->
         fprintf ppf "float"
     | T_Notype ->
@@ -28,6 +30,8 @@ let rec pretty_typ ppf typ =
         fprintf ppf "%a array %d" pretty_typ a (n)
     | T_Id str ->
         fprintf ppf "Cid %s" (str)
+    | T_Alpha a ->
+        fprintf ppf "papi%d" a
 
 let pretty_mode ppf mode =
   match mode with
@@ -50,7 +54,7 @@ let printSymbolTable () =
                   fprintf ppf "<none>"
               | ENTRY_variable inf ->
                   if show_offsets then
-                    fprintf ppf "[%d]" inf.variable_offset
+                    fprintf ppf "[%d] :%a" inf.variable_offset pretty_typ inf.variable_type
               | ENTRY_function inf ->
                   let param ppf e =
                     match e.entry_info with

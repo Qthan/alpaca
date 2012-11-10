@@ -1,12 +1,6 @@
-(*
-let b = 1
-and a = 2
-let a = b
-and  b = a
-*)
 let rec even d =
  if d = 0 then true
   else odd (d-1)
 and odd d =
-   if d = 0 then false
+ if d = 0 then false
     else even (d-1)

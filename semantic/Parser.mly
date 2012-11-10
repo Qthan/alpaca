@@ -191,11 +191,11 @@ typeplus:
 types:
             | T_UNIT                                                    { T_Unit }
             | T_INTST                                                   { T_Int }
-            | T_CHAR                                                    { T_Chr }
+            | T_CHAR                                                    { T_Char }
             | T_BOOL                                                    { T_Bool }
             | T_FLOATST                                                 { T_Float }
             | T_LPAR types T_RPAR                                       { $2 }
-            | types T_GIVES types                                       { T_Gives ($1, $3) }
+            | types T_GIVES types                                       { T_Arrow ($1, $3) }
             | types T_REF                                               { T_Ref ($1) }
             | T_ARRAY T_OF types %prec ARR                              { T_Array ($3, 0) }
             | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                     
