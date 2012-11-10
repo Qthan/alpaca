@@ -5,7 +5,7 @@ open Types
 open Format
 open Symbtest
 open Error
-
+open Typeinf
 
 let rec walk_program ls =
   initSymbolTable 256;
@@ -22,8 +22,10 @@ and walk_stmt_list ls = match ls with
 
 and walk_stmt t = match t with
   | S_Let  l          -> walk_def_list l
-  | S_Rec l           -> walk_recdef_list l
-  | S_Type l          -> (*walk_typedef_list l*)()
+  | S_Rec l           -> 
+      let cnstr = walk_recdef_list l in
+        unify constr
+  | S_Type l          -> walk_expr() (*walk_typedef_list l*)
 
 and walk_def_list t = match t with
   | []                -> ()
@@ -31,43 +33,46 @@ and walk_def_list t = match t with
       walk_def h ;
       walk_def_list t;
 
-and walk_recdef_list t = match t with
-  | []                -> ()
-  | h::t              ->  
+and walk_recdef_list t  = match t with
+  | []                -> []
+  | h::t              ->
       walk_recdef_f h;
-      walk_recdef_list t;
-      walk_recdef h 
+      let cntr = walk_recdef_list t in
+      (walk_recdef h)@cntr  
+      
 
 and walk_def t = match t with
-  | D_Var (l, e)      -> 
-      begin 
+  | D_Var (l, e)      ->
+      begin
         match l with
           | []            -> internal "Definition cannot be empty\n";
-          | (id, ty)::[]  -> 
-              let p = newVariable (id_make id) ty true in (*probably needs newscope*)
-                (* printState "Before opening" "After opening" (openScope()); *)
-                ignore p;
-                printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
-                printState "Before opening" "After opening" (hideScope !currentScope) (true);
+          | (id, ty)::[]  ->
+                let new_ty = refresh ty in
+                (*printState "Before hiding" "After hiding" (hideScope !currentScope) (true); --probably not needed *)
                 let (typ, constr) = walk_expr e in
-                  printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
+                let solved_type = unify ((new_ty,typ) :: constr) in
+                let p = newVariable (id_make id) new_typ true in
+                  ignore p;
+                  (*printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false); --probably not needed *)
           | (id, ty)::tl  ->
               let p = newFunction (id_make id) true in 
                 (* printState "Before opening" "After opening" (openScope()); *)
                 printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                 printState "Before opening" "After opening" (openScope) ();
                 walk_par_list tl p;
-                endFunctionHeader p ty;
+                let new_ty = reshresh ty in
+                endFunctionHeader p new_ty;
                 (* printState "Before opening" "After opening" (openScope) (); *)
                 (* show_par_to_expr tl; *)
-                let (typ, constr) = walk_expr e in
+                let (typ, constr) = walk_expr e in 
+                let solved_type = unify ((new_ty,typ) :: constr)
                   printState "Before closing" "Afterclosing" (closeScope) ();
                   printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
       end
-  | D_Mut (id, t) -> 
+  | D_Mut (id, t) ->
       let p = newVariable (id_make id) t true in
         ignore p;
-  | D_Array (id, t, l) -> 
+  | D_Array (id, t, l) ->
       let p = newVariable (id_make id) (T_Array (t, List.length l)) true in
         ignore p;
         printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
@@ -79,12 +84,15 @@ and walk_recdef_f t = match t with
       begin 
         match l with
           | [] -> printf "too many problems\n";
-          | (id, ty)::[]  -> 
-              let p = newVariable (id_make id) ty true in
+          | (id, ty)::[]  ->
+              let new_ty = refresh ty in
+              let p = newVariable (id_make id) new_ty true in
                 ignore p;
           | (id, ty)::tl  -> 
+              let new_ty = refresh ty in
               let p = newFunction (id_make id) true in
-                forwardFunction p;
+                setType p new_ty;
+                forwardFunction p
       end
   | D_Mut (id, t)     -> error "too many problems\n";
   | D_Array (id, t, l)  -> error "too many problems\n";
@@ -98,13 +106,16 @@ and walk_recdef t = match t with
               printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
               let (typ, constr) = walk_expr e in 
                 printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
+                ((getType ( lookupEntry (id_make id) LOOKUP_ALL_SCOPES true), typ) :: constr)
           | (id, ty)::tl  -> 
               let p = newFunction (id_make id) true in 
                 printState "Before opening" "After opening" (openScope) ();
                 walk_par_list tl p;
-                endFunctionHeader p ty;
+                let new_ty = getType p in
+                endFunctionHeader p new_ty;
                 let (typ, constr) = walk_expr e in
                   printState "Before closing" "Afterclosing" (closeScope) ();
+                 ((new_ty, typ) :: constr)
       end
   | D_Mut (id, t)     -> error "too many problems\n";
   | D_Array (id, t, l)  -> error "too many problems\n";
@@ -112,7 +123,8 @@ and walk_recdef t = match t with
 and walk_par_list l p = match l with
   | []                -> ()
   | (hid,ht)::tl      -> 
-      let f = newParameter (id_make hid) ht PASS_BY_VALUE p true in
+      let new_ty = refresh ht in
+      let f = newParameter (id_make hid) new_ty PASS_BY_VALUE p true in
         begin
           ignore f;
           walk_par_list tl p

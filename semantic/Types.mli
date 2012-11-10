@@ -85,5 +85,6 @@ and typ =
   | T_Ref of typ
   | T_Array of typ * int
   | T_Id of string
+  | T_Alpha of int
 val sizeOfType : typ -> int
 val equalType : typ -> typ -> bool

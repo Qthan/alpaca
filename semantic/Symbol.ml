@@ -26,8 +26,8 @@ type scope = {
 }
 
 and variable_info = {
-  variable_type   : Types.typ;
-  variable_offset : int
+  mutable variable_type   : Types.typ;
+  variable_offset         : int
 }
 
 and function_info = {
@@ -40,7 +40,7 @@ and function_info = {
 }
 
 and parameter_info = {
-  parameter_type           : Types.typ;
+  mutable parameter_type   : Types.typ;
   mutable parameter_offset : int;
   parameter_mode           : pass_mode
 }
@@ -304,3 +304,12 @@ let endFunctionHeader e typ =
       inf.function_pstatus <- PARDEF_COMPLETE
   | _ ->
       internal "Cannot end parameters in a non-function"
+
+let setType entry typ = match entry.entry_info with
+  | ENTRY_function func_info -> func_info.function_result <- typ
+  | _ -> ()
+
+let getType entry = match entry.entry_info with
+  | ENTRY_function func_info -> func_info.function_result
+  | ENTRY_variable var -> var.variable_type
+  | _ -> internal "not a function or var"
