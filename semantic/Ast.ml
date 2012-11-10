@@ -237,7 +237,7 @@ and walk_expr exp = match exp with
                           | _ -> error "Internal error"; raise Exit;
                         in 
                         let typ, cnstr = walk_params_list xs ys in
-                          (typ, (tyx,tyy)::cnstr)
+                          (typ, (tyx,tyy)::cnstr)(* ¿Should return the structure? typ → typ*)
                 in
                   walk_params_list l (func.function_paramlist) 
             | _ -> error "Not a function"; raise Exit;
@@ -373,7 +373,6 @@ and walk_pattom_list t = match t with
   | h::t              -> 
       walk_pattom h;
       walk_pattom_list t
-
 
 (*
  check_types t = match t with
