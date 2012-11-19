@@ -1,13 +1,13 @@
 (*
 
 
-             ____________________________________,--.__
-  --    ,--""                                   '\     '\
-       /  "                                       \      '\
-     ,/                                           '\     |
-     | "   "   "                                    '\,  /
-     |           " , =______________________________,--""
-   - |  "    "    /"/'  
+             ________________________________________________,--.__
+  --    ,--""                                               '\     '\
+       /  "                                                   \     '\
+     ,/                                                       '\     |
+     | "   "   "                                                '\,  /
+     |           " , =__________________________________________,--""
+   - |  "    "    /"/'    
      \  "      ",/ /    
       \   ",",_/,-'       
    -- -'-;.__:-'
@@ -42,8 +42,7 @@ and walk_stmt t = match t with
   | S_Rec l           -> 
       List.iter walk_recdef_names l;      
       let cnstr = walk_recdef_list l in
-        ignore (unify cnstr);
-        ()
+        updateSymbolRec l (unify cnstr);
   | S_Type l          -> () (*walk_typedef_list l*)
 
 and walk_def_list t = match t with
@@ -58,7 +57,6 @@ and walk_recdef_list t  = match t with
       walk_recdef_params h;
       let cntr = walk_recdef_list t in
       (walk_recdef h)@cntr  
-      
 
 and walk_def t = match t with
   | D_Var (l, e)      ->
@@ -69,10 +67,10 @@ and walk_def t = match t with
                 let new_ty = refresh ty in
                 (*printState "Before hiding" "After hiding" (hideScope !currentScope) (true); --probably not needed *)
                 let (typ, constr) = walk_expr e in
-                let solved_type = unify ((new_ty,typ) :: constr) in
                 let p = newVariable (id_make id) new_ty true in
                   ignore p;
-                  (*printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false); --probably not needed *)
+                  updateSymbol [(id,ty)] (unify ((new_ty,typ) :: constr));  
+                  (* printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false); --probably not needed *)
           | (id, ty)::tl  ->
               let p = newFunction (id_make id) true in 
                 (* printState "Before opening" "After opening" (openScope()); *)
@@ -84,7 +82,7 @@ and walk_def t = match t with
                 (* printState "Before opening" "After opening" (openScope) (); *)
                 (* show_par_to_expr tl; *)
                 let (typ, constr) = walk_expr e in 
-                let solved_type = unify ((new_ty,typ) :: constr) in
+                  updateSymbol [(id,ty)] (unify ((new_ty,typ) :: constr)); 
                   printState "Before closing" "Afterclosing" (closeScope) ();
                   printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
       end
