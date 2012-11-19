@@ -281,7 +281,7 @@ and walk_expr exp = match exp with
   (*  TODO | E_Cid (id, l)     -> () ****)
   | E_Match (e, l)    -> 
       begin 
-        let (typ,cnstr) = walk_expr e in
+        let (typ, cnstr) = walk_expr e in
           walk_clause_list l;
           (typ, cnstr)
       end
@@ -290,9 +290,9 @@ and walk_expr exp = match exp with
   | E_Letin (l, e)    -> 
         openScope();
         walk_stmt l;
-        let (typ,cnstr) = walk_expr e in
+        let (typ, cnstr) = walk_expr e in
           closeScope();
-          (T_Notype,[])         (*Shouldn't return unit..*)
+          (typ, cnstr)       
   | E_Atom a          -> walk_atom a
 
 and walk_atom_list t = match t with
