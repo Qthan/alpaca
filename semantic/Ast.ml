@@ -71,9 +71,11 @@ and walk_def t = match t with
                   ignore p;
                   updateSymbol [(id,ty)] (unify ((new_ty,typ) :: constr));  
                   (* printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false); --probably not needed *)
+
           | (id, ty)::tl  ->
               let p = newFunction (id_make id) true in 
                 (* printState "Before opening" "After opening" (openScope()); *)
+                let  prevScope = ref !currentScope in
                 printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                 printState "Before opening" "After opening" (openScope) ();
                 walk_par_list tl p;
@@ -82,9 +84,9 @@ and walk_def t = match t with
                 (* printState "Before opening" "After opening" (openScope) (); *)
                 (* show_par_to_expr tl; *)
                 let (typ, constr) = walk_expr e in 
+                  printState "Before unhiding" "After unhiding" (hideScope !prevScope) (false);
                   updateSymbol [(id,ty)] (unify ((new_ty,typ) :: constr)); 
                   printState "Before closing" "Afterclosing" (closeScope) ();
-                  printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
       end
   | D_Mut (id, t) ->
       let p = newVariable (id_make id) t true in
@@ -281,9 +283,28 @@ and walk_expr exp = match exp with
   (*  TODO | E_Cid (id, l)     -> () ****)
   | E_Match (e, l)    -> 
       begin 
-        let (typ, cnstr) = walk_expr e in
-          walk_clause_list l;
-          (typ, cnstr)
+        let (te,constre) = walk_expr e in
+        let rec create_match_constr xs acc =
+        match xs with
+          | [] -> acc
+          | (tp1, te1, constre1) :: [] when acc = [] -> [(tp1,te)] @ constre1
+          | (tp1, te1, constre1) :: [] -> 
+                begin
+                  match acc with 
+                    | (tp2, tp3) :: (te2, te3) :: _ -> (tp1, tp3) :: (te1, te3) :: acc @ constre1
+                    | _ -> failwith "error on matching\n"
+                end
+          | (tp1, te1, constre1) :: (tp2, te2, constre2) :: t -> 
+                create_match_constr ((tp2, te2, constre2) :: t) ((tp1, tp2) :: (te1, te2) :: acc @ constre1)
+        in
+          let raw_constr = walk_clause_list l in
+          let modified_constr = create_match_constr raw_constr [] in
+          let (final_typ, final_constr) =
+            match modified_constr with
+              | [] -> failwith "error on matching\n"
+              | (tp1, tp2) :: (te1,te2) :: _ -> (te1, (te, tp1) :: modified_constr)
+            in
+          (final_typ, final_constr @ constre)
       end
   | E_New ty1         ->
       (T_Ref ty1, [])           (*Must not be array - need to do that*)
@@ -368,73 +389,56 @@ and walk_atom t = match t with
   | A_Expr a          -> walk_expr a
 
 
-and walk_clause_list t = match t with
-  | []                -> () 
-  | h::t              -> 
-      walk_clause h;
-      walk_clause_list t 
+and walk_clause_list t = 
+  let rec walk_clause_aux l acc =
+      match l with
+        | []     -> acc 
+        | h::t   -> 
+        let constraints = walk_clause h in
+          walk_clause_aux t (constraints :: acc) 
+  in
+    walk_clause_aux t []
 
 and walk_clause t = match t with 
   | Clause(p,e)         -> 
-      walk_pattern p;
-      let (typ, constr) = walk_expr e in 
-        ()
+      openScope(); (* should consider opening only when needed *)
+      let pat_type = walk_pattern p in
+      let (expr_type, expr_constr) = walk_expr e in 
+        closeScope();
+        (pat_type, expr_type, expr_constr)
 
 and walk_pattern p = match p with
   | Pa_Atom a         -> walk_pattom a
-  | Pa_Cid (cid, l)   -> ()(*to be done*)
+  | Pa_Cid (cid, l)   -> T_Notype(*to be done*)
 
 and walk_pattom t = match t with
   | P_Sign(op, num)   ->
       begin
         match op with 
-          | P_Plus        -> ()
-          | P_Minus       -> ()
+          | P_Plus        -> T_Int
+          | P_Minus       -> T_Int
       end
   | P_Fsign(op, num)  ->
       begin
         match op with 
-          | P_Fplus       -> ()
-          | P_Fminus      -> ()
+          | P_Fplus       -> T_Float
+          | P_Fminus      -> T_Float
       end
-  | P_Num n           -> ()
-  | P_Float f         -> ()
-  | P_Chr c           -> ()
-  | P_Bool b          -> ()
-  | P_Id id           -> let s1 = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in ignore s1
-  | P_Cid cid         -> () (*to be done*)
+  | P_Num n           -> T_Int
+  | P_Float f         -> T_Float
+  | P_Chr c           -> T_Char
+  | P_Bool b          -> T_Bool
+  | P_Id id           -> 
+        let new_ty = fresh() in
+        let s1 = newVariable (id_make id) new_ty true in
+            ignore s1;
+            new_ty
+  | P_Cid cid         -> T_Notype (*to be done*)
   | P_Pattern p       -> walk_pattern p
-
+  
 and walk_pattom_list t = match t with
   | []                -> ()
   | h::t              -> 
       walk_pattom h;
       walk_pattom_list t
 
-(*
- check_types t = match t with
- | (A_Num n , A_Num n)     -> true
- | (A_NUM n, A_Var v)      -> 
- begin
- let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in 
- if s1.entry_info.constructor_type = T_Int then true
- else false
- end
- | (A_Var, A_Num)          -> 
- begin
- let s1 = lookupEntry (id_make "con") LOOKUP_CURRENT_SCOPE true in 
- if s1.entry_info.constructor_type = T_Int then true
- else false
- end
- | (A_Dec n , A_Dec n)     -> true
- | (A_Dec n, A_Var v)      -> 
- begin
- let s1 = lookupEntry (id_make v) LOOKUP_CURRENT_SCOPE true in 
- if s1.entry_info.constructor_type = T_Float then true
- else false
- end
- | (A_Var, A_Dec)          -> 
- begin
- let s1 = lookupEntry (id_make "con") LOOKUP_CURRENT_SCOPE true in 
- if s1.entry_info.constructor_type = T_Float then true
- else false *)

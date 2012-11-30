@@ -57,14 +57,20 @@ let updateSymbol func_header solved_types = match func_header with
                 let f_typ = List.assoc f.function_result solved_types in
                   f.function_result <- f_typ;
                   List.iter (fun param_entry -> match param_entry.entry_info with
-                               | ENTRY_parameter param -> 
-                                   let p_typ = List.assoc param.parameter_type solved_types in
-                                     param.parameter_type <- p_typ 
+                               | ENTRY_parameter param ->
+                                  begin
+                                    match (try ( Some List.assoc param.parameter_type solved_types) with Not_found -> None) with
+                                                | None -> ()
+                                                | Some p_typ -> param.parameter_type <- p_typ 
+                                  end
                                | _ -> failwith "Parameter must be a parameter\n"
                   ) f.function_paramlist
-            | ENTRY_variable v ->
-                let v_typ = List.assoc v.variable_type solved_types in
-                  v.variable_type <- v_typ
+            | ENTRY_variable v -> 
+                    begin  
+                       match (try (Some List.assoc v.variable_type solved_types) with Not_found -> None) with
+                        | None -> ()
+                        | Some v_typ ->  v.variable_type <- v_typ
+                    end
             | _ -> failwith "Must be variable or function\n"
         end
 
@@ -73,3 +79,4 @@ let rec updateSymbolRec func_to_change solved_types = match func_to_change with
   | (D_Var (fh, _))::t -> updateSymbol fh solved_types;
                           updateSymbolRec t solved_types
   | _ -> failwith "Must be D_Var\n"
+
