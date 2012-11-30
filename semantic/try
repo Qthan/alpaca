@@ -1,6 +1,6 @@
-let rec even d =
- if d = 0 then true
-  else odd (d-1)
-and odd d =
- if d = 0 then false
-    else even (d-1)
+let rec even e =
+ if e = 0 then true
+  else odd (e-1)
+and odd o =
+ if o = 0 then false
+    else even (o-1)
