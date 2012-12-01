@@ -14,7 +14,7 @@ val walk_expr_list : Types.ast_expr list -> unit
 val walk_atom : Types.ast_atom -> Types.typ * (Types.typ * Types.typ) list
 val walk_clause_list :
   Types.ast_clause list ->
-  (Types.typ * Types.typ * (Types.typ * Types.typ) list) list
+  Types.typ * Types.typ * (Types.typ * Types.typ) list
 val walk_clause :
   Types.ast_clause -> Types.typ * Types.typ * (Types.typ * Types.typ) list
 val walk_pattern : Types.ast_pattern -> Types.typ

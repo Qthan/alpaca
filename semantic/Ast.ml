@@ -62,7 +62,7 @@ and walk_def t = match t with
   | D_Var (l, e)      ->
       begin
         match l with
-          | []            -> failwith "Definition cannot be empty\n";
+          | []            -> internal "Definition cannot be empty";
           | (id, ty)::[]  ->
                 let new_ty = refresh ty in
                 (*printState "Before hiding" "After hiding" (hideScope !currentScope) (true); --probably not needed *)
@@ -75,7 +75,6 @@ and walk_def t = match t with
           | (id, ty)::tl  ->
               let p = newFunction (id_make id) true in 
                 (* printState "Before opening" "After opening" (openScope()); *)
-                let  prevScope = ref !currentScope in
                 printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
                 printState "Before opening" "After opening" (openScope) ();
                 walk_par_list tl p;
@@ -84,9 +83,9 @@ and walk_def t = match t with
                 (* printState "Before opening" "After opening" (openScope) (); *)
                 (* show_par_to_expr tl; *)
                 let (typ, constr) = walk_expr e in 
-                  printState "Before unhiding" "After unhiding" (hideScope !prevScope) (false);
-                  updateSymbol [(id,ty)] (unify ((new_ty,typ) :: constr)); 
                   printState "Before closing" "Afterclosing" (closeScope) ();
+                  printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
+                  updateSymbol [(id,ty)] (unify ((new_ty,typ) :: constr)); 
       end
   | D_Mut (id, t) ->
       let p = newVariable (id_make id) t true in
@@ -99,10 +98,10 @@ and walk_def t = match t with
         printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false)
 
 and walk_recdef_names t = match t with
-  | D_Var (l, e)      ->
+  | D_Var (l, e)       ->
       begin 
         match l with
-          | [] -> printf "too many problems\n";
+          | [] -> internal "Definition cannot be empty";
           | (id, ty)::[]  ->
               let new_ty = refresh ty in
               let p = newVariable (id_make id) new_ty true in
@@ -113,8 +112,8 @@ and walk_recdef_names t = match t with
                 setType p new_ty;
                 forwardFunction p
       end
-  | D_Mut (id, t)     -> error "too many problems\n";
-  | D_Array (id, t, l)  -> error "too many problems\n";
+  | D_Mut (id, t)       -> error "Mutable cannot be rec\n";
+  | D_Array (id, t, l)  -> error "Array cannot be rec\n";
 
 and walk_recdef_params t = match t with
   | D_Var(l, e)  ->
@@ -130,20 +129,20 @@ and walk_recdef_params t = match t with
               printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
               endFunctionHeader p new_ty;
       end
-  | D_Mut (id, t)     -> error "too many problems\n";
-  | D_Array (id, t, l)  -> error "too many problems\n";
-   
+  | D_Mut (id, t)       -> error "Mutable cannot be rec\n";
+  | D_Array (id, t, l)  -> error "Array cannot be rec\n";   
+
 and walk_recdef t = match t with
   | D_Var (l, e)      -> 
       begin 
         match l with
           | []            -> error "too many problems\n"; raise Exit
-          | (id, ty)::[]  -> 
+          | (id, ty) :: []  -> 
               printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
               let (typ, constr) = walk_expr e in 
                 printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
                 ((getType ( lookupEntry (id_make id) LOOKUP_ALL_SCOPES true), typ) :: constr)
-          | (id, ty)::tl  -> 
+          | (id, ty) :: tl  -> 
               (* let p = newFunction (id_make id) true in *) 
               (*   printState "Before opening" "After opening" (openScope) (); *)
               (*   walk_par_list tl p; *)
@@ -155,8 +154,8 @@ and walk_recdef t = match t with
                   printState "Before closing" "Afterclosing" (closeScope) ();
                  ((new_ty, typ) :: constr)
       end
-  | D_Mut (id, t)     -> error "too many problems\n"; raise Exit
-  | D_Array (id, t, l)  -> error "too many problems\n"; raise Exit
+  | D_Mut (id, t)       -> error "Mutable cannot be rec\n"; raise Exit;
+  | D_Array (id, t, l)  -> error "Array cannot be rec\n";   raise Exit;
 
 and walk_par_list l p = match l with
   | []                -> ()
@@ -175,23 +174,23 @@ and walk_expr exp = match exp with
           | Plus | Minus | Times | Div | Mod  -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
-                T_Int, (ty1,T_Int)::(ty2,T_Int)::cnstr1@cnstr2
+                T_Int, (ty1,T_Int) :: (ty2,T_Int) :: cnstr1@cnstr2
           | Fplus | Fminus | Ftimes | Fdiv | Power  -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
-                T_Float, (ty1,T_Float)::(ty2,T_Float)::cnstr1@cnstr2
+                T_Float, (ty1,T_Float) :: (ty2,T_Float) :: cnstr1@cnstr2
           | Seq | Nseq | Eq | Neq       -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
-                T_Bool, (ty1, ty2)::cnstr1@cnstr2 (*Must not be array or function - need to do that*)
+                T_Bool, (ty1, ty2 ) :: cnstr1 @ cnstr2 (*Must not be array or function - need to do that*)
           | L | Le | G  | Ge  -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
-                T_Bool, (ty1,T_Int)::(ty1, ty2)::cnstr1@cnstr2 (*ty1 = T_Int | T_Float | T_Char, using T_Int for the moment, type typ_inf = Ord | Typ of typ or [typ] for all*)
+                T_Bool, (ty1,T_Int) :: (ty1, ty2) :: cnstr1 @ cnstr2 (*ty1 = T_Int | T_Float | T_Char, using T_Int for the moment, type typ_inf = Ord | Typ of typ or [typ] for all*)
           | And | Or      -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
-                T_Bool, (ty1,T_Bool)::(ty2, T_Bool)::cnstr1@cnstr2
+                T_Bool, (ty1,T_Bool) :: (ty2, T_Bool) :: cnstr1 @ cnstr2
           | Semicolon     -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
@@ -199,29 +198,29 @@ and walk_expr exp = match exp with
           | Assign        -> 
               let ty1, cnstr1 = walk_expr exp1 in
               let ty2, cnstr2 = walk_expr exp2 in
-                ty1, (ty1,T_Ref ty2)::cnstr1@cnstr2
+                ty1, (ty1,T_Ref ty2) :: cnstr1 @ cnstr2
       end
   | E_Unop (op, exp1)     ->
       begin
         match op with
           | U_Plus | U_Minus -> 
               let ty1, cnstr1 = walk_expr exp1 in 
-                T_Int, (ty1,T_Int)::cnstr1
+                T_Int, (ty1, T_Int) :: cnstr1
           | U_Fplus | U_Fminus  -> 
               let ty1, cnstr1 = walk_expr exp1 in 
-                T_Float, (ty1, T_Float)::cnstr1
+                T_Float, (ty1, T_Float) :: cnstr1
           | U_Del         -> 
               let ty1, cnstr1 = walk_expr exp1 in
-                T_Unit, (ty1, T_Ref (T_Notype))::cnstr1   (*argument for T_Ref constructor??*)
+                T_Unit, (ty1, T_Ref (T_Notype)) :: cnstr1   (*argument for T_Ref constructor??*)
           | U_Not         -> 
               let ty1, cnstr1 = walk_expr exp1 in
-                T_Bool, (ty1, T_Bool)::cnstr1
+                T_Bool, (ty1, T_Bool) :: cnstr1
       end
   | E_Block exp1    -> walk_expr exp1
   | E_While (exp1, exp2)    -> 
       let ty1, cnstr1 = walk_expr exp1 in
       let ty2, cnstr2 = walk_expr exp2 in
-        T_Unit, (ty1, T_Bool)::(ty2, T_Unit)::cnstr1@cnstr2
+        T_Unit, (ty1, T_Bool) :: (ty2, T_Unit) :: cnstr1 @ cnstr2
   | E_For (id, exp1, cnt, exp2, exp3) ->
       openScope();
       let i = newVariable (id_make id) T_Int true in
@@ -230,7 +229,7 @@ and walk_expr exp = match exp with
         let ty2, cnstr2 = walk_expr exp2 in
         let ty3, cnstr3 = walk_expr exp3 in
           closeScope();
-          T_Unit, (ty1, T_Int)::(ty2, T_Int)::(ty3, T_Unit)::cnstr1@cnstr2@cnstr3                             
+          T_Unit, (ty1, T_Int) :: (ty2, T_Int) :: (ty3, T_Unit) :: cnstr1 @ cnstr2 @ cnstr3                             
   | E_Dim (a, id)      ->
       begin
         let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
@@ -247,11 +246,11 @@ and walk_expr exp = match exp with
       let (ty1, cnstr1) = walk_expr exp1 in
       let (ty2, cnstr2) = walk_expr exp2 in
       let (ty3, cnstr3) = walk_expr exp3 in
-        ty2,(ty1, T_Bool)::(ty2, ty3)::cnstr1@cnstr2@cnstr3
+        ty2, (ty1, T_Bool) :: (ty2, ty3) :: cnstr1 @ cnstr2 @ cnstr3
   | E_Ifthen (exp1, exp2)  -> 
       let (ty1, cnstr1) = walk_expr exp1 in
       let (ty2, cnstr2) = walk_expr exp2 in
-        T_Unit, (ty1, T_Bool)::(ty2, T_Unit)::cnstr1@cnstr2
+        T_Unit, (ty1, T_Bool) :: (ty2, T_Unit) :: cnstr1 @ cnstr2
   | E_Id (id, l)      -> 
       begin
         let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
@@ -260,51 +259,32 @@ and walk_expr exp = match exp with
                 let rec walk_params_list param func_param =
                   match param, func_param  with
                     | [], []  -> (func.function_result, [])
-                    | x::xs, [] -> error "Too many arguments"; raise Exit;
-                    | [], y::ys -> 
+                    | x :: xs, [] -> error "Too many arguments"; raise Exit;
+                    | [], y :: ys -> 
                         let tyy = match y.entry_info with
                           | ENTRY_parameter par_info -> par_info.parameter_type
-                          | _ -> error "Internal error"; raise Exit;
+                          | _ -> internal "Not a parameter"; 
                         in
                         let typ, constr = walk_params_list [] ys in
                           (T_Arrow (tyy,typ), constr)
-                    | x::xs, y::ys -> 
+                    | x :: xs, y :: ys -> 
                         let tyx, constrx = walk_atom x in
                         let tyy = match y.entry_info with
                           | ENTRY_parameter par_info -> par_info.parameter_type
-                          | _ -> error "Internal error"; raise Exit;
+                          | _ -> internal "Not a parameter";
                         in 
                         let typ, cnstr = walk_params_list xs ys in
-                          (typ, (tyx,tyy)::cnstr)(* ¿Should return the structure? typ → typ*)
+                          (typ, (tyx,tyy)::cnstr)
                 in
                   walk_params_list l (func.function_paramlist) 
-            | _ -> error "Not a function"; raise Exit;
+            | _ -> error "This expretion %s is not a function" id; raise Exit;
       end
   (*  TODO | E_Cid (id, l)     -> () ****)
-  | E_Match (e, l)    -> 
+  | E_Match (expr, l)    -> 
       begin 
-        let (te,constre) = walk_expr e in
-        let rec create_match_constr xs acc =
-        match xs with
-          | [] -> acc
-          | (tp1, te1, constre1) :: [] when acc = [] -> [(tp1,te)] @ constre1
-          | (tp1, te1, constre1) :: [] -> 
-                begin
-                  match acc with 
-                    | (tp2, tp3) :: (te2, te3) :: _ -> (tp1, tp3) :: (te1, te3) :: acc @ constre1
-                    | _ -> failwith "error on matching\n"
-                end
-          | (tp1, te1, constre1) :: (tp2, te2, constre2) :: t -> 
-                create_match_constr ((tp2, te2, constre2) :: t) ((tp1, tp2) :: (te1, te2) :: acc @ constre1)
-        in
-          let raw_constr = walk_clause_list l in
-          let modified_constr = create_match_constr raw_constr [] in
-          let (final_typ, final_constr) =
-            match modified_constr with
-              | [] -> failwith "error on matching\n"
-              | (tp1, tp2) :: (te1,te2) :: _ -> (te1, (te, tp1) :: modified_constr)
-            in
-          (final_typ, final_constr @ constre)
+        let (expr_typ, expr_constr) = walk_expr expr in
+          let (result_typ, pat_typ, result_constr) = walk_clause_list l in
+            (result_typ, (expr_typ, pat_typ) :: expr_constr @ result_constr)
       end
   | E_New ty1         ->
       (T_Ref ty1, [])           (*Must not be array - need to do that*)
@@ -340,7 +320,7 @@ and walk_atom t = match t with
       begin
         let s1 = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in 
           match s1.entry_info with
-            | ENTRY_none | ENTRY_temporary _ -> error "Internal error\n"; raise Exit; 
+            | ENTRY_none | ENTRY_temporary _ -> internal "Must be a variable, param or function";
             | ENTRY_variable var -> var.variable_type, []
             | ENTRY_function f ->
                 let rec aux param_list =
@@ -349,7 +329,7 @@ and walk_atom t = match t with
                     | (x::xs) ->
                         let tyx = match x.entry_info with
                           | ENTRY_parameter par_info -> par_info.parameter_type
-                          | _ -> error "Internal error\n"; raise Exit;
+                          | _ -> internal "Must be variable";
                         in
                           T_Arrow(tyx,aux xs)
                 in
@@ -379,7 +359,7 @@ and walk_atom t = match t with
                               | [],_ | _, 0 -> error "array dimensions are %d\n" dim; raise Exit;
                               | (x::xs), n -> 
                                   let tyx, constrx = walk_expr x in 
-                                    walk_array_expr xs (n-1) ((tyx,T_Int)::constrx@acc)
+                                    walk_array_expr xs (n-1) ((tyx, T_Int) :: constrx @ acc)
                           in
                             T_Ref(typ), walk_array_expr b dim []
                       | _ -> error "must be an array\n"; raise Exit; (*What's wrong with pretty print..*)
@@ -389,15 +369,22 @@ and walk_atom t = match t with
   | A_Expr a          -> walk_expr a
 
 
-and walk_clause_list t = 
-  let rec walk_clause_aux l acc =
+
+(*acc = [(tp1,te1,constr1),(tp2,te2,constr2),(tp3,te3,constr3)...]
+ * (tp1,te) :: [(tp1,tp2),(tp2,tp3),(tp3,...),(te1,te2),(te2,te3),(te3,..)]@constr1@constr2...@constre
+ *)
+and walk_clause_list lst =   (* Returns ( type , pattern_type, constraints)*)
+  let rec walk_clause_aux l prev_clause acc =
+      let (prev_pat_typ, prev_expr_typ, prev_expr_constr) = prev_clause in
       match l with
-        | []     -> acc 
+        | []     -> (prev_expr_typ, prev_pat_typ , prev_expr_constr @ acc)  
         | h::t   -> 
-        let constraints = walk_clause h in
-          walk_clause_aux t (constraints :: acc) 
+        let (pat_typ, expr_typ, expr_constr) = walk_clause h in
+          walk_clause_aux t (pat_typ, expr_typ, expr_constr) ((pat_typ, prev_pat_typ) :: (expr_typ, prev_expr_typ) :: acc @ prev_expr_constr) 
   in
-    walk_clause_aux t []
+    match lst with 
+      | []   -> internal "Clause list cannot be empty"
+      | h::t -> walk_clause_aux t (walk_clause h) []
 
 and walk_clause t = match t with 
   | Clause(p,e)         -> 
@@ -441,4 +428,3 @@ and walk_pattom_list t = match t with
   | h::t              -> 
       walk_pattom h;
       walk_pattom_list t
-

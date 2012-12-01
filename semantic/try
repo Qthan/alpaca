@@ -1,6 +1,15 @@
-let rec even e =
- if e = 0 then true
-  else odd (e-1)
-and odd o =
- if o = 0 then false
-    else even (o-1)
+let f x = 
+	let y = 1 in 
+		x+y
+
+let isone num=
+	match num with 
+	 1 -> true
+  |  x -> false
+end
+
+let mymatch x y = 
+  match x with
+   2 -> 4
+  |3 -> 5
+end

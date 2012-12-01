@@ -13,3 +13,8 @@
 *.o
 *.obj
 *.a
+Llama
+Parser.output
+.depend
+Parser.ml
+Lexer.ml

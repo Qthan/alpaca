@@ -59,7 +59,7 @@ let updateSymbol func_header solved_types = match func_header with
                   List.iter (fun param_entry -> match param_entry.entry_info with
                                | ENTRY_parameter param ->
                                   begin
-                                    match (try ( Some List.assoc param.parameter_type solved_types) with Not_found -> None) with
+                                    match (try ( Some ( List.assoc param.parameter_type solved_types) ) with Not_found -> None) with
                                                 | None -> ()
                                                 | Some p_typ -> param.parameter_type <- p_typ 
                                   end
@@ -67,7 +67,7 @@ let updateSymbol func_header solved_types = match func_header with
                   ) f.function_paramlist
             | ENTRY_variable v -> 
                     begin  
-                       match (try (Some List.assoc v.variable_type solved_types) with Not_found -> None) with
+                       match (try ( Some ( List.assoc v.variable_type solved_types) ) with Not_found -> None) with
                         | None -> ()
                         | Some v_typ ->  v.variable_type <- v_typ
                     end
@@ -79,4 +79,3 @@ let rec updateSymbolRec func_to_change solved_types = match func_to_change with
   | (D_Var (fh, _))::t -> updateSymbol fh solved_types;
                           updateSymbolRec t solved_types
   | _ -> failwith "Must be D_Var\n"
-
