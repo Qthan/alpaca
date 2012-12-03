@@ -43,7 +43,7 @@ and walk_stmt t = match t with
       List.iter walk_recdef_names l;      
       let cnstr = walk_recdef_list l in
         updateSymbolRec l (unify cnstr);
-  | S_Type l          -> () (*walk_typedef_list l*)
+  | S_Type l          -> walk_typedef_list l
 
 and walk_def_list t = match t with
   | []                -> ()
@@ -167,6 +167,30 @@ and walk_par_list l p = match l with
           walk_par_list tl p
         end
 
+(* Walks user defined types and initially registers the types' names into the
+ * symbol table (used for mutually recursive defined types). Afterwards it
+ * walks the constructors list and if they are well defined proceeds with
+ * registering them as well. *)
+
+ and walk_typedef_list l = match l with
+  | [] -> internal "Type definition cannot be empty"
+  | l -> 
+      List.iter (fun (id, _) -> ignore (newUdt (id_make id) true)) l; (* Adds user defined types names to symbol table *)
+      let walk_constructor tid cid types_list = 
+        List.iter (function 
+                     | T_Id id -> let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
+                         begin
+                           match entry.entry_info with
+                             | ENTRY_udt -> ()
+                             | _ -> error "Constructor %s parameters must be of a valid type\n" cid; raise Exit;
+                         end
+                     | _ -> ()) types_list;
+        let c = newConstructor (id_make cid) (T_Id tid) types_list true in
+          ignore c;
+      in
+      List.iter (fun (id, constructors_list) -> 
+                   List.iter (fun (cid,types_list) -> walk_constructor id cid types_list) constructors_list) l
+
 and walk_expr exp = match exp with 
   | E_Binop (exp1, op, exp2) -> 
       begin 
@@ -274,12 +298,25 @@ and walk_expr exp = match exp with
                           | _ -> internal "Not a parameter";
                         in 
                         let typ, cnstr = walk_params_list xs ys in
-                          (typ, (tyx,tyy)::cnstr)
+                          (typ, (tyx,tyy) :: constrx @ cnstr)
                 in
                   walk_params_list l (func.function_paramlist) 
             | _ -> error "This expretion %s is not a function" id; raise Exit;
       end
-  (*  TODO | E_Cid (id, l)     -> () ****)
+  | E_Cid (id, l)     -> 
+      let cid_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
+        begin
+          match cid_entry.entry_info with
+          | ENTRY_constructor constructor_info ->
+              let constraints = 
+                try (List.fold_left2 (fun acc atom typ ->
+                                        let (atom_typ, atom_constr) = walk_atom atom in
+                                          (atom_typ, typ) :: atom_constr @ acc ) [] l (constructor_info.constructor_paramlist)) 
+                with Invalid_argument _ -> error "invalid number of arguments\n"; raise Exit
+              in
+                (constructor_info.constructor_type, constraints)
+          | _ -> internal "Kaname malakia, expected constructor"
+        end
   | E_Match (expr, l)    -> 
       begin 
         let (expr_typ, expr_constr) = walk_expr expr in
@@ -296,12 +333,6 @@ and walk_expr exp = match exp with
           (typ, cnstr)       
   | E_Atom a          -> walk_atom a
 
-and walk_atom_list t = match t with
-  | []                -> ()
-  | h::t              -> 
-      let (constr,typ) = walk_atom h in
-        walk_atom_list t
-
 and walk_expr_list t = match t with
   | []                -> ()
   | h::t              -> 
@@ -315,12 +346,18 @@ and walk_atom t = match t with
   | A_Chr c           -> T_Char,  []
   | A_Str str         -> T_Array(T_Char,1), []
   | A_Bool b          -> T_Bool, []
-  (*  | A_Const con       -> TODO *)
+  | A_Cid cid         -> 
+      let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
+        begin
+          match cid_entry.entry_info with
+            | ENTRY_constructor constructor_info -> (constructor_info.constructor_type, [])
+            | _ -> internal "internal error"
+        end
   | A_Var v           -> 
       begin
         let s1 = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in 
           match s1.entry_info with
-            | ENTRY_none | ENTRY_temporary _ -> internal "Must be a variable, param or function";
+            | ENTRY_none | ENTRY_temporary _ | ENTRY_udt | ENTRY_constructor _ -> internal "Must be a variable, param or function";
             | ENTRY_variable var -> var.variable_type, []
             | ENTRY_function f ->
                 let rec aux param_list =
@@ -373,58 +410,71 @@ and walk_atom t = match t with
 (*acc = [(tp1,te1,constr1),(tp2,te2,constr2),(tp3,te3,constr3)...]
  * (tp1,te) :: [(tp1,tp2),(tp2,tp3),(tp3,...),(te1,te2),(te2,te3),(te3,..)]@constr1@constr2...@constre
  *)
-and walk_clause_list lst =   (* Returns ( type , pattern_type, constraints)*)
+and walk_clause_list lst =   (* Returns ( result_type , pattern_type, constraints)*)
   let rec walk_clause_aux l prev_clause acc =
-      let (prev_pat_typ, prev_expr_typ, prev_expr_constr) = prev_clause in
+      let (prev_pat_typ, prev_expr_typ, prev_constr) = prev_clause in
       match l with
-        | []     -> (prev_expr_typ, prev_pat_typ , prev_expr_constr @ acc)  
-        | h::t   -> 
-        let (pat_typ, expr_typ, expr_constr) = walk_clause h in
-          walk_clause_aux t (pat_typ, expr_typ, expr_constr) ((pat_typ, prev_pat_typ) :: (expr_typ, prev_expr_typ) :: acc @ prev_expr_constr) 
+        | []     -> (prev_expr_typ, prev_pat_typ , prev_constr @ acc)  
+        | h :: t   -> 
+            let (pat_typ, expr_typ, constr) = walk_clause h in
+              walk_clause_aux t (pat_typ, expr_typ, constr) ((pat_typ, prev_pat_typ) :: (expr_typ, prev_expr_typ) :: acc @ prev_constr) 
   in
     match lst with 
       | []   -> internal "Clause list cannot be empty"
-      | h::t -> walk_clause_aux t (walk_clause h) []
+      | h :: t -> walk_clause_aux t (walk_clause h) []
 
 and walk_clause t = match t with 
   | Clause(p,e)         -> 
       openScope(); (* should consider opening only when needed *)
-      let pat_type = walk_pattern p in
+      let (pat_type, pat_constraints) = walk_pattern p in
       let (expr_type, expr_constr) = walk_expr e in 
         closeScope();
-        (pat_type, expr_type, expr_constr)
+        (pat_type, expr_type, expr_constr @ pat_constraints)
 
 and walk_pattern p = match p with
   | Pa_Atom a         -> walk_pattom a
-  | Pa_Cid (cid, l)   -> T_Notype(*to be done*)
+  | Pa_Cid (cid, l)   ->  
+      let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
+        match cid_entry.entry_info with
+          | ENTRY_constructor constructor_info -> 
+              let constraints = 
+                try ( List.fold_left2 (fun acc pattom typ -> 
+                                       let (pattom_typ, patom_constraints) = walk_pattom pattom in
+                                         (pattom_typ, typ) :: patom_constraints @ acc) [] l constructor_info.constructor_paramlist )
+                with Invalid_argument _ -> error "Wrong number of constructor arguments\n"; raise Exit
+              in
+                (constructor_info.constructor_type, constraints)
+          | _ -> internal "we failed you again and again"
 
 and walk_pattom t = match t with
   | P_Sign(op, num)   ->
       begin
         match op with 
-          | P_Plus        -> T_Int
-          | P_Minus       -> T_Int
+          | P_Plus        -> (T_Int, [])
+          | P_Minus       -> (T_Int, [])
       end
   | P_Fsign(op, num)  ->
       begin
         match op with 
-          | P_Fplus       -> T_Float
-          | P_Fminus      -> T_Float
+          | P_Fplus       -> (T_Float, [])
+          | P_Fminus      -> (T_Float, [])
       end
-  | P_Num n           -> T_Int
-  | P_Float f         -> T_Float
-  | P_Chr c           -> T_Char
-  | P_Bool b          -> T_Bool
+  | P_Num n           -> (T_Int, [])
+  | P_Float f         -> (T_Float, [])
+  | P_Chr c           -> (T_Char, [])
+  | P_Bool b          -> (T_Bool, [])
   | P_Id id           -> 
-        let new_ty = fresh() in
-        let s1 = newVariable (id_make id) new_ty true in
-            ignore s1;
-            new_ty
-  | P_Cid cid         -> T_Notype (*to be done*)
+      let new_ty = fresh() in
+      let s1 = newVariable (id_make id) new_ty true in
+        ignore s1;
+        (new_ty, [])
+  | P_Cid cid         -> 
+      let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
+        begin
+          match cid_entry.entry_info with
+            | ENTRY_constructor constructor_info -> (constructor_info.constructor_type, [])
+            | _ -> internal "we failed you again"
+        end
   | P_Pattern p       -> walk_pattern p
   
-and walk_pattom_list t = match t with
-  | []                -> ()
-  | h::t              -> 
-      walk_pattom h;
-      walk_pattom_list t
+

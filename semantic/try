@@ -1,15 +1,9 @@
-let f x = 
-	let y = 1 in 
-		x+y
+type tree = Leaf | Node of int forest | Node2 of int int 
+ and forest = Empty | NonEmpty of tree forest
 
-let isone num=
-	match num with 
-	 1 -> true
-  |  x -> false
+let trytype t = match t with
+    Leaf -> 0
+  | Node2 n f -> n
 end
 
-let mymatch x y = 
-  match x with
-   2 -> 4
-  |3 -> 5
-end
+let main = trytype (Leaf)

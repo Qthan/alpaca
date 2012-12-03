@@ -165,22 +165,22 @@ parstar:
             ;
 
 typedef:
-            | T_TYPE T_ID T_SEQ T_CID  constrbar andtdefstar            { S_Type(($2, ($4, [T_Notype])::(List.rev($5)))::(List.rev($6))) }
+            | T_TYPE T_ID T_SEQ T_CID  constrbar andtdefstar            { S_Type(($2, ($4, [])::(List.rev($5)))::(List.rev($6))) }
             | T_TYPE T_ID T_SEQ T_CID T_OF typeplus constrbar andtdefstar
                                                                         { S_Type(($2,($4, (List.rev($6)))::(List.rev($7)))::(List.rev($8))) }
             ;
 
 andtdefstar:
             | /* nothing */                                             { [] }
-            | andtdefstar T_ANDDEF T_ID T_SEQ T_CID  constrbar          { ($3, ($5, [T_Notype])::(List.rev($6)))::$1 }
+            | andtdefstar T_ANDDEF T_ID T_SEQ T_CID  constrbar          { ($3, ($5, [])::(List.rev($6)))::$1 }
             | andtdefstar T_ANDDEF T_ID T_SEQ T_CID T_OF typeplus constrbar    
                                                                         { ($3, ($5, List.rev($7))::(List.rev($8)))::$1 }
             ;                                                            
 
 constrbar:
             | /* nothing */                                             { [] }
-            | constrbar T_BAR T_CID                                     { ($3, [T_Notype])::$1 }
-            | constrbar T_BAR T_CID T_OF typeplus                       { ($3, $5)::$1 }
+            | constrbar T_BAR T_CID                                     { ($3, [])::$1 }
+            | constrbar T_BAR T_CID T_OF typeplus                       { ($3, List.rev($5))::$1 }
             ;
 
 typeplus:
@@ -259,7 +259,7 @@ atom:
             | T_TRUE                                                    { A_Bool $1 } 
             | T_FALSE                                                   { A_Bool $1 } 
             | T_LPAR T_RPAR                                             { A_Par } 
-        /*  | T_CID                                                     { A_Const $1 } */
+            | T_CID                                                     { A_Cid $1 } 
             | T_ID                                                      { A_Var $1 } 
             | T_BANK atom                                               { A_Bank $2 }
             | T_ID T_LBRACK expr comaexpr T_RBRACK                      { A_Array ($1, $3::$4) } 

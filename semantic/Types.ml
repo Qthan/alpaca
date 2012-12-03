@@ -35,7 +35,7 @@ and ast_atom =
     | A_Chr of string
     | A_Str of string
     | A_Bool of bool
-    | A_Const of string
+    | A_Cid of string
     | A_Var of string
     | A_Par 
     | A_Bank of ast_atom

@@ -29,7 +29,7 @@ let rec pretty_typ ppf typ =
     | T_Array (a,n) -> 
         fprintf ppf "%a array %d" pretty_typ a (n)
     | T_Id str ->
-        fprintf ppf "Cid %s" (str)
+        fprintf ppf "Udt %s" (str)
     | T_Alpha a ->
         fprintf ppf "papi%d" a
 
@@ -82,6 +82,10 @@ let printSymbolTable () =
               | ENTRY_temporary inf ->
                   if show_offsets then
                     fprintf ppf "[%d]" inf.temporary_offset
+              | ENTRY_udt -> ()
+              | ENTRY_constructor inf ->
+                  let pp_list ppf l = List.iter (fprintf ppf "%a " pretty_typ) l in
+                  fprintf ppf " Type: %a Parameters: %a" pretty_typ inf.constructor_type pp_list inf.constructor_paramlist
           end
       in
       let rec entries ppf es =

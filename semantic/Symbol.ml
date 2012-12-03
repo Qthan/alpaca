@@ -50,11 +50,18 @@ and temporary_info = {
   temporary_offset : int
 }
 
+and constructor_info = {
+  constructor_type    : Types.typ;
+  constructor_paramlist : Types.typ list
+}
+
 and entry_info = ENTRY_none
                | ENTRY_variable of variable_info
                | ENTRY_function of function_info
                | ENTRY_parameter of parameter_info
                | ENTRY_temporary of temporary_info
+               | ENTRY_udt 
+               | ENTRY_constructor of constructor_info
 
 and entry = {
   entry_id    : Identifier.id;
@@ -178,6 +185,16 @@ let newVariable id typ err =
     variable_offset = !currentScope.sco_negofs
   } in
   newEntry id (ENTRY_variable inf) err
+
+let newUdt id err =
+  newEntry id ENTRY_udt err
+
+let newConstructor id typ typ_list err =
+  let inf = {
+    constructor_type = typ;
+    constructor_paramlist = typ_list
+  } in
+    newEntry id (ENTRY_constructor inf) err  
 
 let newFunction id err =
   try
