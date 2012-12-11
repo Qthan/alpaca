@@ -157,7 +157,7 @@ and walk_recdef t = match t.def with
               printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
               let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               let new_ty = getType p in
-                (new_ty, e.expr_typ) :: constraints)
+                (new_ty, e.expr_typ) :: constraints
           | (id, ty) :: tl  -> 
               (* let p = newFunction (id_make id) true in *) 
               (*   printState "Before opening" "After opening" (openScope) (); *)
@@ -168,7 +168,7 @@ and walk_recdef t = match t.def with
                 printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
                 let constraints = walk_expr e in
                   printState "Before closing" "Afterclosing" (closeScope) ();
-                 ((new_ty, e.expr_typ) :: constr)
+                 (new_ty, e.expr_typ) :: constr
       end
   | D_Mut (id, t)       -> error "Mutable cannot be rec\n"; raise Exit;
   | D_Array (id, t, l)  -> error "Array cannot be rec\n";   raise Exit;
@@ -248,8 +248,8 @@ and walk_expr expr_node = match expr_node.expr with
                 match (expr1.expr_typ) with 
                   | T_Ref typ -> (typ, expr2.expr_typ) :: constraints1 @ constraints2
                   | typ -> 
-                    let (line, char) = expr1.pos in 
-                      error "Line: %d Character: %d -> This expression has type %a but an expression was expected of type %a" line char pretty_typ typ pretty_typ (T_Ref expr2.expr_typ) (*ain't gonna play, but keep it as a sample*)
+                    let (line, char_pos) = expr1.pos in 
+                      error "Line: %d Character: %d -> This expression has type %a but an expression was expected of type %a" line char_pos pretty_typ typ pretty_typ (T_Ref expr2.expr_typ) (*ain't gonna play, but keep it as a sample*)
                       raise Exit;
       end
   | E_Unop (op, expr1)     ->
@@ -269,8 +269,8 @@ and walk_expr expr_node = match expr_node.expr with
                 match (expr1.expr_typ) with 
                   | T_Ref _ -> constraints1
                   | typ -> 
-                    let (line, char) = expr1.pos in 
-                      error "Line: %d Character: %d -> This expression has type %a but an expression was expected of type 'a ref" line char pretty_typ typ pretty_typ; (*ain't gonna play, but keep it as a sample*)
+                    let (line, char_pos) = expr1.pos in 
+                      error "Line: %d Character: %d -> This expression has type %a but an expression was expected of type 'a ref" line char_pos pretty_typ typ pretty_typ; (*ain't gonna play, but keep it as a sample*)
                       raise Exit;
           | U_Not         -> 
               let constraints1 = walk_expr expr1 in
@@ -372,7 +372,7 @@ and walk_expr expr_node = match expr_node.expr with
         let constraints1 = walk_expr expr1 in
           let (result_typ, pat_typ, result_constraints) = walk_clause_list l in
             expr_node.expr_typ <- result_typ;
-            (expr1.expr_typ, pat_typ) :: constraints1 @ result_constraints)
+            (expr1.expr_typ, pat_typ) :: constraints1 @ result_constraints
       end
   | E_New ty1         ->
       match ty1 with
@@ -552,7 +552,7 @@ and walk_pattom t = match t.pattom with
             | _ -> internal "we failed you again"
         end
   | P_Pattern p       -> 
-      let constraints = walk_pattern p in
+      let constraints = walk_pattern (P_Pattern p) in
         t.pattom_typ <- p.pattern_typ;
         constraints
-  
+  | _ -> internal "An error occured. Contact your system administrator muahahaha"

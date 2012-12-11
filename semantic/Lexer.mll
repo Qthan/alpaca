@@ -16,11 +16,13 @@ let print_error lexbuf chr =
   Printf.printf "error::line:%d-character:%d:->Invalid character '%c' (ascii: %d)\n" 
     (pos.pos_lnum) (pos.pos_cnum - pos.pos_bol) (chr) (Char.code chr)
 
-}
-
 let get_pos lexbuf =
     let pos = lexbuf.lex_curr_p in
         (pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
+
+
+}
+
 
 let digit     = ['0'-'9']
 let hexdig    = ['0'-'9''a'-'f''A'-'F']
@@ -104,7 +106,7 @@ rule lexer = parse
   | lowCase+id* as id   { T_ID { id_name = id; pos = get_pos lexbuf } }
   | upCase+id* as cid   { T_CID { cid_name = cid; pos = get_pos lexbuf } }
   | '\''constChar '\'' as c_char  
-                        { T_CONSTCHAR { cval = c_char; pos = get_pos lexbuf }
+                        { T_CONSTCHAR { cval = c_char; pos = get_pos lexbuf } }
   | '\"'[^'\n']* '\"' as c_string  
                         { T_STRING { sval = c_string; pos = get_pos lexbuf } }
   | "--"[^'\n']*        { lexer lexbuf } 
