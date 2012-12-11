@@ -388,7 +388,7 @@ and walk_expr expr_node = match expr_node.expr with
           closeScope();
           constraints1 @ constraints2       
   | E_Atom a          -> 
-    let constrains = walk_atom a;
+    let constrains = walk_atom a in
     expr_node.expr_typ <- a.atom_typ;
     constraints
 
@@ -500,7 +500,7 @@ and walk_clause t = match t with
 and walk_pattern p = match p.pattern with
   | Pa_Atom a         -> 
       let constraints = walk_pattom a in
-        p.pattern_typ <- a.atom_typ;
+        p.pattern_typ <- a.pattom_typ;
         constraints
   | Pa_Cid (cid, l)   ->  
       let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
