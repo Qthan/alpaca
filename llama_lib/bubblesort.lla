@@ -10,7 +10,7 @@ let bsort x =
 			begin	
 				swap x[i] x[i+1]
 				changed := true
-			end
+		        end
 		done
 	done
 
