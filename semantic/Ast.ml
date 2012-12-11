@@ -492,56 +492,67 @@ and walk_clause_list lst =   (* Returns ( result_type , pattern_type, constraint
 and walk_clause t = match t with 
   | Clause(pat, expr)         -> 
       openScope(); (* should consider opening only when needed *)
-      let (pat_typ, pat_constraints) = walk_pattern pat in
+      let pat_constrains = walk_pattern pat in
       let expr_constraints = walk_expr expr in 
         closeScope();
-        (pat_typ, expr.expr_typ, expr_constr @ pat_constraints)
+        (pat.pattern_typ, expr.expr_typ, expr_constraints @ pat_constraints)
 
-and walk_pattern p = match p with
-  | Pa_Atom a         -> (a.pattom_typ, walk_pattom a)
+and walk_pattern p = match p.pattern with
+  | Pa_Atom a         -> 
+      let constraints = walk_pattom a in
+        p.pattern_typ <- a.atom_typ;
+        constraints
   | Pa_Cid (cid, l)   ->  
       let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
         match cid_entry.entry_info with
           | ENTRY_constructor constructor_info -> 
               let constraints = 
                 try ( List.fold_left2 (fun acc pattom typ -> 
-                                       let (pattom_typ, patom_constraints) = walk_pattom pattom in
-                                         (pattom_typ, typ) :: patom_constraints @ acc) [] l constructor_info.constructor_paramlist )
+                                         let patom_constraints = walk_pattom pattom in
+                                         (pattom.pattom_typ, typ) :: patom_constraints @ acc ) [] l constructor_info.constructor_paramlist )
                 with Invalid_argument _ -> error "Wrong number of constructor arguments\n"; raise Exit
               in
-                (constructor_info.constructor_type, constraints)
+                p.pattern_typ <- constructor_info.constructor_type;
+                p.entry <- cid_entry;
+                constraints
           | _ -> internal "we failed you again and again"
 
-and walk_pattom t = match t with
+and walk_pattom t = match t.pattom with
   | P_Sign(op, num)   ->
       begin
         match op with 
-          | P_Plus        -> (T_Int, [])
-          | P_Minus       -> (T_Int, [])
+          | P_Plus        -> t.pattom_typ <- T_Int; []
+          | P_Minus       -> t.pattom_typ <- T_Int; []
       end
   | P_Fsign(op, num)  ->
       begin
         match op with 
-          | P_Fplus       -> (T_Float, [])
-          | P_Fminus      -> (T_Float, [])
+          | P_Fplus       -> t.pattom_typ <- T_Float; []
+          | P_Fminus      -> t.pattom_typ <- T_Float; []
       end
-  | P_Num n           -> (T_Int, [])
-  | P_Float f         -> (T_Float, [])
-  | P_Chr c           -> (T_Char, [])
-  | P_Bool b          -> (T_Bool, [])
+  | P_Num n           -> t.pattom_typ <- T_Int;   []
+  | P_Float f         -> t.pattom_typ <- T_Float; []
+  | P_Chr c           -> t.pattom_typ <- T_Char;  []
+  | P_Bool b          -> t.pattom_typ <- T_Bool;  []
   | P_Id id           -> 
       let new_ty = fresh() in
-      let s1 = newVariable (id_make id) new_ty true in
-        ignore s1;
-        (new_ty, [])
+      let id_entry = newVariable (id_make id) new_ty true in
+        ignore id_entry;
+        t.pattom_typ <- new_ty;
+        t.entry <- id_entry;
+        []
   | P_Cid cid         -> 
       let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
         begin
           match cid_entry.entry_info with
-            | ENTRY_constructor constructor_info -> (constructor_info.constructor_type, [])
+            | ENTRY_constructor constructor_info -> 
+                t.pattom_typ <- constructor_info.constructor_type;
+                t.entry <- cid_entry;
+                []
             | _ -> internal "we failed you again"
         end
-  | P_Pattern p       -> walk_pattern p
+  | P_Pattern p       -> 
+      let constraints = walk_pattern p in
+        t.pattom_typ <- p.pattern_typ;
+        constraints
   
-
-

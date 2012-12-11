@@ -124,7 +124,7 @@
 %type <intmb> intmb
 %type <ast_clause> clause
 %type <ast_clause list> clausestar
-%type <ast_pattern> pattern
+%type <ast_pattern_node> pattern
 %type <ast_pattom_node list> pattomstar
 %type <ast_pattom_node> pattom 
 %%
@@ -296,8 +296,8 @@ clause:
             ;
 
 pattern:
-            | pattom                                                    { Pa_Atom $1 }
-            | T_CID pattomstar                                          { Pa_Cid ($1, List.rev($2)) }
+            | pattom                                                    { { pattern = Pa_Atom $1; pos = $1.pos; pattern_typ = T_Notype; entry = None } }
+            | T_CID pattomstar                                          { { pattern = Pa_Cid ($1.cid_name, List.rev($2)); pos = $1.pos; pattern_typ = T_Notype; entry = None } }
             ;
 
 pattom:
