@@ -31,15 +31,17 @@ let rec walk_program ls =
   unify constraints
 
 and walk_stmt_list ls = 
-  let walk_stmt_list_aux ls acc = match ls with
-    | []                  ->  acc
+  let constraints = ref [] in
+  let rec walk_stmt_list_aux ls acc = match ls with
+    | []                  ->  constraints := acc
     | h :: t              ->
         printState "Before opening" "After opening" (openScope) ();
-        let constraints = walk_stmt h in
-          walk_stmt_list_aux t (constraints :: acc);
+        let constraints1 = walk_stmt h in
+          walk_stmt_list_aux t (constraints1 @ acc);
           printState "Before closing" "Afterclosing" (closeScope) ();
   in
-    walk_stmt_list_aux ls []
+    walk_stmt_list_aux ls [];
+    !constraints
 
 and walk_stmt t = match t with
   | S_Let  l          -> walk_def_list l
@@ -49,18 +51,21 @@ and walk_stmt t = match t with
         constraints
   | S_Type l          -> walk_typedef_list l
 
-and walk_def_list t = match t with
-  | []                  -> []
-  | h :: t              ->  
-      let constraints = walk_def_list t in
-      (walk_def h) @ constraints
+and walk_def_list t = 
+  let rec walk_def_list_aux t acc = match t with
+    | []                  -> acc
+    | h :: t              -> walk_def_list_aux t ((walk_def h) @ acc)
+  in
+    walk_def_list_aux t []
 
-and walk_recdef_list t  = match t with
-  | []                -> []
-  | h :: t            ->
+and walk_recdef_list t  = 
+  let rec walk_recdef_list_aux t acc = match t with
+    | []                -> []
+    | h :: t            ->
       walk_recdef_params h;
-      let constraints = walk_recdef_list t in
-      (walk_recdef h) @ constraints  
+      walk_recdef_list_aux t (walk_recdef h) @ acc 
+  in
+    walk_recdef_list_aux t []
 
 and walk_def t = match t.def with
   | D_Var (l, e)      ->
@@ -73,7 +78,7 @@ and walk_def t = match t.def with
                 let constraints = walk_expr e in
                 let p = newVariable (id_make id) new_ty true in
                   ignore p;
-                  ((new_ty, e.expr_typ) :: constraints)
+                  (new_ty, e.expr_typ) :: constraints
                   (* printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false); --probably not needed *)
 
           | (id, ty) :: tl  ->
@@ -89,7 +94,7 @@ and walk_def t = match t.def with
                 let constraints = walk_expr e in 
                   printState "Before closing" "Afterclosing" (closeScope) ();
                   printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
-                  ((new_ty, e.expr_typ) :: constraints)
+                  (new_ty, e.expr_typ) :: constraints
       end
   | D_Mut (id, ty) ->     
       let new_ty = refresh ty in
@@ -107,7 +112,7 @@ and walk_def t = match t.def with
       let p = newVariable (id_make id) (T_Array (new_ty, List.length l)) true in
         ignore p;
         printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
-        let constraints = walk_expr_list l in
+        let constraints = walk_expr_list l [] in
         printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
         constraints
         
@@ -168,14 +173,14 @@ and walk_recdef t = match t.def with
                 printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
                 let constraints = walk_expr e in
                   printState "Before closing" "Afterclosing" (closeScope) ();
-                 (new_ty, e.expr_typ) :: constr
+                 (new_ty, e.expr_typ) :: constraints
       end
   | D_Mut (id, t)       -> error "Mutable cannot be rec\n"; raise Exit;
   | D_Array (id, t, l)  -> error "Array cannot be rec\n";   raise Exit;
 
 and walk_par_list l p = match l with
   | []                -> ()
-  | (hid,ht)::tl      -> 
+  | (hid, ht) :: tl      -> 
       let new_ty = refresh ht in
       let f = newParameter (id_make hid) new_ty PASS_BY_VALUE p true in
         begin
@@ -205,7 +210,8 @@ and walk_par_list l p = match l with
           ignore c;
       in
       List.iter (fun (id, constructors_list) -> 
-                   List.iter (fun (cid,types_list) -> walk_constructor id cid types_list) constructors_list) l
+                   List.iter (fun (cid, types_list) -> walk_constructor id cid types_list) constructors_list) l;
+      [] (* Check return *)
 
 and walk_expr expr_node = match expr_node.expr with 
   | E_Binop (expr1, op, expr2) -> 
@@ -248,8 +254,12 @@ and walk_expr expr_node = match expr_node.expr with
                 match (expr1.expr_typ) with 
                   | T_Ref typ -> (typ, expr2.expr_typ) :: constraints1 @ constraints2
                   | typ -> 
-                    let (line, char_pos) = expr1.pos in 
-                      error "Line: %d Character: %d -> This expression has type %a but an expression was expected of type %a" line char_pos pretty_typ typ pretty_typ (T_Ref expr2.expr_typ) (*ain't gonna play, but keep it as a sample*)
+                    let (line, char_pos) = expr1.expr_pos in 
+                      (*error "Line: %d Character: %d -> This expression has
+                       * type %a but an expression was expected of type %a" line
+                       * char_pos pretty_typ typ pretty_typ (T_Ref
+                       * expr2.expr_typ)*)
+                      (*ain't gonna play, but keep it as a sample*)
                       raise Exit;
       end
   | E_Unop (op, expr1)     ->
@@ -262,16 +272,20 @@ and walk_expr expr_node = match expr_node.expr with
           | U_Fplus | U_Fminus  -> 
               let constraints1 = walk_expr expr1 in 
                 expr_node.expr_typ <- T_Float;
-                T_Float, (ty1, T_Float) :: constraints1
+                (expr1.expr_typ, T_Float) :: constraints1
           | U_Del         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Unit;
+                (
                 match (expr1.expr_typ) with 
                   | T_Ref _ -> constraints1
                   | typ -> 
-                    let (line, char_pos) = expr1.pos in 
-                      error "Line: %d Character: %d -> This expression has type %a but an expression was expected of type 'a ref" line char_pos pretty_typ typ pretty_typ; (*ain't gonna play, but keep it as a sample*)
+                    let (line, char_pos) = expr1.expr_pos in 
+                      (*error "Line: %d Character: %d -> This expression has
+                       * type %a but an expression was expected of type 'a ref"
+                       * line char_pos pretty_typ typ pretty_typ;*) (*ain't gonna play, but keep it as a sample*)
                       raise Exit;
+                )
           | U_Not         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Bool;
@@ -291,7 +305,7 @@ and walk_expr expr_node = match expr_node.expr with
         let constraints2 = walk_expr expr2 in 
         let constraints3 = walk_expr expr3 in
           closeScope();
-          expr_node.entry <- i;
+          expr_node.expr_entry <- Some i;
           expr_node.expr_typ <- T_Unit;
           (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) :: (expr3.expr_typ, T_Unit) :: constraints1 @ constraints2 @ constraints3                        
   | E_Dim (a, id)      ->
@@ -303,7 +317,7 @@ and walk_expr expr_node = match expr_node.expr with
                   match var.variable_type with
                     | T_Array (_,_) ->
                       expr_node.expr_typ <- T_Int;
-                      expr_node.entry <- id_entry;
+                      expr_node.expr_entry <- Some id_entry;
                       []
                     | _ -> error "Must be array"; raise Exit;
                 end
@@ -337,7 +351,7 @@ and walk_expr expr_node = match expr_node.expr with
                         let typ, constr = walk_params_list [] ys in
                           (T_Arrow (tyy,typ), constr)
                     | x :: xs, y :: ys -> 
-                        let tyx, constrx = walk_atom x in
+                        let tyx, constrx = walk_atom x in   (* OK THIS NEEDS FIXING*)
                         let tyy = match y.entry_info with
                           | ENTRY_parameter par_info -> par_info.parameter_type
                           | _ -> internal "Not a parameter";
@@ -347,7 +361,7 @@ and walk_expr expr_node = match expr_node.expr with
                 in
                   let (typ, constraints) = walk_params_list l (func.function_paramlist) in
                     expr_node.expr_typ <- typ;
-                    expr_node.entry <- id_entry;
+                    expr_node.expr_entry <- Some id_entry;
                     constraints
             | _ -> error "This expression %s is not a function" id; raise Exit;
       end
@@ -363,7 +377,7 @@ and walk_expr expr_node = match expr_node.expr with
                 with Invalid_argument _ -> error "invalid number of arguments\n"; raise Exit
               in
                 expr_node.expr_typ <- constructor_info.constructor_type;
-                expr_node.entry <- cid_entry;
+                expr_node.expr_entry <- Some cid_entry;
                 constraints
           | _ -> internal "Kaname malakia, soz. expected constructor gia na ksereis"
         end
@@ -375,22 +389,24 @@ and walk_expr expr_node = match expr_node.expr with
             (expr1.expr_typ, pat_typ) :: constraints1 @ result_constraints
       end
   | E_New ty1         ->
-      match ty1 with
-        | T_Array _, _ -> error "Cannot dynamically allocate array. This is not ruby. Or python. Or C. THIS IS LLAMA!"; raise Exit;
-        | ty1 -> 
-          expr_node.expr_typ <- ty1;
-          []
+      begin
+        match ty1 with
+          | T_Array _ -> error "Cannot dynamically allocate array. This is not ruby. Or python. Or C. THIS IS LLAMA!"; raise Exit;
+          | ty1 -> 
+              expr_node.expr_typ <- ty1;
+              []
+      end
   | E_Letin (l, expr)    -> 
-        openScope();
-        let constraints1 = walk_stmt l in
-        let constraints2 = walk_expr expr in
-          expr_node.expr_typ <- expr.expr_typ;
-          closeScope();
-          constraints1 @ constraints2       
+      openScope();
+      let constraints1 = walk_stmt l in
+      let constraints2 = walk_expr expr in
+        expr_node.expr_typ <- expr.expr_typ;
+        closeScope();
+        constraints1 @ constraints2       
   | E_Atom a          -> 
-    let constrains = walk_atom a in
-    expr_node.expr_typ <- a.atom_typ;
-    constraints
+      let constraints = walk_atom a in
+        expr_node.expr_typ <- a.atom_typ;
+        constraints
 
 and walk_atom t = match t.atom with 
   | A_Num n           -> t.atom_typ <- T_Int; []
@@ -403,9 +419,9 @@ and walk_atom t = match t.atom with
         begin
           match cid_entry.entry_info with
             | ENTRY_constructor constructor_info -> 
-              t.atom_typ <- constructor_info.constructor_type; 
-              t.entry <- cid_entry;
-              []
+                t.atom_typ <- constructor_info.constructor_type; 
+                t.atom_entry <- cid_entry;
+                []
             | _ -> internal "internal error"
         end
   | A_Var v           -> 
@@ -414,25 +430,25 @@ and walk_atom t = match t.atom with
           match id_entry.entry_info with
             | ENTRY_none | ENTRY_temporary _ | ENTRY_udt | ENTRY_constructor _ | ENTRY_function _-> internal "Must be a variable, param";
             | ENTRY_variable var -> 
-              t.atom_typ <- var.variable_type; 
-              t.entry <- id_entry;
-              []
+                t.atom_typ <- var.variable_type; 
+                t.atom_entry <- id_entry;
+                []
             (*| ENTRY_function f ->   Opws ola ta wraia pragmata apagoreuetai h merikh efarmogh.
-                let rec aux param_list =
-                  match param_list with
-                    | [] -> f.function_result
-                    | x :: xs ->
-                        let tyx = match x.entry_info with
-                          | ENTRY_parameter par_info -> par_info.parameter_type
-                          | _ -> internal "Must be variable";
-                        in
-                          T_Arrow(tyx, aux xs)
-                in
-                  ((aux f.function_paramlist), [])*)
+             let rec aux param_list =
+             match param_list with
+             | [] -> f.function_result
+             | x :: xs ->
+             let tyx = match x.entry_info with
+             | ENTRY_parameter par_info -> par_info.parameter_type
+             | _ -> internal "Must be variable";
+             in
+             T_Arrow(tyx, aux xs)
+             in
+             ((aux f.function_paramlist), [])*)
             | ENTRY_parameter par -> 
-              t.atom_typ <- par.parameter_type; 
-              t.entry <- id_entry;
-              []
+                t.atom_typ <- par.parameter_type; 
+                t.atom_entry <- id_entry;
+                []
       end
   | A_Par             -> t.atom_typ <- T_Unit; []
   | A_Bank atom          -> 
@@ -460,25 +476,25 @@ and walk_atom t = match t.atom with
                                     walk_array_expr xs (n-1) ((expr.expr_typ, T_Int) :: constraints @ acc)
                           in
                             t.atom_typ <- T_Ref typ;
-                            t.entry <- array_entry;
+                            t.atom_entry <- array_entry;
                             walk_array_expr expr_list dim []
                       | _ -> error "must be an array\n"; raise Exit; (*What's wrong with pretty print..*)
                   end
             | _ -> error "must be an array\n"; raise Exit;
         end
   | A_Expr expr          -> 
-    let constraints = walk_expr expr in
-      t.atom_typ <- expr.expr_typ;
-      constraints
+      let constraints = walk_expr expr in
+        t.atom_typ <- expr.expr_typ;
+        constraints
 
 
 (*acc = [(tp1,te1,constr1),(tp2,te2,constr2),(tp3,te3,constr3)...]
  * (tp1,te) :: [(tp1,tp2),(tp2,tp3),(tp3,...),(te1,te2),(te2,te3),(te3,..)]@constr1@constr2...@constre
  *)
- 
+
 and walk_clause_list lst =   (* Returns ( result_type , pattern_type, constraints)*)
   let rec walk_clause_aux l prev_clause acc =
-      let (prev_pat_typ, prev_expr_typ, prev_constr) = prev_clause in
+    let (prev_pat_typ, prev_expr_typ, prev_constr) = prev_clause in
       match l with
         | []     -> (prev_expr_typ, prev_pat_typ , prev_constr @ acc)  
         | h :: t   -> 
@@ -509,11 +525,11 @@ and walk_pattern p = match p.pattern with
               let constraints = 
                 try ( List.fold_left2 (fun acc pattom typ -> 
                                          let patom_constraints = walk_pattom pattom in
-                                         (pattom.pattom_typ, typ) :: patom_constraints @ acc ) [] l constructor_info.constructor_paramlist )
+                                           (pattom.pattom_typ, typ) :: patom_constraints @ acc ) [] l constructor_info.constructor_paramlist )
                 with Invalid_argument _ -> error "Wrong number of constructor arguments\n"; raise Exit
               in
                 p.pattern_typ <- constructor_info.constructor_type;
-                p.entry <- cid_entry;
+                p.pattern_entry <- cid_entry;
                 constraints
           | _ -> internal "we failed you again and again"
 
@@ -539,7 +555,7 @@ and walk_pattom t = match t.pattom with
       let id_entry = newVariable (id_make id) new_ty true in
         ignore id_entry;
         t.pattom_typ <- new_ty;
-        t.entry <- id_entry;
+        t.pattom_entry <- id_entry;
         []
   | P_Cid cid         -> 
       let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
@@ -547,7 +563,7 @@ and walk_pattom t = match t.pattom with
           match cid_entry.entry_info with
             | ENTRY_constructor constructor_info -> 
                 t.pattom_typ <- constructor_info.constructor_type;
-                t.entry <- cid_entry;
+                t.pattom_entry <- cid_entry;
                 []
             | _ -> internal "we failed you again"
         end

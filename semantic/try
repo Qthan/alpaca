@@ -1,9 +1,0 @@
-type tree = Leaf | Node of int forest | Node2 of int int 
- and forest = Empty | NonEmpty of tree forest
-
-let trytype t = match t with
-    Leaf -> 0
-  | Node2 n f -> n
-end
-
-let main = trytype (Leaf)

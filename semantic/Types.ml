@@ -16,41 +16,42 @@ type typ =
     | T_Id of string
     | T_Alpha of int
 
+
 (** Parser Types **)
 
 type string_const = { 
   sval : string; 
-  pos : (int * int)
+  spos : (int * int)
 }
 
 type char_const = { 
-  cval : char; 
-  pos : (int * int)
+  cval : string; 
+  cpos : (int * int)
 }
 
 type int_const = {
   ival : int; 
-  pos : (int * int)
+  ipos : (int * int)
 }
 
 type float_const = { 
   fval : float; 
-  pos : (int * int)
+  fpos : (int * int)
 }
 
 type id_const = { 
   id_name : string; 
-  pos : (int * int)
+  id_pos : (int * int)
 }
 
 type cid_const = { 
   cid_name : string; 
-  pos : (int * int)
+  cid_pos : (int * int)
 }
 
 type bool_const = {
   bval : bool; 
-  pos : (int * int)
+  bpos : (int * int)
 }
 
 type op = {
@@ -100,7 +101,7 @@ and temporary_info = {
 }
 
 and constructor_info = {
-  constructor_type      : typ;
+  constructor_type    : typ;
   constructor_paramlist : typ list
 }
 
@@ -154,10 +155,10 @@ type intmb =
     | Nonum
 
 and ast_atom_node = {
-  atom              : ast_atom;
-  pos               : (int * int);
-  mutable atom_typ  : typ;
-  mutable entry     : entry option
+  atom                   : ast_atom;
+  atom_pos               : (int * int);
+  mutable atom_typ       : typ;
+  mutable atom_entry     : entry option
 }
 
 and ast_atom =
@@ -174,10 +175,10 @@ and ast_atom =
     | A_Expr of ast_expr_node
 
 and ast_expr_node = {
-  expr              : ast_expr;
-  pos               : (int * int);
-  mutable expr_typ  : typ;
-  mutable entry     : entry option
+  expr                   : ast_expr;
+  expr_pos               : (int * int);
+  mutable expr_typ       : typ;
+  mutable expr_entry     : entry option
 }
 
 and ast_expr =
@@ -200,10 +201,10 @@ and ast_clause =
       Clause of ast_pattern_node * ast_expr_node
 
 and ast_pattern_node = {
-  pattern             : ast_pattern;
-  pos                 : (int * int);
-  mutable pattern_typ : typ;
-  mutable entry       : entry option
+  pattern                     : ast_pattern;
+  pattern_pos                 : (int * int);
+  mutable pattern_typ         : typ;
+  mutable pattern_entry       : entry option
 }
 
 and ast_pattern =
@@ -211,10 +212,10 @@ and ast_pattern =
     | Pa_Cid of string * ast_pattom_node list
 
 and ast_pattom_node = {
-  pattom             : ast_pattom;
-  pos                : (int * int);
-  mutable pattom_typ : typ;
-  mutable entry      : entry option
+  pattom                    : ast_pattom;
+  pattom_pos                : (int * int);
+  mutable pattom_typ        : typ;
+  mutable pattom_entry      : entry option
 }
 
 and ast_pattom =
@@ -229,9 +230,9 @@ and ast_pattom =
     | P_Pattern of ast_pattern
 
 and ast_def_node = {
-  def              : ast_def;
-  pos              : (int * int);
-  mutable entry    : entry option
+  def                  : ast_def;
+  def_pos              : (int * int);
+  mutable def_entry    : entry option
 }
 
 and ast_def =
@@ -244,6 +245,8 @@ and ast_stmt =
     | S_Rec of ast_def_node list
     | S_Type of  (string * ( ( string*typ list ) list) ) list
     
+
+
 let rec sizeOfType t =
    match t with
    | T_Int            -> 2

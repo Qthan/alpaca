@@ -1,6 +1,7 @@
 {
 open Parser
 open Lexing
+open Types
 
 exception EOF of string
 
@@ -36,9 +37,9 @@ let constChar = ( [^ '\\' '\"' '\''] ) | ( '\\'( ( ['n' 't' 'r' '0' '\\' '\'' '\
 rule lexer = parse
   | white               { lexer lexbuf }
   | ['\n']              { incr_linenum lexbuf; lexer lexbuf  (*; EOL*) }
-  | digit+ as num       { T_INT { ival = (int_of_string num); pos = get_pos lexbuf } } 
+  | digit+ as num       { T_INT { ival = (int_of_string num); ipos = get_pos lexbuf } } 
   | digit+( '.'digit+('e'['-''+']?digit+)? ) as fnum
-                        { T_FLOAT { fval = (float_of_string fnum ); pos = get_pos lexbuf } }
+                        { T_FLOAT { fval = (float_of_string fnum ); fpos = get_pos lexbuf } }
   | "and"               { T_ANDDEF}
   | "array"             { T_ARRAY }
   | "begin"             { T_BEGIN { pos = get_pos lexbuf } } 
@@ -51,7 +52,7 @@ rule lexer = parse
   | "downto"            { T_DOWNTO }
   | "else"              { T_ELSE  }
   | "end"               { T_END }
-  | "false"             { T_FALSE { bval = false; pos = get_pos lexbuf } }
+  | "false"             { T_FALSE { bval = false; bpos = get_pos lexbuf } }
   | "float"             { T_FLOATST }
   | "for"               { T_FOR { pos = get_pos lexbuf } }
   | "if"                { T_IF { pos = get_pos lexbuf } }
@@ -68,7 +69,7 @@ rule lexer = parse
   | "ref"               { T_REF }
   | "then"              { T_THEN }
   | "to"                { T_TO }
-  | "true"              { T_TRUE { bval = true; pos = get_pos lexbuf } }
+  | "true"              { T_TRUE { bval = true; bpos = get_pos lexbuf } }
   | "type"              { T_TYPE }
   | "unit"              { T_UNIT }
   | "while"             { T_WHILE { pos = get_pos lexbuf } }
@@ -103,12 +104,12 @@ rule lexer = parse
   | "]"                 { T_RBRACK }
   | ","                 { T_COMA }
   | ":"                 { T_COLON }
-  | lowCase+id* as id   { T_ID { id_name = id; pos = get_pos lexbuf } }
-  | upCase+id* as cid   { T_CID { cid_name = cid; pos = get_pos lexbuf } }
+  | lowCase+id* as id   { T_ID { id_name = id; id_pos = get_pos lexbuf } }
+  | upCase+id* as cid   { T_CID { cid_name = cid; cid_pos = get_pos lexbuf } }
   | '\''constChar '\'' as c_char  
-                        { T_CONSTCHAR { cval = c_char; pos = get_pos lexbuf } }
+                        { T_CONSTCHAR { cval = c_char; cpos = get_pos lexbuf } }
   | '\"'[^'\n']* '\"' as c_string  
-                        { T_STRING { sval = c_string; pos = get_pos lexbuf } }
+                        { T_STRING { sval = c_string; spos = get_pos lexbuf } }
   | "--"[^'\n']*        { lexer lexbuf } 
   | "(*"                {  comments 0 lexbuf }
   | _ as chr            { print_error lexbuf chr ; lexer lexbuf }

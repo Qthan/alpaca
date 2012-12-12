@@ -11,13 +11,13 @@ type typ =
   | T_Array of typ * int
   | T_Id of string
   | T_Alpha of int
-type string_const = { sval : string; pos : int * int; }
-type char_const = { cval : char; pos : int * int; }
-type int_const = { ival : int; pos : int * int; }
-type float_const = { fval : float; pos : int * int; }
-type id_const = { id_name : string; pos : int * int; }
-type cid_const = { cid_name : string; pos : int * int; }
-type bool_const = { bval : bool; pos : int * int; }
+type string_const = { sval : string; spos : int * int; }
+type char_const = { cval : string; cpos : int * int; }
+type int_const = { ival : int; ipos : int * int; }
+type float_const = { fval : float; fpos : int * int; }
+type id_const = { id_name : string; id_pos : int * int; }
+type cid_const = { cid_name : string; cid_pos : int * int; }
+type bool_const = { bval : bool; bpos : int * int; }
 type op = { pos : int * int; }
 type pass_mode = PASS_BY_VALUE | PASS_BY_REFERENCE
 type param_status = PARDEF_COMPLETE | PARDEF_DEFINE | PARDEF_CHECK
@@ -91,9 +91,9 @@ type count = To | Downto
 type intmb = Yesnum of int | Nonum
 and ast_atom_node = {
   atom : ast_atom;
-  pos : int * int;
+  atom_pos : int * int;
   mutable atom_typ : typ;
-  mutable entry : entry option;
+  mutable atom_entry : entry option;
 }
 and ast_atom =
     A_Num of int
@@ -109,9 +109,9 @@ and ast_atom =
   | A_Expr of ast_expr_node
 and ast_expr_node = {
   expr : ast_expr;
-  pos : int * int;
+  expr_pos : int * int;
   mutable expr_typ : typ;
-  mutable entry : entry option;
+  mutable expr_entry : entry option;
 }
 and ast_expr =
     E_Binop of ast_expr_node * binop * ast_expr_node
@@ -131,18 +131,18 @@ and ast_expr =
 and ast_clause = Clause of ast_pattern_node * ast_expr_node
 and ast_pattern_node = {
   pattern : ast_pattern;
-  pos : int * int;
+  pattern_pos : int * int;
   mutable pattern_typ : typ;
-  mutable entry : entry option;
+  mutable pattern_entry : entry option;
 }
 and ast_pattern =
     Pa_Atom of ast_pattom_node
   | Pa_Cid of string * ast_pattom_node list
 and ast_pattom_node = {
   pattom : ast_pattom;
-  pos : int * int;
+  pattom_pos : int * int;
   mutable pattom_typ : typ;
-  mutable entry : entry option;
+  mutable pattom_entry : entry option;
 }
 and ast_pattom =
     P_Sign of sign * int
@@ -156,8 +156,8 @@ and ast_pattom =
   | P_Pattern of ast_pattern
 and ast_def_node = {
   def : ast_def;
-  pos : int * int;
-  mutable entry : entry option;
+  def_pos : int * int;
+  mutable def_entry : entry option;
 }
 and ast_def =
     D_Var of (string * typ) list * ast_expr_node

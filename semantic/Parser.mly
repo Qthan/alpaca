@@ -7,42 +7,42 @@
 
 %token T_ANDDEF
 %token T_ARRAY
-%token<op> T_BEGIN
-%token<op> T_DELETE
-%token<op> T_DIM
+%token<Types.op> T_BEGIN
+%token<Types.op> T_DELETE
+%token<Types.op> T_DIM
 %token T_DO
 %token T_DONE
 %token T_DOWNTO
 %token T_ELSE
 %token T_END
-%token<op> T_FOR
-%token<op> T_IF
+%token<Types.op> T_FOR
+%token<Types.op> T_IF
 %token T_IN
 %token T_LET
-%token<op> T_MATCH
+%token<Types.op> T_MATCH
 %token T_MUTABLE
-%token<op> T_NEW
-%token<op> T_NOT
+%token<Types.op> T_NEW
+%token<Types.op> T_NOT
 %token T_OF
 %token T_REC
 %token T_REF
 %token T_THEN
 %token T_TO
 %token T_TYPE
-%token<op> T_WHILE
+%token<Types.op> T_WHILE
 %token T_WITH
 
-%token<id_const> T_ID
-%token<cid_const> T_CID
+%token<Types.id_const> T_ID
+%token<Types.cid_const> T_CID
 
-%token<float_const> T_FLOAT
-%token<int_const> T_INT
+%token<Types.float_const> T_FLOAT
+%token<Types.int_const> T_INT
 %token T_CHAR
 
-%token<char_const> T_CONSTCHAR
-%token<string_const> T_STRING
-%token<bool_const> T_FALSE
-%token<bool_const> T_TRUE
+%token<Types.char_const> T_CONSTCHAR
+%token<Types.string_const> T_STRING
+%token<Types.bool_const> T_FALSE
+%token<Types.bool_const> T_TRUE
 %token T_BOOL
 %token T_UNIT
 %token T_FLOATST
@@ -51,17 +51,17 @@
 %token T_GIVES
 %token T_SEQ 
 %token T_BAR
-%token<op> T_PLUS 
-%token<op> T_MINUS
+%token<Types.op> T_PLUS 
+%token<Types.op> T_MINUS
 %token T_TIMES
 %token T_DIV
 %token T_MOD
-%token<op> T_FPLUS
-%token<op> T_FMINUS
+%token<Types.op> T_FPLUS
+%token<Types.op>  T_FMINUS
 %token T_FTIMES
 %token T_FDIV
 %token T_POWER
-%token<op> T_BANK
+%token<Types.op>  T_BANK
 %token T_SMCOLON
 %token T_AND
 %token T_OR
@@ -74,7 +74,7 @@
 %token T_NEQ
 %token T_ASSIGN
 
-%token<op> T_LPAR
+%token<Types.op>  T_LPAR
 %token T_RPAR
 %token T_LBRACK
 %token T_RBRACK
@@ -149,13 +149,13 @@ anddef:
             ;
 
 def:
-            | T_ID parstar  T_SEQ expr                                  { { def = D_Var (($1.id_name, T_Notype) :: (List.rev($2), $4)); pos = $1.pos; entry = None } }
-            | T_ID parstar T_COLON types T_SEQ expr                     { { def = D_Var (($1.id_name, $4) :: (List.rev($2), $6)); pos = $1.pos; entry = None } }
-            | T_MUTABLE T_ID                                            { { def = D_Mut ($2.id_name, T_Notype); pos = $2.pos; entry = None } }
-            | T_MUTABLE T_ID T_COLON types                              { { def = D_Mut ($2.id_name. $4); pos = $2.pos; entry = None } }
-            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { { def = D_Array (($2.id_name, T_Notype), ($4::$5)); pos = $2.pos; entry = None } }
+            | T_ID parstar  T_SEQ expr                                  { { def = D_Var (($1.id_name, T_Notype) :: (List.rev($2), $4)); def_pos = $1.id_pos; def_entry = None } }
+            | T_ID parstar T_COLON types T_SEQ expr                     { { def = D_Var (($1.id_name, $4) :: (List.rev($2), $6)); def_pos = $1.id_pos; def_entry = None } }
+            | T_MUTABLE T_ID                                            { { def = D_Mut ($2.id_name, T_Notype); def_pos = $2.id_pos; def_entry = None } }
+            | T_MUTABLE T_ID T_COLON types                              { { def = D_Mut ($2.id_name. $4); def_pos = $2.id_pos; def_entry = None } }
+            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { { def = D_Array (($2.id_name, T_Notype), ($4::$5)); def_pos = $2.id_pos; def_entry = None } }
             | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK T_COLON types  
-                                                                        { { def = D_Array (($2.id_name, T_Notype), ($4::$5)); pos = $2.pos; entry = None } }
+                                                                        { { def = D_Array (($2.id_name, T_Notype), ($4::$5)); pos = $2.id_pos; def_entry = None } }
             ;
 
 parstar:
@@ -209,61 +209,61 @@ comastar:
             ;
 
 expr:
-            | expr T_FPLUS expr                                         { { expr = E_Binop ($1, Fplus, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_PLUS expr                                          { { expr = E_Binop ($1, Plus, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_MINUS expr                                         { { expr = E_Binop ($1, Minus, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_FMINUS expr                                        { { expr = E_Binop ($1, Fminus, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_TIMES expr                                         { { expr = E_Binop ($1, Times, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_FTIMES expr                                        { { expr = E_Binop ($1, Ftimes, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } }  
-            | expr T_DIV expr                                           { { expr = E_Binop ($1, Div, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_FDIV expr                                          { { expr = E_Binop ($1, Fdiv, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } }   
-            | expr T_MOD expr                                           { { expr = E_Binop ($1, Mod, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_POWER expr                                         { { expr = E_Binop ($1, Power, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_SEQ expr                                           { { expr = E_Binop ($1, Seq, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_NSEQ expr                                          { { expr = E_Binop ($1, Nseq, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_L expr                                             { { expr = E_Binop ($1, L, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_G expr                                             { { expr = E_Binop ($1, G, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_LE expr                                            { { expr = E_Binop ($1, Le, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_GE expr                                            { { expr = E_Binop ($1, Ge, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_EQ expr                                            { { expr = E_Binop ($1, Eq, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_NEQ expr                                           { { expr = E_Binop ($1, Neq, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_AND expr                                           { { expr = E_Binop ($1, And, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_OR expr                                            { { expr = E_Binop ($1, Or, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | expr T_SMCOLON expr                                       { { expr = E_Binop ($1, Semicolon, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | expr T_ASSIGN expr                                        { { expr = E_Binop ($1, Assing, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } }  
-            | T_PLUS expr %prec UN                                      { { expr = E_Unop (U_Plus, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_FPLUS expr %prec UN                                     { { expr = E_Unop (U_Fplus, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_FMINUS expr %prec UN                                    { { expr = E_Unop (U_Fminus, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_MINUS expr %prec UN                                     { { expr = E_Unop (U_Minus, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_NOT expr %prec UN                                       { { expr = E_Unop (U_Not, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_DELETE expr %prec UN                                    { { expr = E_Unop (U_Del, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_BEGIN expr T_END                                        { { expr = E_Block ($2); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | T_WHILE expr T_DO expr T_DONE                             { { expr = E_While ($2, $4); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE         { { expr = E_For ($2, $4, $5, $6, $8); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | T_DIM intmb T_ID                                          { { expr = E_Dim ($2, $3); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | T_NEW types                                               { { expr = E_New ($2); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | T_IF expr T_THEN expr T_ELSE expr                         { { expr = E_Ifthenelse ($2, $4, $6); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | T_IF expr T_THEN expr                                     { { expr = E_Ifthen ($2, $4); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | letdef T_IN expr                                          { { expr = E_Letin ($1, $3); pos = $3.pos; expr_typ = T_Notype; entry = None } }
-            | T_MATCH expr T_WITH clause clausestar T_END               { { expr = E_Match ($2, $4::(List.rev($5))); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_CID atomstar                                            { { expr = E_Cid ($1.cid_name, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
-            | T_ID atomstar                                             { { expr = E_Id ($1.id_name, $2); pos = $1.pos; expr_typ = T_Notype; entry = None } }
-            | atom                                                      { { expr = E_Atom ($1); pos = $1.pos; expr_typ = T_Notype; entry = None } } 
+            | expr T_FPLUS expr                                         { { expr = E_Binop ($1, Fplus, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_PLUS expr                                          { { expr = E_Binop ($1, Plus, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_MINUS expr                                         { { expr = E_Binop ($1, Minus, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_FMINUS expr                                        { { expr = E_Binop ($1, Fminus, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_TIMES expr                                         { { expr = E_Binop ($1, Times, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_FTIMES expr                                        { { expr = E_Binop ($1, Ftimes, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }  
+            | expr T_DIV expr                                           { { expr = E_Binop ($1, Div, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_FDIV expr                                          { { expr = E_Binop ($1, Fdiv, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }   
+            | expr T_MOD expr                                           { { expr = E_Binop ($1, Mod, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_POWER expr                                         { { expr = E_Binop ($1, Power, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_SEQ expr                                           { { expr = E_Binop ($1, Seq, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_NSEQ expr                                          { { expr = E_Binop ($1, Nseq, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_L expr                                             { { expr = E_Binop ($1, L, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_G expr                                             { { expr = E_Binop ($1, G, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_LE expr                                            { { expr = E_Binop ($1, Le, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_GE expr                                            { { expr = E_Binop ($1, Ge, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_EQ expr                                            { { expr = E_Binop ($1, Eq, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_NEQ expr                                           { { expr = E_Binop ($1, Neq, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_AND expr                                           { { expr = E_Binop ($1, And, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_OR expr                                            { { expr = E_Binop ($1, Or, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | expr T_SMCOLON expr                                       { { expr = E_Binop ($1, Semicolon, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | expr T_ASSIGN expr                                        { { expr = E_Binop ($1, Assing, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }  
+            | T_PLUS expr %prec UN                                      { { expr = E_Unop (U_Plus, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_FPLUS expr %prec UN                                     { { expr = E_Unop (U_Fplus, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_FMINUS expr %prec UN                                    { { expr = E_Unop (U_Fminus, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_MINUS expr %prec UN                                     { { expr = E_Unop (U_Minus, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_NOT expr %prec UN                                       { { expr = E_Unop (U_Not, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_DELETE expr %prec UN                                    { { expr = E_Unop (U_Del, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_BEGIN expr T_END                                        { { expr = E_Block ($2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_WHILE expr T_DO expr T_DONE                             { { expr = E_While ($2, $4); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_FOR T_ID T_SEQ expr count expr T_DO expr T_DONE         { { expr = E_For ($2, $4, $5, $6, $8); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_DIM intmb T_ID                                          { { expr = E_Dim ($2, $3); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_NEW types                                               { { expr = E_New ($2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_IF expr T_THEN expr T_ELSE expr                         { { expr = E_Ifthenelse ($2, $4, $6); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_IF expr T_THEN expr                                     { { expr = E_Ifthen ($2, $4); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | letdef T_IN expr                                          { { expr = E_Letin ($1, $3); expr_pos = $3.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_MATCH expr T_WITH clause clausestar T_END               { { expr = E_Match ($2, $4::(List.rev($5))); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_CID atomstar                                            { { expr = E_Cid ($1.cid_name, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
+            | T_ID atomstar                                             { { expr = E_Id ($1.id_name, $2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | atom                                                      { { expr = E_Atom ($1); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
             ;
 
 atom:       
-            | T_INT                                                     { { atom = A_Num $1.ival; pos = $1.pos; atom_typ = T_Notype; entry = None } }
-            | T_FLOAT                                                   { { atom = A_Dec $1.fval; pos = $1.pos; atom_typ = T_Notype; entry = None } }
-            | T_CONSTCHAR                                               { { atom = A_Chr $1.cval; pos = $1.pos; atom_typ = T_Notype; entry = None } }
-            | T_STRING                                                  { { atom = A_Str $1.sval; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
-            | T_TRUE                                                    { { atom = A_Bool $1.bval; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
-            | T_FALSE                                                   { { atom = A_Bool $1.bval; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
-            | T_LPAR T_RPAR                                             { { atom = A_Par; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
-            | T_CID                                                     { { atom = A_Cid $1.cid_name; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
-            | T_ID                                                      { { atom = A_Var $1.id_name; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
-            | T_BANK atom                                               { { atom = A_Bank $2; pos = $1.pos; atom_typ = T_Notype; entry = None } }
-            | T_ID T_LBRACK expr comaexpr T_RBRACK                      { { atom = A_Array ($1.id_name, $3::$4); pos = $1.pos; atom_typ = T_Notype; entry = None } }
-            | T_LPAR expr T_RPAR                                        { { atom = A_Expr $2; pos = $1.pos; atom_typ = T_Notype; entry = None } } 
+            | T_INT                                                     { { atom = A_Num $1.ival; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
+            | T_FLOAT                                                   { { atom = A_Dec $1.fval; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
+            | T_CONSTCHAR                                               { { atom = A_Chr $1.cval; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
+            | T_STRING                                                  { { atom = A_Str $1.sval; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
+            | T_TRUE                                                    { { atom = A_Bool $1.bval; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
+            | T_FALSE                                                   { { atom = A_Bool $1.bval; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
+            | T_LPAR T_RPAR                                             { { atom = A_Par; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
+            | T_CID                                                     { { atom = A_Cid $1.cid_name; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
+            | T_ID                                                      { { atom = A_Var $1.id_name; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
+            | T_BANK atom                                               { { atom = A_Bank $2; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
+            | T_ID T_LBRACK expr comaexpr T_RBRACK                      { { atom = A_Array ($1.id_name, $3::$4); atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
+            | T_LPAR expr T_RPAR                                        { { atom = A_Expr $2; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
             ;
 
 comaexpr:  
@@ -296,23 +296,23 @@ clause:
             ;
 
 pattern:
-            | pattom                                                    { { pattern = Pa_Atom $1; pos = $1.pos; pattern_typ = T_Notype; entry = None } }
-            | T_CID pattomstar                                          { { pattern = Pa_Cid ($1.cid_name, List.rev($2)); pos = $1.pos; pattern_typ = T_Notype; entry = None } }
+            | pattom                                                    { { pattern = Pa_Atom $1; pattern_pos = $1.pos; pattern_typ = T_Notype; pattern_entry = None } }
+            | T_CID pattomstar                                          { { pattern = Pa_Cid ($1.cid_name, List.rev($2)); pattern_pos = $1.pos; pattern_typ = T_Notype; pattern_pattom_posentry = None } }
             ;
 
 pattom:
-            | T_PLUS T_INT %prec UN                                     { { pattom = P_Sign (P_Plus, $2.ival); pos = $1.pos; pattom_typ = T_Notype; entry = None } } 
-            | T_MINUS T_INT %prec UN                                    { { pattom = P_Sign (P_Minus, $2.ival); pos = $1.pos; pattom_typ = T_Notype; entry = None } } 
-            | T_FPLUS T_FLOAT %prec UN                                  { { pattom = P_Fsign (P_Fplus, $2.fval); pos = $1.pos; pattom_typ = T_Notype; entry = None } } 
-            | T_FMINUS T_FLOAT %prec UN                                 { { pattom = P_Fsign (P_Fminus, $2.fval); pos = $1.pos; pattom_typ = T_Notype; entry = None } } 
-            | T_INT                                                     { { pattom = P_Num $1.ival; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_FLOAT                                                   { { pattom = P_Float $1.fval; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_CONSTCHAR                                               { { pattom = P_Chr $1.cval; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_TRUE                                                    { { pattom = P_Bool $1.bval; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_FALSE                                                   { { pattom = P_Bool $1.bval; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_ID                                                      { { pattom = P_Id $1.id_name; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_CID                                                     { { pattom = P_Cid $1.cid_name; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
-            | T_LPAR pattern T_RPAR                                     { { pattom = P_Pattern $2; pos = $1.pos; pattom_typ = T_Notype; entry = None } }
+            | T_PLUS T_INT %prec UN                                     { { pattom = P_Sign (P_Plus, $2.ival); pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } } 
+            | T_MINUS T_INT %prec UN                                    { { pattom = P_Sign (P_Minus, $2.ival); pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } } 
+            | T_FPLUS T_FLOAT %prec UN                                  { { pattom = P_Fsign (P_Fplus, $2.fval); pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } } 
+            | T_FMINUS T_FLOAT %prec UN                                 { { pattom = P_Fsign (P_Fminus, $2.fval); pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } } 
+            | T_INT                                                     { { pattom = P_Num $1.ival; pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_FLOAT                                                   { { pattom = P_Float $1.fval; pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_CONSTCHAR                                               { { pattom = P_Chr $1.cval; pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_TRUE                                                    { { pattom = P_Bool $1.bval; pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_FALSE                                                   { { pattom = P_Bool $1.bval; pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_ID                                                      { { pattom = P_Id $1.id_name; pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_CID                                                     { { pattom = P_Cid $1.cid_name; pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
+            | T_LPAR pattern T_RPAR                                     { { pattom = P_Pattern $2; pattom_pos = $1.pos; pattom_typ = T_Notype; pattom_entry = None } }
             ;
 
 pattomstar: 
@@ -320,4 +320,5 @@ pattomstar:
             | pattomstar pattom                                         { $2::$1 }
             ;
 %%
+
 
