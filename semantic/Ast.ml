@@ -28,7 +28,10 @@ let rec walk_program ls =
   initSymbolTable 256;
   (* printSymbolTable (); *)
   let constraints = walk_stmt_list ls in
-  unify constraints
+  let solved = unify constraints in
+    krazo_kosti solved;
+    ()
+
 
 and walk_stmt_list ls = 
   let constraints = ref [] in
@@ -231,12 +234,12 @@ and walk_expr expr_node = match expr_node.expr with
               let constraints1 = walk_expr expr1 in
               let constraints2 = walk_expr expr2 in
               expr_node.expr_typ <- T_Bool; 
-              (expr1.expr_typ, expr2.expr_typ ) :: constraints1 @ constraints2 (*Must not be array or function - need to do that*)
+              (expr1.expr_typ, expr2.expr_typ ) :: constraints1 @ constraints2 (* Must not be array or function - need to do that *)
           | L | Le | G  | Ge  -> 
               let constraints1 = walk_expr expr1 in
               let constraints2 = walk_expr expr2 in
                 expr_node.expr_typ <- T_Bool; 
-                (expr1.expr_typ,T_Int) :: (expr1.expr_typ, expr2.expr_typ) :: constraints1 @ constraints2 (*ty1 = T_Int | T_Float | T_Char, using T_Int for the moment, type typ_inf = Ord | Typ of typ or [typ] for all*)
+                (expr1.expr_typ,T_Int) :: (expr1.expr_typ, expr2.expr_typ) :: constraints1 @ constraints2 (* ty1 = T_Int | T_Float | T_Char, using T_Int for the moment, type typ_inf = Ord | Typ of typ or [typ] for all *)
           | And | Or      -> 
               let constraints1 = walk_expr expr1 in
               let constraints2 = walk_expr expr2 in
@@ -276,7 +279,7 @@ and walk_expr expr_node = match expr_node.expr with
           | U_Del         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Unit;
-                (
+                begin
                 match (expr1.expr_typ) with 
                   | T_Ref _ -> constraints1
                   | typ -> 
@@ -285,7 +288,7 @@ and walk_expr expr_node = match expr_node.expr with
                        * type %a but an expression was expected of type 'a ref"
                        * line char_pos pretty_typ typ pretty_typ;*) (*ain't gonna play, but keep it as a sample*)
                       raise Exit;
-                )
+                end
           | U_Not         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Bool;
@@ -350,14 +353,14 @@ and walk_expr expr_node = match expr_node.expr with
                         in
                         let typ, constr = walk_params_list [] ys in
                           (T_Arrow (tyy,typ), constr)
-                    | x :: xs, y :: ys -> 
-                        let tyx, constrx = walk_atom x in   (* OK THIS NEEDS FIXING*)
+                    | x :: xs, y :: ys ->   
+                        let constrx = walk_atom x in   
                         let tyy = match y.entry_info with
                           | ENTRY_parameter par_info -> par_info.parameter_type
                           | _ -> internal "Not a parameter";
                         in 
                         let typ, cnstr = walk_params_list xs ys in
-                          (typ, (tyx, tyy) :: constrx @ cnstr)
+                          (typ, (x.atom_typ, tyy) :: constrx @ cnstr)
                 in
                   let (typ, constraints) = walk_params_list l (func.function_paramlist) in
                     expr_node.expr_typ <- typ;
@@ -372,8 +375,8 @@ and walk_expr expr_node = match expr_node.expr with
           | ENTRY_constructor constructor_info ->
               let constraints = 
                 try ( List.fold_left2 (fun acc atom typ ->
-                                        let (atom_typ, atom_constr) = walk_atom atom in
-                                          (atom_typ, typ) :: atom_constr @ acc ) [] l (constructor_info.constructor_paramlist)) 
+                                        let atom_constr = walk_atom atom in
+                                          (atom.atom_typ, typ) :: atom_constr @ acc ) [] l (constructor_info.constructor_paramlist)) 
                 with Invalid_argument _ -> error "invalid number of arguments\n"; raise Exit
               in
                 expr_node.expr_typ <- constructor_info.constructor_type;
@@ -420,7 +423,7 @@ and walk_atom t = match t.atom with
           match cid_entry.entry_info with
             | ENTRY_constructor constructor_info -> 
                 t.atom_typ <- constructor_info.constructor_type; 
-                t.atom_entry <- cid_entry;
+                t.atom_entry <- Some cid_entry;
                 []
             | _ -> internal "internal error"
         end
@@ -431,7 +434,7 @@ and walk_atom t = match t.atom with
             | ENTRY_none | ENTRY_temporary _ | ENTRY_udt | ENTRY_constructor _ | ENTRY_function _-> internal "Must be a variable, param";
             | ENTRY_variable var -> 
                 t.atom_typ <- var.variable_type; 
-                t.atom_entry <- id_entry;
+                t.atom_entry <- Some id_entry;
                 []
             (*| ENTRY_function f ->   Opws ola ta wraia pragmata apagoreuetai h merikh efarmogh.
              let rec aux param_list =
@@ -447,7 +450,7 @@ and walk_atom t = match t.atom with
              ((aux f.function_paramlist), [])*)
             | ENTRY_parameter par -> 
                 t.atom_typ <- par.parameter_type; 
-                t.atom_entry <- id_entry;
+                t.atom_entry <- Some id_entry;
                 []
       end
   | A_Par             -> t.atom_typ <- T_Unit; []
@@ -476,7 +479,7 @@ and walk_atom t = match t.atom with
                                     walk_array_expr xs (n-1) ((expr.expr_typ, T_Int) :: constraints @ acc)
                           in
                             t.atom_typ <- T_Ref typ;
-                            t.atom_entry <- array_entry;
+                            t.atom_entry <- Some array_entry;
                             walk_array_expr expr_list dim []
                       | _ -> error "must be an array\n"; raise Exit; (*What's wrong with pretty print..*)
                   end
@@ -508,7 +511,7 @@ and walk_clause_list lst =   (* Returns ( result_type , pattern_type, constraint
 and walk_clause t = match t with 
   | Clause(pat, expr)         -> 
       openScope(); (* should consider opening only when needed *)
-      let pat_constrains = walk_pattern pat in
+      let pat_constraints = walk_pattern pat in
       let expr_constraints = walk_expr expr in 
         closeScope();
         (pat.pattern_typ, expr.expr_typ, expr_constraints @ pat_constraints)
@@ -524,12 +527,12 @@ and walk_pattern p = match p.pattern with
           | ENTRY_constructor constructor_info -> 
               let constraints = 
                 try ( List.fold_left2 (fun acc pattom typ -> 
-                                         let patom_constraints = walk_pattom pattom in
-                                           (pattom.pattom_typ, typ) :: patom_constraints @ acc ) [] l constructor_info.constructor_paramlist )
+                                         let pattom_constraints = walk_pattom pattom in
+                                           (pattom.pattom_typ, typ) :: pattom_constraints @ acc ) [] l constructor_info.constructor_paramlist )
                 with Invalid_argument _ -> error "Wrong number of constructor arguments\n"; raise Exit
               in
                 p.pattern_typ <- constructor_info.constructor_type;
-                p.pattern_entry <- cid_entry;
+                p.pattern_entry <- Some cid_entry;
                 constraints
           | _ -> internal "we failed you again and again"
 
@@ -555,7 +558,7 @@ and walk_pattom t = match t.pattom with
       let id_entry = newVariable (id_make id) new_ty true in
         ignore id_entry;
         t.pattom_typ <- new_ty;
-        t.pattom_entry <- id_entry;
+        t.pattom_entry <- Some id_entry;
         []
   | P_Cid cid         -> 
       let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
@@ -563,12 +566,13 @@ and walk_pattom t = match t.pattom with
           match cid_entry.entry_info with
             | ENTRY_constructor constructor_info -> 
                 t.pattom_typ <- constructor_info.constructor_type;
-                t.pattom_entry <- cid_entry;
+                t.pattom_entry <- Some cid_entry;
                 []
             | _ -> internal "we failed you again"
         end
   | P_Pattern p       -> 
-      let constraints = walk_pattern (P_Pattern p) in
+      let constraints = walk_pattern p in
         t.pattom_typ <- p.pattern_typ;
         constraints
-  | _ -> internal "An error occured. Contact your system administrator muahahaha"
+
+

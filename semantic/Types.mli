@@ -153,7 +153,7 @@ and ast_pattom =
   | P_Bool of bool
   | P_Id of string
   | P_Cid of string
-  | P_Pattern of ast_pattern
+  | P_Pattern of ast_pattern_node
 and ast_def_node = {
   def : ast_def;
   def_pos : int * int;
