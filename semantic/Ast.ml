@@ -29,7 +29,7 @@ let rec walk_program ls =
   (* printSymbolTable (); *)
   let constraints = walk_stmt_list ls in
   let solved = unify constraints in
-    krazo_kosti solved;
+    print_solved solved;
     ()
 
 

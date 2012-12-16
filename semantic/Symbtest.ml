@@ -122,14 +122,19 @@ let printState s1 s2 action arg =
     printSymbolTable ();
 ;;
 
-let krazo_kosti solved =
-  let print_kostis ppf =
-    let pp_list ppf l = List.iter (fun (a,b) -> fprintf ppf "%a, %a," pretty_typ a pretty_typ b) l in
-        fprintf ppf "%a" pp_list solved
+let print_solved lst = 
+  let rec pp_solved ppf solved = 
+    let pp_tuple ppf (t1, t2) =
+      fprintf ppf "(%a, %a)" pretty_typ t1 pretty_typ t2 
+    in
+      match solved with 
+        | [] -> ()
+        | x::[] -> fprintf ppf "%a" pp_tuple x
+        | x::xs -> fprintf ppf "%a, %a" pp_tuple x pp_solved xs
   in
-    fprintf ppf "%a" print_kostis;
-    ()
+    printf "%a" pp_solved lst 
 ;;
+    
 
 (* Κύριο πρόγραμμα επίδειξης του πίνακα συμβόλων *)
 
