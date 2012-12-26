@@ -6,6 +6,7 @@ type typ =
   | T_Bool
   | T_Float
   | T_Notype
+  | T_Ord
   | T_Arrow of typ * typ
   | T_Ref of typ
   | T_Array of typ * int

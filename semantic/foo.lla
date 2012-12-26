@@ -1,1 +1,2 @@
-let add x y = x + y
+let f x y z = (x > y) && (z < x)
+let test = f 1 1.2 3

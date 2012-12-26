@@ -17,8 +17,8 @@ let rec notIn alpha typ = match typ with
   | T_Arrow (t1, t2) -> (notIn alpha t1) && (notIn alpha t2)
   | T_Array(a,n) -> a != alpha 
   | T_Ref tref -> tref != alpha
-  | T_Int  | T_Char  | T_Str | T_Unit| T_Id _ (* must be handled *)
-  | T_Bool | T_Float | T_Notype -> true
+  | T_Int  | T_Char  | T_Str | T_Unit| T_Id _ 
+  | T_Ord | T_Bool | T_Float | T_Notype -> true
 
 let rec singleSub alpha t2 typ = match alpha, typ with
   | T_Alpha a, T_Alpha n when a = n -> t2
@@ -33,6 +33,36 @@ let rec subc alpha tau c =
   let walk (tau1, tau2) = (singleSub alpha tau tau1, singleSub alpha tau tau2) in
     List.map walk c
 
+let equalsType tau1 tau2  = match tau1, tau2 with
+  | T_Ord, tau | tau, T_Ord -> (tau = T_Int) || (tau = T_Float) || (tau = T_Char)
+  | tau1, tau2 -> tau1 = tau2
+
+let unify c =
+  let rec unifyOrd ord acc = match ord with
+    | [] -> acc 
+    | (tau1, tau2) :: c when (equalsType tau1 tau2) -> unifyOrd c acc
+    | (T_Alpha alpha, T_Ord) :: c | (T_Ord, T_Alpha alpha) :: c -> 
+        unifyOrd (subc (T_Alpha alpha) T_Ord c) ((T_Alpha alpha, T_Ord) :: (subc (T_Alpha alpha) T_Ord acc))
+    | _ -> failwith "ERROR !!! BOO !!!"
+  in
+  let rec unifyAux c ord acc = match c with
+    | [] -> (unifyOrd ord acc)
+    | (tau1, tau2) :: c when equalsType tau1 tau2 -> unifyAux c ord acc
+    | (T_Ord, tau2) :: c -> unifyAux c ((T_Ord, tau2) :: ord) acc
+    | (tau1, T_Ord) :: c -> unifyAux c ((tau1, T_Ord) :: ord) acc
+    | (T_Alpha alpha, tau2) :: c when notIn (T_Alpha alpha) tau2 ->
+        unifyAux (subc (T_Alpha alpha) tau2 c) (subc (T_Alpha alpha) tau2 ord) ((T_Alpha alpha, tau2)::(subc (T_Alpha alpha) tau2 acc))
+    | (tau1, T_Alpha alpha) :: c when notIn (T_Alpha alpha) tau1 ->
+        unifyAux (subc (T_Alpha alpha) tau1 c) (subc (T_Alpha alpha) tau1 ord) ((T_Alpha alpha, tau1)::(subc (T_Alpha alpha) tau1 acc))
+    | (T_Arrow (tau11, tau12), T_Arrow (tau21, tau22)) :: c ->
+        unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord acc
+    | _ -> failwith "ERROR !!! BOO !!!"
+  in
+    unifyAux c [] []
+
+
+(* Old Unify
+ 
 let unify c =
   let rec unifyAux c acc = match c with
     | [] -> acc
@@ -46,6 +76,7 @@ let unify c =
     | _ -> failwith "ERROR !!! BOO !!!"
   in
     unifyAux c []
+ *)
 
 let updateSymbol func_header solved_types = match func_header with
   | [] -> failwith "func_header cannot be empty\n";

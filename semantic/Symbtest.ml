@@ -22,6 +22,8 @@ let rec pretty_typ ppf typ =
         fprintf ppf "float"
     | T_Notype ->
         fprintf ppf "undefined"
+    | T_Ord -> 
+        fprintf ppf "ord"
     | T_Arrow (a,b) ->
         fprintf ppf "%a -> %a" pretty_typ a pretty_typ b
     | T_Ref a -> 

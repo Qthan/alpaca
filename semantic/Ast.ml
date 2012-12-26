@@ -239,7 +239,7 @@ and walk_expr expr_node = match expr_node.expr with
               let constraints1 = walk_expr expr1 in
               let constraints2 = walk_expr expr2 in
                 expr_node.expr_typ <- T_Bool; 
-                (expr1.expr_typ,T_Int) :: (expr1.expr_typ, expr2.expr_typ) :: constraints1 @ constraints2 (* ty1 = T_Int | T_Float | T_Char, using T_Int for the moment, type typ_inf = Ord | Typ of typ or [typ] for all *)
+                (expr1.expr_typ, T_Ord) :: (expr1.expr_typ, expr2.expr_typ) :: constraints1 @ constraints2 (* ty1 = T_Int | T_Float | T_Char, using T_Int for the moment, type typ_inf = Ord | Typ of typ or [typ] for all *)
           | And | Or      -> 
               let constraints1 = walk_expr expr1 in
               let constraints2 = walk_expr expr2 in
