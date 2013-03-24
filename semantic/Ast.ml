@@ -332,9 +332,9 @@ and walk_expr expr_node = match expr_node.expr with
                 (expr1.expr_typ, T_Bool) :: constraints1
       end
   | E_Block expr1    -> 
-    expr_node.expr_typ <- T_Unit; 
     let constraints = walk_expr expr1 in
-      (expr1.expr_typ, T_Unit) :: constraints  
+      expr_node.expr_typ <- expr1.expr_typ;
+      constraints  
   | E_While (expr1, expr2)    -> 
      let constraints1 = walk_expr expr1 in
      let constraints2 = walk_expr expr2 in  
