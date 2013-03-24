@@ -2,18 +2,22 @@ open Identifier
 
 (** Llama Types **)
 
+type dim =
+  | D_Int of int 
+  | D_Alpha of int
+
 type typ = 
     | T_Unit 
     | T_Int
     | T_Char
-    | T_Str
+    | T_Str (* T_Str is wrong, use array of chars instead*)
     | T_Bool
     | T_Float
     | T_Notype
     | T_Ord
     | T_Arrow of typ * typ
     | T_Ref of typ
-    | T_Array of typ * int
+    | T_Array of typ * dim
     | T_Id of string
     | T_Alpha of int
 
@@ -252,7 +256,7 @@ let rec sizeOfType t =
    match t with
    | T_Int            -> 2
    (*| TYPE_byte           -> 1*)
-   | T_Array (et, sz) -> sz * sizeOfType et
+   | T_Array (et, sz) -> (sizeOfType et)
    | _                -> 0
 
 let rec equalType t1 t2 =

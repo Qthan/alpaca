@@ -1,3 +1,4 @@
+type dim = D_Int of int | D_Alpha of int
 type typ =
     T_Unit
   | T_Int
@@ -9,7 +10,7 @@ type typ =
   | T_Ord
   | T_Arrow of typ * typ
   | T_Ref of typ
-  | T_Array of typ * int
+  | T_Array of typ * dim
   | T_Id of string
   | T_Alpha of int
 type string_const = { sval : string; spos : int * int; }

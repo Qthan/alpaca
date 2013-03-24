@@ -104,3 +104,11 @@ and warning fmt =
 and message fmt =
   let fmt = "@[<v 2>" ^^ fmt ^^ "@]@;@?" in
   eprintf fmt
+
+
+  (*printf "Line: %d Character: %d -> This expression has
+                        type %a but an expression was expected of type %a \n" line
+                        char_pos pretty_typ typ pretty_typ (T_Ref
+                        expr2.expr_typ);*)
+                      (*ain't gonna play, but keep it as a sample*)
+

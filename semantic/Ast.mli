@@ -1,4 +1,6 @@
+val library_funs : (string * Types.typ * (string * Types.typ) list) list
 val walk_program : Types.ast_stmt list -> unit
+val insert_function : string * Types.typ * (string * Types.typ) list -> unit
 val walk_stmt_list : Types.ast_stmt list -> (Types.typ * Types.typ) list
 val walk_stmt : Types.ast_stmt -> (Types.typ * Types.typ) list
 val walk_def_list : Types.ast_def_node list -> (Types.typ * Types.typ) list

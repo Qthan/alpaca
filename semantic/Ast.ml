@@ -24,14 +24,60 @@ open Symbtest
 open Error
 open Typeinf
 
+(* Standard Library Functions*)
+let library_funs = 
+    [("print_int", T_Unit, [("a", T_Int)]);
+     ("print_bool", T_Unit, [("a", T_Bool)]);
+     ("print_char", T_Unit, [("a", T_Char)]);
+     ("print_float", T_Unit, [("a", T_Float)]);
+     ("print_string", T_Unit, [("a", T_Array (T_Char, D_Int 1))]);
+     ("read_int", T_Int, [("a", T_Unit)]);
+     ("read_bool", T_Bool, [("a", T_Unit)]);
+     ("read_char", T_Char, [("a", T_Unit)]);
+     ("read_float", T_Float, [("a", T_Unit)]);
+     ("read_string", T_Array (T_Char, D_Int 1), [("a", T_Unit)]);
+     ("abs", T_Int, [("a", T_Int)]);
+     ("fabs", T_Float, [("a", T_Float)]);    
+     ("sqrt", T_Float, [("a", T_Float)]);
+     ("sin", T_Float, [("a", T_Float)]);
+     ("cos", T_Float, [("a", T_Float)]);
+     ("tan", T_Float, [("a", T_Float)]);
+     ("atan", T_Float, [("a", T_Float)]);
+     ("exp", T_Float, [("a", T_Float)]);
+     ("ln", T_Float, [("a", T_Float)]);
+     ("pi", T_Float, [("a", T_Unit)]);
+     ("incr", T_Unit, [("a", T_Ref (T_Int))]);
+     ("decr", T_Unit, [("a", T_Ref (T_Int))]);
+     ("float_of_int", T_Float, [("a", T_Int)]);
+     ("int_of_float", T_Int, [("a", T_Float)]);
+     ("round", T_Int, [("a", T_Float)]);
+     ("int_of_char", T_Int, [("a", T_Char)]);
+     ("char_of_int", T_Char, [("a", T_Int)]);
+     ("strlen", T_Int, [("a", T_Array (T_Char, D_Int 1))]);
+     ("strcmp", T_Int, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
+     ("strcpy", T_Unit, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
+     ("strcat", T_Unit, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
+    ]
+
+
+
 let rec walk_program ls =
   initSymbolTable 256;
   (* printSymbolTable (); *)
+  List.iter insert_function library_funs;
   let constraints = walk_stmt_list ls in
   let solved = unify constraints in
     print_solved solved;
     ()
 
+and insert_function (id, result_ty, params) =
+  let p = newFunction (id_make id) true in
+    (*printState "Before opening" "After opening" (openScope) ();*)
+    openScope ();
+    walk_par_list params p;
+    endFunctionHeader p result_ty;
+    (*printState "Before closing" "Afterclosing" (closeScope) ();*)
+    closeScope ();
 
 and walk_stmt_list ls = 
   let constraints = ref [] in
@@ -112,7 +158,7 @@ and walk_def t = match t.def with
               walk_expr_list t (((e.expr_typ, T_Int) :: constraints) @ acc)
       in
       let new_ty = refresh ty in
-      let p = newVariable (id_make id) (T_Array (new_ty, List.length l)) true in
+      let p = newVariable (id_make id) (T_Array (new_ty, D_Int (List.length l))) true in
         ignore p;
         printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
         let constraints = walk_expr_list l [] in
@@ -254,16 +300,7 @@ and walk_expr expr_node = match expr_node.expr with
               let constraints1 = walk_expr expr1 in
               let constraints2 = walk_expr expr2 in     
                 expr_node.expr_typ <- T_Unit;   
-                match (expr1.expr_typ) with 
-                  | T_Ref typ -> (typ, expr2.expr_typ) :: constraints1 @ constraints2
-                  | typ -> 
-                    let (line, char_pos) = expr1.expr_pos in 
-                      (*error "Line: %d Character: %d -> This expression has
-                       * type %a but an expression was expected of type %a" line
-                       * char_pos pretty_typ typ pretty_typ (T_Ref
-                       * expr2.expr_typ)*)
-                      (*ain't gonna play, but keep it as a sample*)
-                      raise Exit;
+                (T_Ref expr2.expr_typ, expr1.expr_typ) :: constraints1 @ constraints2
       end
   | E_Unop (op, expr1)     ->
       begin
@@ -294,7 +331,10 @@ and walk_expr expr_node = match expr_node.expr with
                 expr_node.expr_typ <- T_Bool;
                 (expr1.expr_typ, T_Bool) :: constraints1
       end
-  | E_Block expr1    -> walk_expr expr1
+  | E_Block expr1    -> 
+    expr_node.expr_typ <- T_Unit; 
+    let constraints = walk_expr expr1 in
+      (expr1.expr_typ, T_Unit) :: constraints  
   | E_While (expr1, expr2)    -> 
      let constraints1 = walk_expr expr1 in
      let constraints2 = walk_expr expr2 in  
@@ -316,15 +356,14 @@ and walk_expr expr_node = match expr_node.expr with
         let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           match id_entry.entry_info with
             | ENTRY_variable var -> 
-                begin
-                  match var.variable_type with
-                    | T_Array (_,_) ->
-                      expr_node.expr_typ <- T_Int;
-                      expr_node.expr_entry <- Some id_entry;
-                      []
-                    | _ -> error "Must be array"; raise Exit;
-                end
-            | _ -> error "Must be array"; raise Exit;
+                expr_node.expr_typ <- T_Int;
+                expr_node.expr_entry <- Some id_entry;
+                [(var.variable_type, T_Array (fresh (), freshDim ()))]
+            | ENTRY_parameter par ->
+              expr_node.expr_typ <- T_Int;
+              expr_node.expr_entry <- Some id_entry;
+              [(par.parameter_type, T_Array (fresh (), freshDim()))]
+            | _ -> error "Array type must be variable or parameter"; raise Exit;
       end
   | E_Ifthenelse (expr1, expr2, expr3)  -> (*Change ifthelse to ifthenelse*)
         let constraints1 = walk_expr expr1 in
@@ -415,7 +454,7 @@ and walk_atom t = match t.atom with
   | A_Num n           -> t.atom_typ <- T_Int; []
   | A_Dec f           -> t.atom_typ <- T_Float; []
   | A_Chr c           -> t.atom_typ <- T_Char;  []
-  | A_Str str         -> t.atom_typ <- T_Array(T_Char, 1); []
+  | A_Str str         -> t.atom_typ <- T_Array(T_Char, D_Int 1); []
   | A_Bool b          -> t.atom_typ <- T_Bool; []
   | A_Cid cid         -> 
       let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
@@ -453,37 +492,39 @@ and walk_atom t = match t.atom with
                 t.atom_entry <- Some id_entry;
                 []
       end
-  | A_Par             -> t.atom_typ <- T_Unit; []
+  | A_Par             -> t.atom_typ <- T_Unit; [] 
   | A_Bank atom          -> 
+      begin 
+        let constraints = walk_atom atom in
+          t.atom_typ <- refresh t.atom_typ;
+          (T_Ref t.atom_typ, atom.atom_typ) :: constraints
+      end
+ (* | A_Bank atom          -> 
       begin 
         let constraints = walk_atom atom in
           match atom.atom_typ with 
             | T_Ref typ -> t.atom_typ <- typ; constraints
             | _ -> error "Must be a reference\n"; raise Exit;
-      end
+      end *)
   | A_Array (id, expr_list)    -> 
+      let rec walk_array_expr expr_list acc =
+        match expr_list with
+          | [] -> acc
+          | (expr :: xs) -> 
+              let constraints = walk_expr expr in 
+                walk_array_expr xs ((expr.expr_typ, T_Int) :: constraints @ acc)
+      in
       let array_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
         begin
-          match array_entry.entry_info with 
-            | ENTRY_variable arr -> 
-                let typ_arr = arr.variable_type in
-                  begin
-                    match typ_arr with 
-                      | T_Array(typ, dim) -> 
-                          let rec walk_array_expr expr_list n acc =
-                            match expr_list, n with
-                              | [], 0 -> acc
-                              | [], _ | _, 0 -> error "array dimensions are %d\n" dim; raise Exit;
-                              | (expr :: xs), n -> 
-                                  let constraints = walk_expr expr in 
-                                    walk_array_expr xs (n-1) ((expr.expr_typ, T_Int) :: constraints @ acc)
-                          in
-                            t.atom_typ <- T_Ref typ;
-                            t.atom_entry <- Some array_entry;
-                            walk_array_expr expr_list dim []
-                      | _ -> error "must be an array\n"; raise Exit; (*What's wrong with pretty print..*)
-                  end
-            | _ -> error "must be an array\n"; raise Exit;
+          let typ_arr = match array_entry.entry_info with 
+            | ENTRY_variable arr -> arr.variable_type 
+            | ENTRY_parameter arr -> arr.parameter_type 
+            | _ -> error "must be an array\n"; raise Exit;  
+          in
+            let typ = fresh() in
+              t.atom_typ <- T_Ref typ;
+              t.atom_entry <- Some array_entry;
+              walk_array_expr expr_list [(typ_arr, T_Array (typ, freshDim()))]
         end
   | A_Expr expr          -> 
       let constraints = walk_expr expr in
@@ -574,5 +615,3 @@ and walk_pattom t = match t.pattom with
       let constraints = walk_pattern p in
         t.pattom_typ <- p.pattern_typ;
         constraints
-
-

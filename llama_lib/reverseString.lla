@@ -1,13 +1,13 @@
 let main =
-	let reverse s r =
-		let l = strlen s in
-		for i = 0 to l-1 do
-			r[i] := !s[l-i-1]
-		done;
-		r[l] := '\0' in
+   let reverse s r =
+      let l = strlen s in
+      for i = 0 to l-1 do
+         r[i] := !s[l-i-1]
+      done;
+      r[l] := '\0' in
 
-	let mutable p [20] in
+   let mutable p [20] in
 
-	reverse "\n!dlrow olleH" p;
-	print_string p
+   reverse "\n!dlrow olleH" p;
+   print_string p
 

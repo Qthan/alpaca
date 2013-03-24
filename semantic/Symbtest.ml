@@ -6,6 +6,11 @@ open Symbol
 
 let show_offsets = true
 
+let rec pretty_dim ppf dim1 =
+  match dim1 with 
+    | D_Int n -> fprintf ppf "%d" n
+    | D_Alpha n -> fprintf ppf "d@@%d" n
+    
 let rec pretty_typ ppf typ =
   match typ with
     | T_Unit -> 
@@ -29,11 +34,11 @@ let rec pretty_typ ppf typ =
     | T_Ref a -> 
         fprintf ppf "%a ref" pretty_typ  a
     | T_Array (a,n) -> 
-        fprintf ppf "%a array %d" pretty_typ a (n)
+        fprintf ppf "array (%a, %a)" pretty_typ a pretty_dim n
     | T_Id str ->
         fprintf ppf "Udt %s" (str)
     | T_Alpha a ->
-        fprintf ppf "papi%d" a
+        fprintf ppf "@@%d" a
 
 let pretty_mode ppf mode =
   match mode with
@@ -280,3 +285,4 @@ let print_solved lst =
  closeScope ();
 
  printSymbolTable ()*)
+
