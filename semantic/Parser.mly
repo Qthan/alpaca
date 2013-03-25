@@ -81,27 +81,30 @@
 %token T_COMA
 %token T_COLON
 
-%nonassoc T_IN
-%nonassoc T_IF
-%nonassoc T_THEN
-%nonassoc T_ELSE
-%left T_SMCOLON T_COMA
 
+%nonassoc T_IN
+%left T_SMCOLON T_COMA
+%nonassoc IFX
+%nonassoc T_ELSE
+%nonassoc T_ASSIGN
 %left T_OR 
 %left T_AND 
+%nonassoc T_SEQ T_NSEQ T_L T_LE T_G T_GE T_EQ T_NEQ
+%left T_PLUS T_MINUS T_FPLUS T_FMINUS
+%left T_TIMES T_DIV T_MOD T_FTIMES T_FDIV
+%right T_POWER
+%left UN
+%nonassoc T_BANK
+%nonassoc T_NEW T_LBRACK T_RBRACK T_MUTABLE 
 
-%nonassoc T_SEQ T_NSEQ T_L T_LE T_G T_GE T_EQ T_NEQ T_ASSIGN T_DELETE T_ID T_CID T_ANDDEF
 
 %right T_GIVES
-%nonassoc T_REF ARR
+%left T_REF
+%nonassoc T_ARRAY ARR
 
-%nonassoc T_DIM
-%left T_PLUS T_MINUS T_FPLUS T_FMINUS 
-%left T_TIMES T_DIV T_MOD T_FTIMES T_FDIV
 
-%right T_POWER
 
-%left UN 
+
 
 %start program
 %type <unit> program
@@ -198,7 +201,7 @@ types:
             | types T_GIVES types                                       { T_Arrow ($1, $3) }
             | types T_REF                                               { T_Ref ($1) }
             | T_ARRAY T_OF types %prec ARR                              { T_Array ($3, D_Int 0) }
-            | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                     
+            | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                    
                                                                         { T_Array ($7, D_Int ($4+1)) }
             | T_ID                                                      { T_Id ($1.id_name) }
             ;
@@ -242,7 +245,7 @@ expr:
             | T_DIM intmb T_ID                                          { { expr = E_Dim ($2, $3.id_name); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
             | T_NEW types                                               { { expr = E_New ($2); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
             | T_IF expr T_THEN expr T_ELSE expr                         { { expr = E_Ifthenelse ($2, $4, $6); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
-            | T_IF expr T_THEN expr                                     { { expr = E_Ifthen ($2, $4); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
+            | T_IF expr T_THEN expr %prec IFX                           { { expr = E_Ifthen ($2, $4); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } }
             | letdef T_IN expr                                          { { expr = E_Letin ($1, $3); expr_pos = $3.expr_pos; expr_typ = T_Notype; expr_entry = None } }
             | T_MATCH expr T_WITH clause clausestar T_END               { { expr = E_Match ($2, $4::(List.rev($5))); expr_pos = $1.pos; expr_typ = T_Notype; expr_entry = None } } 
             | T_CID atomstar                                            { { expr = E_Cid ($1.cid_name, $2); expr_pos = $1.cid_pos; expr_typ = T_Notype; expr_entry = None } } 
@@ -319,6 +322,7 @@ pattomstar:
             | pattomstar pattom                                         { $2::$1 }
             ;
 %%
+
 
 
 
