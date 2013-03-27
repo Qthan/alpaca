@@ -1,6 +1,9 @@
 open Identifier
 open Error
 open Types
+open Pretty_print
+open Printf
+open Format
 
 module H = Hashtbl.Make (
   struct
@@ -10,6 +13,9 @@ module H = Hashtbl.Make (
   end
 )
 
+let debug_symbol = true
+
+(* Symbol table definitions *)
 
 let start_positive_offset = 8
 let start_negative_offset = 0
@@ -38,6 +44,90 @@ let initSymbolTable size =
    tab := H.create size;
    currentScope := the_outer_scope
 
+(* Functions for debugging symbol table *)
+
+let show_offsets = true
+
+let printSymbolTable () =
+  let rec walk ppf scp =
+    if scp.sco_nesting <> 0 then begin
+      fprintf ppf "scope: ";
+      let entry ppf e =
+        if (scp.sco_hidden) then 
+          fprintf ppf "Hidden!!"
+        else
+          begin
+            fprintf ppf "%a" pretty_id e.entry_id;
+            match e.entry_info with
+              | ENTRY_none ->
+                  fprintf ppf "<none>"
+              | ENTRY_variable inf ->
+                  if show_offsets then
+                    fprintf ppf "[%d] :%a" inf.variable_offset pretty_typ inf.variable_type
+              | ENTRY_function inf ->
+                  let param ppf e =
+                    match e.entry_info with
+                      | ENTRY_parameter inf ->
+                          fprintf ppf "%a%a : %a"
+                            pretty_mode inf.parameter_mode
+                            pretty_id e.entry_id
+                            pretty_typ inf.parameter_type
+                      | _ ->
+                          fprintf ppf "<invalid>" in
+                  let rec params ppf ps =
+                    match ps with
+                      | [p] ->
+                          fprintf ppf "%a" param p
+                      | p :: ps ->
+                          fprintf ppf "%a; %a" param p params ps;
+                      | [] ->
+                          () in
+                    fprintf ppf "(%a) : %a"
+                      params inf.function_paramlist
+                      pretty_typ inf.function_result
+              | ENTRY_parameter inf ->
+                  if show_offsets then
+                    fprintf ppf "[%d]" inf.parameter_offset
+              | ENTRY_temporary inf ->
+                  if show_offsets then
+                    fprintf ppf "[%d]" inf.temporary_offset
+              | ENTRY_udt -> ()
+              | ENTRY_constructor inf ->
+                  let pp_list ppf l = List.iter (fprintf ppf "%a " pretty_typ) l in
+                  fprintf ppf " Type: %a Parameters: %a" pretty_typ inf.constructor_type pp_list inf.constructor_paramlist
+          end
+      in
+      let rec entries ppf es =
+        match es with
+          | [e] ->
+              fprintf ppf "%a" entry e
+          | e :: es ->
+              fprintf ppf "%a, %a" entry e entries es;
+          | [] ->
+              () in
+        match scp.sco_parent with
+          | Some scpar ->
+              fprintf ppf "%a\n%a"
+                entries scp.sco_entries
+                walk scpar
+          | None ->
+              fprintf ppf "<impossible>\n"
+    end 
+  in
+  let scope ppf scp =
+    if scp.sco_nesting == 0 then
+      fprintf ppf "no scope\n"
+    else
+      walk ppf scp in
+    printf "%a----------------------------------------\n"
+      scope !currentScope
+
+let printState msg =
+  Printf.printf "%s:\n" msg;
+  printSymbolTable ()
+                     
+(* Symbol table functions *) 
+
 let openScope () =
   let sco = {
     sco_parent = Some !currentScope;
@@ -46,7 +136,8 @@ let openScope () =
     sco_negofs = start_negative_offset;
     sco_hidden = false
   } in
-  currentScope := sco
+  currentScope := sco;
+  if (debug_symbol) then printState "Opened scope"
 
 let closeScope () =
   let sco = !currentScope in
@@ -54,12 +145,14 @@ let closeScope () =
   List.iter manyentry sco.sco_entries;
   match sco.sco_parent with
   | Some scp ->
-      currentScope := scp
+      currentScope := scp;
+      if (debug_symbol) then printState "Closed scope"
   | None ->
       internal "cannot close the outer scope!"
 
 let hideScope sco flag =
-  sco.sco_hidden <- flag
+  sco.sco_hidden <- flag;
+  if (debug_symbol) then printState "Hidden scope"
 
 exception Failure_NewEntry of entry
 
@@ -80,6 +173,7 @@ let newEntry id inf err =
     } in
     H.add !tab id e;
     !currentScope.sco_entries <- e :: !currentScope.sco_entries;
+    if (debug_symbol) then printState "Added new entry";
     e
   with Failure_NewEntry e ->
     error "duplicate identifier %a" pretty_id id;

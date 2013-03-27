@@ -1,10 +1,25 @@
 open Error
 open Types
 open Identifier
-open Symbol
 open Printf
-open Symbtest
+open Pretty_print
 open Format
+
+(* Function for type inference debugging *)
+
+let debug_typeinf = true
+
+let print_constraints lst = 
+  let rec pp_constraints ppf solved = 
+    let pp_tuple ppf (t1, t2) =
+      fprintf ppf "(%a, %a)" pretty_typ t1 pretty_typ t2 
+    in
+      match solved with 
+        | [] -> ()
+        | x :: [] -> fprintf ppf "%a" pp_tuple x
+        | x :: xs -> fprintf ppf "%a, %a" pp_tuple x pp_constraints xs
+  in
+    printf "%a" pp_constraints lst 
 
 let fresh =
   let k = ref 0 in
@@ -80,7 +95,9 @@ let unify c =
   let rec unifyAux c ord dims acc = match c with
     | [] -> 
       let acc' = unifyOrd ord acc in 
-        unifyDims dims acc'
+      let solved = unifyDims dims acc' in
+        if (debug_typeinf) then print_constraints solved;
+        solved
     | (tau1, tau2) :: c when equalsType tau1 tau2 -> 
       unifyAux c ord dims acc
     | (T_Ref tau1, T_Ref tau2) :: c -> 
@@ -120,39 +137,3 @@ let unify c =
   in
     unifyAux c []
  *)
-
-let updateSymbol func_header solved_types = match func_header with
-  | [] -> failwith "func_header cannot be empty\n";
-  | (id, _)::_ -> 
-      let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-        begin
-          match p.entry_info with 
-            | ENTRY_function f -> 
-                let f_typ = List.assoc f.function_result solved_types in
-                  f.function_result <- f_typ;
-                  List.iter (fun param_entry -> match param_entry.entry_info with
-                               | ENTRY_parameter param ->
-                                  begin
-                                    match (try ( Some ( List.assoc param.parameter_type solved_types) ) with Not_found -> None) with
-                                                | None -> ()
-                                                | Some p_typ -> param.parameter_type <- p_typ 
-                                  end
-                               | _ -> failwith "Parameter must be a parameter\n"
-                  ) f.function_paramlist
-            | ENTRY_variable v -> 
-                    begin  
-                       match (try ( Some ( List.assoc v.variable_type solved_types) ) with Not_found -> None) with
-                        | None -> ()
-                        | Some v_typ ->  v.variable_type <- v_typ
-                    end
-            | _ -> failwith "Must be variable or function\n"
-        end
-
-let rec updateSymbolRec func_to_change solved_types = match func_to_change with
-  | [] -> ()
-  | (D_Var (fh, _))::t -> updateSymbol fh solved_types;
-                          updateSymbolRec t solved_types
-  | _ -> failwith "Must be D_Var\n"
-
-
-

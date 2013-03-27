@@ -1,3 +1,5 @@
+val debug_typeinf : bool
+val print_constraints : (Types.typ * Types.typ) list -> unit
 val fresh : unit -> Types.typ
 val freshDim : unit -> Types.dim
 val refresh : Types.typ -> Types.typ
@@ -16,6 +18,3 @@ val subArray :
   Types.dim -> (Types.typ * Types.typ) list -> (Types.typ * Types.typ) list
 val equalsType : Types.typ -> Types.typ -> bool
 val unify : (Types.typ * Types.typ) list -> (Types.typ * Types.typ) list
-val updateSymbol : (string * 'a) list -> (Types.typ * Types.typ) list -> unit
-val updateSymbolRec :
-  Types.ast_def list -> (Types.typ * Types.typ) list -> unit

@@ -1,26 +1,8 @@
-(*
-
-
-             ________________________________________________,--.__
-  --    ,--""                                               '\     '\
-       /  "                                                   \     '\
-     ,/                                                       '\     |
-     | "   "   "                                                '\,  /
-     |           " , =__________________________________________,--""
-   - |  "    "    /"/'    
-     \  "      ",/ /    
-      \   ",",_/,-'       
-   -- -'-;.__:-'
-   
-*)
-
-
 open Printf
 open Symbol
 open Identifier
 open Types
 open Format
-open Symbtest
 open Error
 open Typeinf
 
@@ -67,16 +49,15 @@ let rec walk_program ls =
   List.iter insert_function library_funs;
   let constraints = walk_stmt_list ls in
   let solved = unify constraints in
-    print_solved solved;
     ()
 
 and insert_function (id, result_ty, params) =
   let p = newFunction (id_make id) true in
-    (*printState "Before opening" "After opening" (openScope) ();*)
+    (*openScope ();*)
     openScope ();
     walk_par_list params p;
     endFunctionHeader p result_ty;
-    (*printState "Before closing" "Afterclosing" (closeScope) ();*)
+    (*closeScope ();*)
     closeScope ();
 
 and walk_stmt_list ls = 
@@ -84,10 +65,10 @@ and walk_stmt_list ls =
   let rec walk_stmt_list_aux ls acc = match ls with
     | []                  ->  constraints := acc
     | h :: t              ->
-        printState "Before opening" "After opening" (openScope) ();
+        openScope ();
         let constraints1 = walk_stmt h in
           walk_stmt_list_aux t (constraints1 @ acc);
-          printState "Before closing" "Afterclosing" (closeScope) ();
+          closeScope ();
   in
     walk_stmt_list_aux ls [];
     !constraints
@@ -123,26 +104,26 @@ and walk_def t = match t.def with
           | []            -> internal "Definition cannot be empty";
           | (id, ty) :: []  ->
                 let new_ty = refresh ty in
-                (*printState "Before hiding" "After hiding" (hideScope !currentScope) (true); --probably not needed *)
+                (*hideScope !currentScope true; --probably not needed *)
                 let constraints = walk_expr e in
                 let p = newVariable (id_make id) new_ty true in
                   ignore p;
                   (new_ty, e.expr_typ) :: constraints
-                  (* printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false); --probably not needed *)
+                  (* hideScope !currentScope false; --probably not needed *)
 
           | (id, ty) :: tl  ->
               let p = newFunction (id_make id) true in 
                 (* printState "Before opening" "After opening" (openScope()); *)
-                printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
-                printState "Before opening" "After opening" (openScope) ();
+                hideScope !currentScope true;
+                openScope ();
                 walk_par_list tl p;
                 let new_ty = refresh ty in
                 endFunctionHeader p new_ty;
-                (* printState "Before opening" "After opening" (openScope) (); *)
+                (* openScope (); *)
                 (* show_par_to_expr tl; *)
                 let constraints = walk_expr e in 
-                  printState "Before closing" "Afterclosing" (closeScope) ();
-                  printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
+                  closeScope ();
+                  hideScope !currentScope false;
                   (new_ty, e.expr_typ) :: constraints
       end
   | D_Mut (id, ty) ->     
@@ -160,9 +141,9 @@ and walk_def t = match t.def with
       let new_ty = refresh ty in
       let p = newVariable (id_make id) (T_Array (new_ty, D_Int (List.length l))) true in
         ignore p;
-        printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
+        hideScope !currentScope true;
         let constraints = walk_expr_list l [] in
-        printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
+        hideScope !currentScope false;
         constraints
         
 and walk_recdef_names t = match t.def with
@@ -192,9 +173,9 @@ and walk_recdef_params t = match t.def with
           | (id, ty) :: tl  -> 
               let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               let new_ty = getType p in
-              printState "Before opening" "After opening" (openScope) ();
+              openScope ();
               walk_par_list tl p;
-              printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
+              hideScope !currentScope true;
               endFunctionHeader p new_ty;
       end
   | D_Mut (id, t)       -> error "Mutable cannot be rec\n";
@@ -206,22 +187,22 @@ and walk_recdef t = match t.def with
         match l with
           | []            -> error "too many problems\n"; raise Exit
           | (id, ty) :: []  -> 
-              printState "Before hiding" "After hiding" (hideScope !currentScope) (true);
+              hideScope !currentScope true;
               let constraints = walk_expr e in 
-              printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
+              hideScope !currentScope false;
               let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               let new_ty = getType p in
                 (new_ty, e.expr_typ) :: constraints
           | (id, ty) :: tl  -> 
               (* let p = newFunction (id_make id) true in *) 
-              (*   printState "Before opening" "After opening" (openScope) (); *)
+              (*   openScope (); *)
               (*   walk_par_list tl p; *)
               (*   endFunctionHeader p new_ty; *)
                 let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
                 let new_ty = getType p in
-                printState "Before unhiding" "After unhiding" (hideScope !currentScope) (false);
+                hideScope !currentScope false;
                 let constraints = walk_expr e in
-                  printState "Before closing" "Afterclosing" (closeScope) ();
+                  closeScope ();
                  (new_ty, e.expr_typ) :: constraints
       end
   | D_Mut (id, t)       -> error "Mutable cannot be rec\n"; raise Exit;
