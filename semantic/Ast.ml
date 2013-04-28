@@ -53,11 +53,9 @@ let rec walk_program ls =
 
 and insert_function (id, result_ty, params) =
   let p = newFunction (id_make id) true in
-    (*openScope ();*)
     openScope ();
     walk_par_list params p;
     endFunctionHeader p result_ty;
-    (*closeScope ();*)
     closeScope ();
 
 and walk_stmt_list ls = 
@@ -104,13 +102,12 @@ and walk_def t = match t.def with
           | []            -> internal "Definition cannot be empty";
           | (id, ty) :: []  ->
                 let new_ty = refresh ty in
-                (*hideScope !currentScope true; --probably not needed *)
-                let constraints = walk_expr e in
                 let p = newVariable (id_make id) new_ty true in
+                hideScope !currentScope true;
+                let constraints = walk_expr e in
                   ignore p;
+                  hideScope !currentScope false; 
                   (new_ty, e.expr_typ) :: constraints
-                  (* hideScope !currentScope false; --probably not needed *)
-
           | (id, ty) :: tl  ->
               let p = newFunction (id_make id) true in 
                 (* printState "Before opening" "After opening" (openScope()); *)
@@ -185,7 +182,7 @@ and walk_recdef t = match t.def with
   | D_Var (l, e)      -> 
       begin 
         match l with
-          | []            -> error "too many problems\n"; raise Exit
+          | []            -> internal "Definition cannot be empty\n"; raise Exit
           | (id, ty) :: []  -> 
               hideScope !currentScope true;
               let constraints = walk_expr e in 
@@ -297,16 +294,7 @@ and walk_expr expr_node = match expr_node.expr with
           | U_Del         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Unit;
-                begin
-                match (expr1.expr_typ) with 
-                  | T_Ref _ -> constraints1
-                  | typ -> 
-                    let (line, char_pos) = expr1.expr_pos in 
-                      (*error "Line: %d Character: %d -> This expression has
-                       * type %a but an expression was expected of type 'a ref"
-                       * line char_pos pretty_typ typ pretty_typ;*) (*ain't gonna play, but keep it as a sample*)
-                      raise Exit;
-                end
+	        (expr1.expr_typ, T_Ref fresh())
           | U_Not         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Bool;
@@ -331,7 +319,7 @@ and walk_expr expr_node = match expr_node.expr with
           closeScope();
           expr_node.expr_entry <- Some i;
           expr_node.expr_typ <- T_Unit;
-          (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) :: (expr3.expr_typ, T_Unit) :: constraints1 @ constraints2 @ constraints3                        
+          (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) :: (expr3.expr_typ, T_Unit) :: constraints1 @ constraints2 @ constraints3
   | E_Dim (a, id)      ->
       begin
         let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
@@ -416,7 +404,7 @@ and walk_expr expr_node = match expr_node.expr with
         match ty1 with
           | T_Array _ -> error "Cannot dynamically allocate array. This is not ruby. Or python. Or C. THIS IS LLAMA!"; raise Exit;
           | ty1 -> 
-              expr_node.expr_typ <- ty1;
+              expr_node.expr_typ <- T_Ref ty1;
               []
       end
   | E_Letin (l, expr)    -> 

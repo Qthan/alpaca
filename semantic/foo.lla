@@ -1,2 +1,7 @@
-let f x y z = (x > y) && (z < x)
-let test = f 1 1.2 3
+type list = Nill | Cons of int list | Moufa
+
+let rec reverse lst acc =
+  match lst with
+    Nill -> acc
+  | Cons x xs -> reverse xs (Cons x acc)
+  end
