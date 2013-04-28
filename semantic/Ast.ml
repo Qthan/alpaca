@@ -182,7 +182,7 @@ and walk_recdef t = match t.def with
   | D_Var (l, e)      -> 
       begin 
         match l with
-          | []            -> internal "Definition cannot be empty\n"; raise Exit
+          | []            -> internal "Definition cannot be empty\n";
           | (id, ty) :: []  -> 
               hideScope !currentScope true;
               let constraints = walk_expr e in 
@@ -294,7 +294,7 @@ and walk_expr expr_node = match expr_node.expr with
           | U_Del         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Unit;
-	        (expr1.expr_typ, T_Ref fresh())
+	        (expr1.expr_typ, T_Ref fresh()) :: constraints1
           | U_Not         -> 
               let constraints1 = walk_expr expr1 in
                 expr_node.expr_typ <- T_Bool;

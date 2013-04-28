@@ -6,10 +6,6 @@ type dim =
   | D_Int of int 
   | D_Alpha of int
 
-type alloc =
-  | Static
-  | Dynamic§
-
 type typ = 
     | T_Unit 
     | T_Int
@@ -20,7 +16,7 @@ type typ =
     | T_Notype
     | T_Ord
     | T_Arrow of typ * typ
-    | T_Ref of typ * alloc
+    | T_Ref of typ
     | T_Array of typ * dim
     | T_Id of string
     | T_Alpha of int
