@@ -5,6 +5,9 @@ open Printf
 open Pretty_print
 open Format
 
+(* XXX VOTE : Handling errors with exceptions *)
+exception Unify of typ * typ
+
 (* Function for type inference debugging *)
 
 let debug_typeinf = true
@@ -12,14 +15,21 @@ let debug_typeinf = true
 let print_constraints lst = 
   let rec pp_constraints ppf solved = 
     let pp_tuple ppf (t1, t2) =
-      fprintf ppf "(%a, %a)" pretty_typ t1 pretty_typ t2 
+      fprintf ppf "(%a, %a)\n" pretty_typ t1 pretty_typ t2 
     in
       match solved with 
         | [] -> ()
         | x :: [] -> fprintf ppf "%a" pp_tuple x
-        | x :: xs -> fprintf ppf "%a, %a" pp_tuple x pp_constraints xs
+        | x :: xs -> fprintf ppf "%a %a" pp_tuple x pp_constraints xs
   in
-    printf "%a" pp_constraints lst 
+    printf "%a" pp_constraints lst
+
+(* Save inferred types on a hashtable for fast look-ups *)
+
+let add_solved_table solved tbl = 
+  List.iter (fun (tvar, typ) -> Hashtbl.add tbl tvar typ) solved 
+
+(* Type inference functions *)
 
 let fresh =
   let k = ref 0 in
@@ -118,22 +128,6 @@ let unify c =
         unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord dims acc
     | (typ1, typ2) :: lst -> printf "Could not match type %a with type %a \n" pretty_typ typ1  pretty_typ typ2; raise Exit
   in
-    unifyAux c [] [] []
+   print_constraints c; unifyAux c [] [] []
 
 
-(* Old Unify
- 
-let unify c =
-  let rec unifyAux c acc = match c with
-    | [] -> acc
-    | (tau1, tau2) :: c when tau1 = tau2 -> unifyAux c acc
-    | (T_Alpha alpha, tau2) :: c when notIn (T_Alpha alpha) tau2 ->
-        unifyAux (subc (T_Alpha alpha) tau2 c) ((T_Alpha alpha, tau2)::(subc (T_Alpha alpha) tau2 acc))
-    | (tau1, T_Alpha alpha) :: c when notIn (T_Alpha alpha) tau1 ->
-        unifyAux (subc (T_Alpha alpha) tau1 c) ((T_Alpha alpha, tau1)::(subc (T_Alpha alpha) tau1 acc))
-    | (T_Arrow (tau11, tau12), T_Arrow (tau21, tau22)) :: c ->
-        unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) acc
-    | _ -> failwith "ERROR !!! BOO !!!"
-  in
-    unifyAux c []
- *)

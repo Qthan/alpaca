@@ -108,7 +108,7 @@ rule lexer = parse
   | upCase+id* as cid   { T_CID { cid_name = cid; cid_pos = get_pos lexbuf } }
   | '\''constChar '\'' as c_char  
                         { T_CONSTCHAR { cval = c_char; cpos = get_pos lexbuf } }
-  | '\"'[^'\n']* '\"' as c_string  
+  | '\"'([^'\n' '\"'] | '\\' '\"')* '\"' as c_string  
                         { T_STRING { sval = c_string; spos = get_pos lexbuf } }
   | "--"[^'\n']*        { lexer lexbuf } 
   | "(*"                {  comments 0 lexbuf }

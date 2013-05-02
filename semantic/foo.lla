@@ -1,7 +1,3 @@
-type list = Nill | Cons of int list | Moufa
+let f x = x
 
-let rec reverse lst acc =
-  match lst with
-    Nill -> acc
-  | Cons x xs -> reverse xs (Cons x acc)
-  end
+let main = f 4

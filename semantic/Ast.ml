@@ -17,7 +17,7 @@ let library_funs =
      ("read_bool", T_Bool, [("a", T_Unit)]);
      ("read_char", T_Char, [("a", T_Unit)]);
      ("read_float", T_Float, [("a", T_Unit)]);
-     ("read_string", T_Array (T_Char, D_Int 1), [("a", T_Unit)]);
+     ("read_string", T_Unit, [("a",  T_Array (T_Char, D_Int 1))]);
      ("abs", T_Int, [("a", T_Int)]);
      ("fabs", T_Float, [("a", T_Float)]);    
      ("sqrt", T_Float, [("a", T_Float)]);
@@ -44,7 +44,7 @@ let library_funs =
 
 
 let rec walk_program ls =
-  initSymbolTable 256;
+  initSymbolTable 10009;
   (* printSymbolTable (); *)
   List.iter insert_function library_funs;
   let constraints = walk_stmt_list ls in
@@ -88,10 +88,10 @@ and walk_def_list t =
 
 and walk_recdef_list t  = 
   let rec walk_recdef_list_aux t acc = match t with
-    | []                -> []
+    | []                -> acc
     | h :: t            ->
       walk_recdef_params h;
-      walk_recdef_list_aux t (walk_recdef h) @ acc 
+      walk_recdef_list_aux t ((walk_recdef h) @ acc) 
   in
     walk_recdef_list_aux t []
 
@@ -106,7 +106,8 @@ and walk_def t = match t.def with
                 hideScope !currentScope true;
                 let constraints = walk_expr e in
                   ignore p;
-                  hideScope !currentScope false; 
+                  hideScope !currentScope false;
+		          t.def_entry <- Some p;
                   (new_ty, e.expr_typ) :: constraints
           | (id, ty) :: tl  ->
               let p = newFunction (id_make id) true in 
@@ -121,12 +122,14 @@ and walk_def t = match t.def with
                 let constraints = walk_expr e in 
                   closeScope ();
                   hideScope !currentScope false;
+		  t.def_entry <- Some p;
                   (new_ty, e.expr_typ) :: constraints
       end
   | D_Mut (id, ty) ->     
       let new_ty = refresh ty in
       let p = newVariable (id_make id) (T_Ref new_ty) true in
         ignore p;
+        t.def_entry <- Some p;
         []
   | D_Array (id, ty, l) ->
       let rec walk_expr_list l acc = match l with
@@ -141,6 +144,7 @@ and walk_def t = match t.def with
         hideScope !currentScope true;
         let constraints = walk_expr_list l [] in
         hideScope !currentScope false;
+	t.def_entry <- Some p;
         constraints
         
 and walk_recdef_names t = match t.def with
@@ -179,7 +183,7 @@ and walk_recdef_params t = match t.def with
   | D_Array (id, t, l)  -> error "Array cannot be rec\n";   
 
 and walk_recdef t = match t.def with
-  | D_Var (l, e)      -> 
+  | D_Var (l, e)      ->
       begin 
         match l with
           | []            -> internal "Definition cannot be empty\n";
@@ -189,7 +193,8 @@ and walk_recdef t = match t.def with
               hideScope !currentScope false;
               let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               let new_ty = getType p in
-                (new_ty, e.expr_typ) :: constraints
+              t.def_entry <- Some p;
+	         (new_ty, e.expr_typ) :: constraints
           | (id, ty) :: tl  -> 
               (* let p = newFunction (id_make id) true in *) 
               (*   openScope (); *)
@@ -199,8 +204,9 @@ and walk_recdef t = match t.def with
                 let new_ty = getType p in
                 hideScope !currentScope false;
                 let constraints = walk_expr e in
-                  closeScope ();
-                 (new_ty, e.expr_typ) :: constraints
+                closeScope ();
+		        t.def_entry <- Some p; 
+                (new_ty, e.expr_typ) :: constraints
       end
   | D_Mut (id, t)       -> error "Mutable cannot be rec\n"; raise Exit;
   | D_Array (id, t, l)  -> error "Array cannot be rec\n";   raise Exit;

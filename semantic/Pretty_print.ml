@@ -51,4 +51,4 @@ let print_solved lst =
         | x::[] -> fprintf ppf "%a" pp_tuple x
         | x::xs -> fprintf ppf "%a, %a" pp_tuple x pp_solved xs
   in
-    printf "%a" pp_solved lst 
+    printf "%a" pp_solved lst

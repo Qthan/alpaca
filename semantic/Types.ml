@@ -1,5 +1,6 @@
 open Identifier
 
+exception PolymorphicTypes
 (** Llama Types **)
 
 type dim =
@@ -147,7 +148,7 @@ type sign =
     | P_Plus
     | P_Minus
 
-type fsign=
+type fsign =
     | P_Fplus
     | P_Fminus
 
@@ -250,18 +251,84 @@ and ast_stmt =
     | S_Rec of ast_def_node list
     | S_Type of  (string * ( ( string*typ list ) list) ) list
     
+(* Intermediate Types *)
 
+
+type quad_operators =
+  | Q_Unit | Q_Endu
+  | Q_Plus | Q_Minus | Q_Mult | Q_Div | Q_Mod
+  | Q_Fplus | Q_Fminus | Q_Fmult | Q_Fdiv | Q_Pow
+  | Q_L | Q_Le | Q_G | Q_Ge | Q_Seq | Q_Nseq
+  | Q_Eq | Q_Neq (* Physical equality *)
+  | Q_Assign | Q_Ifb | Q_Array
+  | Q_Jump | Q_Jumpl | Q_Label
+  | Q_Call | Q_Par | Q_Ret
+
+type quad_operands = 
+  | O_Int of int
+  | O_Char of char
+  | O_Bool of bool
+  | O_Backpatch
+  | O_Label of int
+  | O_Temp of int * typ
+  | O_Res (* $$ *)
+  | O_Ret (* RET *)
+  | O_ByVal
+  | O_Fun of string
+  | O_Obj of string
+  | O_Empty
+  | O_Ref of quad_operands
+  | O_Deref of quad_operands
+  | O_Size of int
+  | O_Dims of int
+
+type quad = {
+  label : int;
+  operator : quad_operators;
+  arg1 : quad_operands;
+  arg2 : quad_operands;
+  mutable arg3 : quad_operands
+}
+
+type expr_info = {
+  place : quad_operators option;
+  next  : int list
+}
+
+type cond_info = {
+  true_lst  : int list;
+  false_lst : int list
+}
+
+type stmt_info = { 
+    next : int list
+}
 
 let rec sizeOfType t =
    match t with
-   | T_Int            -> 2
+     | T_Int            -> 2
    (*| TYPE_byte           -> 1*)
-   | T_Array (et, sz) -> (sizeOfType et)
-   | _                -> 0
+     | T_Array (et, sz) -> (sizeOfType et)
+     | T_Char           -> 1
+     | T_Bool           -> 1
+     | _                -> 0
 
 let rec equalType t1 t2 =
    match t1, t2 with
    | T_Array (et1, sz1), T_Array (et2, sz2) -> equalType et1 et2
    | _ -> t1 = t2
 
-
+let arrayDims a =
+  match a with
+    | T_Array (_, dims) -> dims
+    | _ -> failwith "must be an array\n"
+(*
+let rec checkType typ =
+  match typ with
+    | T_Alpha _ | T_Ord -> raise PolymorphicTypes
+    | T_Array (_, D_Alpha _) -> raise PolymorphicTypes
+    | T_Array (t, _) -> checkType t 
+    | T_Ref t -> checkType t
+    | T_Notype -> internal "Invalid type \n"
+    | T_Arrow _ -> internal "I used to be a valid type but then I took an arrow to the knee \n"
+    | _ -> () *)
