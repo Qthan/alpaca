@@ -159,7 +159,7 @@ def:
             | T_MUTABLE T_ID T_COLON types                              { { def = D_Mut ($2.id_name, $4); def_pos = $2.id_pos; def_entry = None } }
             | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { { def = D_Array ($2.id_name, T_Notype, ($4::$5)); def_pos = $2.id_pos; def_entry = None } }
             | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK T_COLON types  
-                                                                        { { def = D_Array ($2.id_name, T_Notype, ($4::$5)); def_pos = $2.id_pos; def_entry = None } }
+                                                                        { { def = D_Array ($2.id_name, $8, ($4::$5)); def_pos = $2.id_pos; def_entry = None } }
             ;
 
 parstar:
