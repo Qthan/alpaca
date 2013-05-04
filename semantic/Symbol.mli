@@ -17,30 +17,36 @@ module H :
     val length : 'a t -> int
     val stats : 'a t -> Hashtbl.statistics
   end
+val debug_symbol : bool
 val start_positive_offset : int
 val start_negative_offset : int
-val the_outer_scope : Types.scope
-val no_entry : Identifier.id -> Types.entry
-val currentScope : Types.scope ref
+val the_outer_scope : SymbTypes.scope
+val no_entry : Identifier.id -> SymbTypes.entry
+val currentScope : SymbTypes.scope ref
 val quadNext : int ref
 val tempNumber : int ref
-val tab : Types.entry H.t ref
+val tab : SymbTypes.entry H.t ref
 val initSymbolTable : int -> unit
+val show_offsets : bool
+val printSymbolTable : unit -> unit
+val printState : string -> unit
 val openScope : unit -> unit
 val closeScope : unit -> unit
-val hideScope : Types.scope -> bool -> unit
-exception Failure_NewEntry of Types.entry
-val newEntry : H.key -> Types.entry_info -> bool -> Types.entry
-val lookupEntry : H.key -> Types.lookup_type -> bool -> Types.entry
-val newVariable : H.key -> Types.typ -> bool -> Types.entry
-val newUdt : H.key -> bool -> Types.entry
+val hideScope : SymbTypes.scope -> bool -> unit
+exception Failure_NewEntry of SymbTypes.entry
+val newEntry : H.key -> SymbTypes.entry_info -> bool -> SymbTypes.entry
+val lookupEntry : H.key -> SymbTypes.lookup_type -> bool -> SymbTypes.entry
+val newVariable : H.key -> Types.typ -> bool -> SymbTypes.entry
+val newUdt : H.key -> bool -> SymbTypes.entry
 val newConstructor :
-  H.key -> Types.typ -> Types.typ list -> bool -> Types.entry
-val newFunction : H.key -> bool -> Types.entry
+  H.key -> Types.typ -> Types.typ list -> bool -> SymbTypes.entry
+val newFunction : H.key -> bool -> SymbTypes.entry
 val newParameter :
-  H.key -> Types.typ -> Types.pass_mode -> Types.entry -> bool -> Types.entry
-val newTemporary : Types.typ -> Types.entry
-val forwardFunction : Types.entry -> unit
-val endFunctionHeader : Types.entry -> Types.typ -> unit
-val setType : Types.entry -> Types.typ -> unit
-val getType : Types.entry -> Types.typ
+  H.key ->
+  Types.typ ->
+  SymbTypes.pass_mode -> SymbTypes.entry -> bool -> SymbTypes.entry
+val newTemporary : Types.typ -> SymbTypes.entry
+val forwardFunction : SymbTypes.entry -> unit
+val endFunctionHeader : SymbTypes.entry -> Types.typ -> unit
+val setType : SymbTypes.entry -> Types.typ -> unit
+val getType : SymbTypes.entry -> Types.typ

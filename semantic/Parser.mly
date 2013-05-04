@@ -1,6 +1,7 @@
 %{
     open Printf
     open Types
+    open AstTypes
     open Ast
 %}
 %token T_EOF

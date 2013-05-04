@@ -1,5 +1,7 @@
 open Types
 open Typeinf
+open Quads
+open QuadLabels
 
 let solved_types = Hashtbl.create 1009 
 

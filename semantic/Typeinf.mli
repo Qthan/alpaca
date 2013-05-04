@@ -1,5 +1,7 @@
+exception Unify of Types.typ * Types.typ
 val debug_typeinf : bool
 val print_constraints : (Types.typ * Types.typ) list -> unit
+val add_solved_table : ('a * 'b) list -> ('a, 'b) Hashtbl.t -> unit
 val fresh : unit -> Types.typ
 val freshDim : unit -> Types.dim
 val refresh : Types.typ -> Types.typ

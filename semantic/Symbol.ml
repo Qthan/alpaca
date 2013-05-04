@@ -1,6 +1,7 @@
 open Identifier
 open Error
 open Types
+open SymbTypes
 open Pretty_print
 open Printf
 open Format

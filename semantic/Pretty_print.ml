@@ -1,5 +1,6 @@
 open Format
 open Types
+open SymbTypes
 
 let rec pretty_dim ppf dim1 =
   match dim1 with 

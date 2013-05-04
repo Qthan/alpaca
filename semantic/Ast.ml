@@ -1,7 +1,9 @@
 open Printf
 open Symbol
 open Identifier
+open AstTypes
 open Types
+open SymbTypes
 open Format
 open Error
 open Typeinf
