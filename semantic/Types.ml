@@ -70,6 +70,7 @@ type op = {
 let rec sizeOfType t =
    match t with
      | T_Int            -> 2
+     | T_Float          -> 10
    (*| TYPE_byte           -> 1*)
      | T_Array (et, sz) -> (sizeOfType et)
      | T_Char           -> 1

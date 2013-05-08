@@ -1,6 +1,5 @@
 open Types
 open AstTypes
-
 (* Label lists interface *)
 module type LABEL_LIST =  
 sig
@@ -19,9 +18,10 @@ sig
   val removeLabel : labelList -> int * labelList
   (* peek at first element *)
   val peekLabel : labelList -> int
+  val mergeLabels : labelList -> labelList -> labelList
 end
 
-module QuadLabels : LABEL_LIST =
+module QuadLabels =
 struct
   type labelList = int list
   exception EmptyLabelList
@@ -37,6 +37,8 @@ struct
     match l with
       | [] -> raise EmptyLabelList
       | n :: _ -> n
+  let mergeLabels (l1 : labelList) (l2 : labelList) =
+    l1 @ l2
 end
 
 
@@ -54,8 +56,10 @@ type quad_operators =
 
 type quad_operands = 
   | O_Int of int
+  | O_Float of float
   | O_Char of char
   | O_Bool of bool
+  | O_Str of string 
   | O_Backpatch
   | O_Label of int
   | O_Temp of int * typ
@@ -63,7 +67,7 @@ type quad_operands =
   | O_Ret (* RET *)
   | O_ByVal
   | O_Fun of string
-  | O_Obj of string
+  | O_Obj of string * typ 
   | O_Empty
   | O_Ref of quad_operands
   | O_Deref of quad_operands
@@ -79,7 +83,7 @@ type quad = {
 }
 
 type expr_info = {
-  place : quad_operators option;
+  place : quad_operands;
   next  : labelList
 }
 
@@ -127,6 +131,19 @@ let getQuadBop bop = match bop with
   | And | Or | Semicolon -> internal "no operator for and/or/;" 
   | Assign -> Q_Assign
 
+let qetQuadUnop unop = match unop with
+  | U_Plus -> Q_Plus
+  | U_Minus -> Q_Minus
+  | U_Fplus -> Q_Fplus
+  | U_Fminus -> Q_Fminus
+  | U_Not | U_Del -> internal "no operator for not/delete"
+        
+
+let backpatch quads lst patch =
+    List.iter (fun quad_label -> 
+                 match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
+                   | None -> internal "Quad label not found, can't backpatch\n"
+                   | quad.arg3 <- patch) lst
 
 let newQuadList () = []
 
@@ -145,4 +162,7 @@ let mergeQuads quads new_quads = quads @ new_quads
 
 let setExprInfo p n = { place = p; next = n }
 
-let setCondInfo t f = { true_lst = t; false_lst = f } 
+let setCondInfo t f = { true_lst = t; false_lst = f }
+
+let setStmtInfo n = { next = n }
+

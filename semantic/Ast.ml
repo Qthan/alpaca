@@ -501,7 +501,7 @@ and walk_atom t = match t.atom with
             let typ = fresh() in
               t.atom_typ <- T_Ref typ;
               t.atom_entry <- Some array_entry;
-              walk_array_expr expr_list [(typ_arr, T_Array (typ, freshDim()))]
+              walk_array_expr expr_list [(typ_arr, T_Array (typ, (List.length expr_list)))] (* List.length was freshDim *)
         end
   | A_Expr expr          -> 
       let constraints = walk_expr expr in
