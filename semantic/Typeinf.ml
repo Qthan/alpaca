@@ -17,12 +17,12 @@ let print_constraints lst =
     let pp_tuple ppf (t1, t2) =
       fprintf ppf "(%a, %a)\n" pretty_typ t1 pretty_typ t2 
     in
-      match solved with 
-        | [] -> ()
-        | x :: [] -> fprintf ppf "%a" pp_tuple x
-        | x :: xs -> fprintf ppf "%a %a" pp_tuple x pp_constraints xs
+    match solved with
+    | [] -> ()
+    | x :: [] -> fprintf ppf "%a" pp_tuple x
+    | x :: xs -> fprintf ppf "%a %a" pp_tuple x pp_constraints xs
   in
-    printf "%a" pp_constraints lst
+  printf "%a" pp_constraints lst
 
 (* Save inferred types on a hashtable for fast look-ups *)
 
@@ -33,16 +33,16 @@ let add_solved_table solved tbl =
 
 let fresh =
   let k = ref 0 in
-    fun () -> incr k; T_Alpha !k
+  fun () -> incr k; T_Alpha !k
 
 let freshDim =
   let k = ref 0 in
-    fun () -> incr k; D_Alpha !k
+  fun () -> incr k; D_Alpha !k
 
 let refresh ty = 
   match ty with
-    | T_Notype -> fresh ()
-    | _        -> ty
+  | T_Notype -> fresh ()
+  | _        -> ty
 
 let rec notIn alpha typ = match typ with
   | T_Alpha n -> alpha != (T_Alpha n)
@@ -63,8 +63,8 @@ let rec singleSub alpha t2 typ = match alpha, typ with
 
 let subc alpha tau c =
   let walk (tau1, tau2) = (singleSub alpha tau tau1, singleSub alpha tau tau2) in
-    List.map walk c
-  
+  List.map walk c
+
 let rec singleSubDim alpha d dim1 = match alpha, dim1 with 
   | D_Alpha a, D_Alpha b when a = b -> d
   | D_Alpha _, D_Alpha b -> D_Alpha b
@@ -73,7 +73,7 @@ let rec singleSubDim alpha d dim1 = match alpha, dim1 with
 
 let subDim alpha d lst =
   let walk (dim1, dim2) = (singleSubDim alpha d dim1, singleSubDim alpha d dim2) in
-    List.map walk lst
+  List.map walk lst
 
 let rec singleSubArray alpha d tau = match alpha, tau with
   | alpha, T_Array (tau, dim1) -> T_Array (tau, singleSubDim alpha d dim1)
@@ -81,7 +81,7 @@ let rec singleSubArray alpha d tau = match alpha, tau with
 
 let subArray alpha d lst =
   let walk (dim1, dim2) = (singleSubArray alpha d dim1, singleSubArray alpha d dim2) in
-    List.map walk lst
+  List.map walk lst
 
 let equalsType tau1 tau2  = match tau1, tau2 with
   | T_Ord, tau | tau, T_Ord -> (tau = T_Int) || (tau = T_Float) || (tau = T_Char)
@@ -99,15 +99,15 @@ let unify c =
     | [] -> acc 
     | (tau1, tau2) :: c when (equalsType tau1 tau2) -> unifyOrd c acc
     | (T_Alpha alpha, T_Ord) :: c | (T_Ord, T_Alpha alpha) :: c -> 
-        unifyOrd (subc (T_Alpha alpha) T_Ord c) ((T_Alpha alpha, T_Ord) :: (subc (T_Alpha alpha) T_Ord acc))
+      unifyOrd (subc (T_Alpha alpha) T_Ord c) ((T_Alpha alpha, T_Ord) :: (subc (T_Alpha alpha) T_Ord acc))
     | (typ1, typ2) :: lst -> printf "Could not match type %a with type %a \n" pretty_typ typ1 pretty_typ typ2; raise Exit  
   in
   let rec unifyAux c ord dims acc = match c with
     | [] -> 
       let acc' = unifyOrd ord acc in 
       let solved = unifyDims dims acc' in
-        if (debug_typeinf) then print_constraints solved;
-        solved
+      if (debug_typeinf) then print_constraints solved;
+      solved
     | (tau1, tau2) :: c when equalsType tau1 tau2 -> 
       unifyAux c ord dims acc
     | (T_Ref tau1, T_Ref tau2) :: c -> 
@@ -121,13 +121,13 @@ let unify c =
     | (tau1, T_Ord) :: c -> 
       unifyAux c ((tau1, T_Ord) :: ord) dims acc
     | (T_Alpha alpha, tau2) :: c when notIn (T_Alpha alpha) tau2 ->
-        unifyAux (subc (T_Alpha alpha) tau2 c) (subc (T_Alpha alpha) tau2 ord) dims ((T_Alpha alpha, tau2) :: (subc (T_Alpha alpha) tau2 acc))
+      unifyAux (subc (T_Alpha alpha) tau2 c) (subc (T_Alpha alpha) tau2 ord) dims ((T_Alpha alpha, tau2) :: (subc (T_Alpha alpha) tau2 acc))
     | (tau1, T_Alpha alpha) :: c when notIn (T_Alpha alpha) tau1 ->
-        unifyAux (subc (T_Alpha alpha) tau1 c) (subc (T_Alpha alpha) tau1 ord) dims ((T_Alpha alpha, tau1) :: (subc (T_Alpha alpha) tau1 acc))
+      unifyAux (subc (T_Alpha alpha) tau1 c) (subc (T_Alpha alpha) tau1 ord) dims ((T_Alpha alpha, tau1) :: (subc (T_Alpha alpha) tau1 acc))
     | (T_Arrow (tau11, tau12), T_Arrow (tau21, tau22)) :: c ->
-        unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord dims acc
+      unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord dims acc
     | (typ1, typ2) :: lst -> printf "Could not match type %a with type %a \n" pretty_typ typ1  pretty_typ typ2; raise Exit
   in
-   print_constraints c; unifyAux c [] [] []
+  print_constraints c; unifyAux c [] [] []
 
 

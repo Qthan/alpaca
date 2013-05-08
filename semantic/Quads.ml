@@ -1,8 +1,11 @@
 open Types
 open AstTypes
+open Identifier
+open Error
+
 (* Label lists interface *)
-module type LABEL_LIST =  
-sig
+(*module type LABEL_LIST =  
+  sig
   type labelList
   (* create an empty labelList *)
   val newLabelList : unit -> labelList
@@ -19,27 +22,26 @@ sig
   (* peek at first element *)
   val peekLabel : labelList -> int
   val mergeLabels : labelList -> labelList -> labelList
-end
+  end
+*)
 
-module QuadLabels =
-struct
-  type labelList = int list
-  exception EmptyLabelList
-  let newLabelList () : labelList = []
-  let makeLabelList (n : int) = [n]
-  let addLabel (n : int) (l : labelList) = n :: l
-  let is_empty (l : labelList) = l = []
-  let removeLabel (l : labelList) =
-    match l with 
-      | [] -> raise EmptyLabelList
-      | n :: t -> (n, t)
-  let peekLabel (l : labelList) = 
-    match l with
-      | [] -> raise EmptyLabelList
-      | n :: _ -> n
-  let mergeLabels (l1 : labelList) (l2 : labelList) =
-    l1 @ l2
-end
+type labelList = int list
+exception EmptyLabelList
+let newLabelList () : labelList = []
+let makeLabelList (n : int) = [n]
+let addLabel (n : int) (l : labelList) = n :: l
+let is_empty (l : labelList) = l = []
+let removeLabel (l : labelList) =
+  match l with 
+    | [] -> raise EmptyLabelList
+    | n :: t -> (n, t)
+let peekLabel (l : labelList) = 
+  match l with
+    | [] -> raise EmptyLabelList
+    | n :: _ -> n
+let mergeLabels (l1 : labelList) (l2 : labelList) =
+  l1 @ l2
+
 
 
 (* Intermediate Types *)
@@ -84,7 +86,7 @@ type quad = {
 
 type expr_info = {
   place : quad_operands;
-  next  : labelList
+  next_expr  : labelList
 }
 
 type cond_info = {
@@ -93,7 +95,7 @@ type cond_info = {
 }
 
 type stmt_info = { 
-    next : labelList
+  next_stmt : labelList
 }
 
 (* Quads infrastructure *)
@@ -106,7 +108,7 @@ let nextLabel = fun () -> !label + 1
 
 let newTemp =
   let k = ref 0 in
-    fun typ -> incr k; O_Temp (!k, typ)
+  fun typ -> incr k; O_Temp (!k, typ)
 
 (* Return quad operator from Llama binary operator *)
 let getQuadBop bop = match bop with 
@@ -131,19 +133,21 @@ let getQuadBop bop = match bop with
   | And | Or | Semicolon -> internal "no operator for and/or/;" 
   | Assign -> Q_Assign
 
-let qetQuadUnop unop = match unop with
+let getQuadUnop unop = match unop with
   | U_Plus -> Q_Plus
   | U_Minus -> Q_Minus
   | U_Fplus -> Q_Fplus
   | U_Fminus -> Q_Fminus
   | U_Not | U_Del -> internal "no operator for not/delete"
-        
 
+(* XXX Backpatch, changes a mutable field so we can maybe avoid returning a new
+ * quad list thus avoiding all the quads1,2,3... pollution. Moo XXX*)
 let backpatch quads lst patch =
-    List.iter (fun quad_label -> 
-                 match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
-                   | None -> internal "Quad label not found, can't backpatch\n"
-                   | quad.arg3 <- patch) lst
+  List.iter (fun quad_label -> 
+      match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
+        | None -> internal "Quad label not found, can't backpatch\n"
+        | Some quad -> quad.arg3 <- O_Label patch) lst;
+  quads
 
 let newQuadList () = []
 
@@ -156,13 +160,13 @@ let genQuad (op, ar1, ar2, ar3) quad_lst =
     arg3 = ar3
   } 
   in
-    (quad :: quad_lst) 
+  (quad :: quad_lst) 
 
 let mergeQuads quads new_quads = quads @ new_quads
 
-let setExprInfo p n = { place = p; next = n }
+let setExprInfo p n = { place = p; next_expr = n }
 
 let setCondInfo t f = { true_lst = t; false_lst = f }
 
-let setStmtInfo n = { next = n }
+let setStmtInfo n = { next_stmt = n }
 

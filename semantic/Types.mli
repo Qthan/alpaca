@@ -25,3 +25,4 @@ type op = { pos : int * int; }
 val sizeOfType : typ -> int
 val equalType : typ -> typ -> bool
 val arrayDims : typ -> dim
+val checkType : typ -> unit
