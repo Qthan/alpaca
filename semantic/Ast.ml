@@ -51,7 +51,7 @@ let rec walk_program ls =
   List.iter insert_function library_funs;
   let constraints = walk_stmt_list ls in
   let solved = unify constraints in
-  ()
+    solved
 
 and insert_function (id, result_ty, params) =
   let p = newFunction (id_make id) true in
@@ -470,13 +470,13 @@ and walk_atom t = match t.atom with
           []
     end
   | A_Par             -> t.atom_typ <- T_Unit; [] 
-  | A_Bank atom          -> 
+  | A_Bang atom          -> 
     begin 
       let constraints = walk_atom atom in
       t.atom_typ <- refresh t.atom_typ;
       (T_Ref t.atom_typ, atom.atom_typ) :: constraints
     end
-  (* | A_Bank atom          -> 
+  (* | A_Bang atom          -> 
        begin 
          let constraints = walk_atom atom in
            match atom.atom_typ with 

@@ -1,7 +1,9 @@
+open Format
 open Types
 open AstTypes
 open Identifier
 open Error
+open Pretty_print
 
 (* Label lists interface *)
 (*module type LABEL_LIST =  
@@ -59,7 +61,7 @@ type quad_operators =
 type quad_operands = 
   | O_Int of int
   | O_Float of float
-  | O_Char of char
+  | O_Char of string
   | O_Bool of bool
   | O_Str of string 
   | O_Backpatch
@@ -170,3 +172,60 @@ let setCondInfo t f = { true_lst = t; false_lst = f }
 
 let setStmtInfo n = { next_stmt = n }
 
+let string_of_operator = function 
+  | Q_Unit -> "Unit" 
+  | Q_Endu -> "Endu"
+  | Q_Plus -> "+" 
+  | Q_Minus -> "-" 
+  | Q_Mult -> "*" 
+  | Q_Div -> "/" 
+  | Q_Mod -> "Mod"
+  | Q_Fplus -> "+."
+  | Q_Fminus -> "-." 
+  | Q_Fmult -> "*."
+  | Q_Fdiv -> "/." 
+  | Q_Pow -> "**"
+  | Q_L -> "<"
+  | Q_Le -> "<=" 
+  | Q_G -> ">" 
+  | Q_Ge -> ">=" 
+  | Q_Seq -> "=" 
+  | Q_Nseq -> "<>"
+  | Q_Eq -> "==" 
+  | Q_Neq -> "!=" (* Physical equality *)
+  | Q_Assign -> ":=" | Q_Ifb -> "ifb" | Q_Array -> "Array"
+  | Q_Jump -> "Jump" | Q_Jumpl -> "Jumpl" | Q_Label -> "Label??"
+  | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 
+
+
+let print_operator chan op = fprintf chan "%s" (string_of_operator op)
+
+
+let rec print_operand chan op = match op with
+  | O_Int i -> fprintf chan "%d" i 
+  | O_Float f -> fprintf chan "%f" f 
+  | O_Char str -> fprintf chan "\'%s\'" str 
+  | O_Bool b -> fprintf chan "%b" b 
+  | O_Str str -> fprintf chan "\"%s\"" str  
+  | O_Backpatch -> fprintf chan "*"  
+  | O_Label i -> fprintf chan "l: %d" i 
+  | O_Temp (i, t) -> fprintf chan "temp[$%d, %a]" i pretty_typ t
+  | O_Res -> fprintf chan "$$" 
+  | O_Ret -> fprintf chan "RET" 
+  | O_ByVal -> fprintf chan "V"
+  | O_Fun n -> fprintf chan "fun[%s]" n 
+  | O_Obj (n, t) -> fprintf chan "Obj[%s, %a]" n pretty_typ t
+  | O_Empty ->  fprintf chan "-"
+  | O_Ref op -> fprintf chan "{%a}" print_operand op
+  | O_Deref op -> fprintf chan "[%a]" print_operand op
+  | O_Size i -> fprintf chan "Size %d" i
+  | O_Dims i -> fprintf chan "Dims %d" i
+
+
+let printQuad chan quad =
+  fprintf chan "%d:\t %a, %a, %a, %a\n" 
+    quad.label print_operator quad.operator 
+    print_operand quad.arg1 print_operand quad.arg2 print_operand quad.arg3
+
+let printQuads quads = 
+  List.iter (fun q -> printf "%a" printQuad q) quads

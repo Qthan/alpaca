@@ -10,7 +10,7 @@ exception Unify of typ * typ
 
 (* Function for type inference debugging *)
 
-let debug_typeinf = true
+let debug_typeinf = false
 
 let print_constraints lst = 
   let rec pp_constraints ppf solved = 
@@ -128,6 +128,6 @@ let unify c =
       unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord dims acc
     | (typ1, typ2) :: lst -> printf "Could not match type %a with type %a \n" pretty_typ typ1  pretty_typ typ2; raise Exit
   in
-  print_constraints c; unifyAux c [] [] []
+  unifyAux c [] [] []
 
 

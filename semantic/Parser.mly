@@ -3,6 +3,7 @@
     open Types
     open AstTypes
     open Ast
+    open Intermediate
 %}
 %token T_EOF
 
@@ -133,7 +134,13 @@
 %type <ast_pattom_node> pattom 
 %%
 
-program     : stmt_list T_EOF                                           { walk_program (List.rev($1)) }
+program     : stmt_list T_EOF                                           
+    {  
+        let ast = List.rev $1 in
+        let solved = walk_program ast in
+            gen_program ast solved
+    }
+        
             ;
 
 stmt_list: 
@@ -264,7 +271,7 @@ atom:
             | T_LPAR T_RPAR                                             { { atom = A_Par; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
             | T_CID                                                     { { atom = A_Cid $1.cid_name; atom_pos = $1.cid_pos; atom_typ = T_Notype; atom_entry = None } } 
             | T_ID                                                      { { atom = A_Var $1.id_name; atom_pos = $1.id_pos; atom_typ = T_Notype; atom_entry = None } } 
-            | T_BANK atom                                               { { atom = A_Bank $2; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
+            | T_BANK atom                                               { { atom = A_Bang $2; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } }
             | T_ID T_LBRACK expr comaexpr T_RBRACK                      { { atom = A_Array ($1.id_name, $3::$4); atom_pos = $1.id_pos; atom_typ = T_Notype; atom_entry = None } }
             | T_LPAR expr T_RPAR                                        { { atom = A_Expr $2; atom_pos = $1.pos; atom_typ = T_Notype; atom_entry = None } } 
             ;

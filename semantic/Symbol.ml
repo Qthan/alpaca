@@ -14,7 +14,7 @@ module H = Hashtbl.Make (
   end
   )
 
-let debug_symbol = true
+let debug_symbol = false
 
 (* Symbol table definitions *)
 

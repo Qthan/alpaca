@@ -50,7 +50,7 @@ and ast_atom =
     | A_Cid of string
     | A_Var of string
     | A_Par 
-    | A_Bank of ast_atom_node
+    | A_Bang of ast_atom_node
     | A_Array of string * ast_expr_node list
     | A_Expr of ast_expr_node
 
