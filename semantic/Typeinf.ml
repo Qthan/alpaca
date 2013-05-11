@@ -5,12 +5,14 @@ open Printf
 open Pretty_print
 open Format
 
-(* XXX VOTE : Handling errors with exceptions *)
-exception Unify of typ * typ
+(* Handling type errors with exceptions *)
+exception TypeError of string * typ
+exception UnifyError of typ * typ
+exception DimError of dim * dim 
 
 (* Function for type inference debugging *)
 
-let debug_typeinf = false
+let debug_typeinf = true
 
 let print_constraints lst = 
   let rec pp_constraints ppf solved = 
@@ -31,45 +33,49 @@ let add_solved_table solved tbl =
 
 (* Type inference functions *)
 
-let fresh =
+let fresh =                                             (* Return a frech type variable *)
   let k = ref 0 in
   fun () -> incr k; T_Alpha !k
 
-let freshDim =
+let freshDim =                                          (* Return a fresh dimention variable *)
   let k = ref 0 in
   fun () -> incr k; D_Alpha !k
 
-let refresh ty = 
+let refresh ty =                                        (* Return a fresh type variable for undefined types *) 
   match ty with
   | T_Notype -> fresh ()
   | _        -> ty
 
-let rec notIn alpha typ = match typ with
+let rec notIn alpha typ = match typ with                (* check whether a type occurs in an other *)
   | T_Alpha n -> alpha != (T_Alpha n)
   | T_Arrow (t1, t2) -> (notIn alpha t1) && (notIn alpha t2)
   | T_Array(a,n) -> a != alpha 
   | T_Ref tref -> tref != alpha
   | T_Int  | T_Char  | T_Str | T_Unit| T_Id _ 
-  | T_Ord | T_Bool | T_Float | T_Notype -> true
+  | T_Ord | T_Bool | T_Float | T_Nofun -> true
+  | T_Notype -> internal "Found indefined type in type inference (T_Notype)"
 
-let rec singleSub alpha t2 typ = match alpha, typ with
-  | T_Alpha a, T_Alpha n when a = n -> t2
+let rec singleSub alpha t typ = match alpha, typ with   (* substitute alpha with t in typ *)
+  | T_Alpha a, T_Alpha n when a = n -> t
   | T_Alpha _, T_Alpha _ -> typ
-  | T_Alpha _, T_Arrow (typ1,typ2) -> T_Arrow ((singleSub alpha t2 typ1),(singleSub alpha t2 typ2))
-  | T_Alpha _, T_Ref typ1 -> T_Ref (singleSub alpha t2 typ1)
-  | T_Alpha _, T_Array (typ1,n)-> T_Array ((singleSub alpha t2 typ1),n)
+  | T_Alpha _, T_Arrow (typ1,typ2) -> T_Arrow ((singleSub alpha t typ1),(singleSub alpha t typ2))
+  | T_Alpha _, T_Ref typ1 -> T_Ref (singleSub alpha t typ1)
+  | T_Alpha _, T_Array (typ1,n)-> T_Array ((singleSub alpha t typ1),n)
   | T_Alpha _, _ -> typ
-  | _, _ -> failwith "must be alpha"
+  | _, _ -> internal "Cannot substitute a non fresh type"
 
-let subc alpha tau c =
+let subc alpha tau c =                                  (* substitute alpha with tau in a tuple list c *)
   let walk (tau1, tau2) = (singleSub alpha tau tau1, singleSub alpha tau tau2) in
   List.map walk c
+
+let subl alpha tau l =                                  (* substitute alpha with tau in a simple list *)
+  List.map (singleSub alpha tau) l
 
 let rec singleSubDim alpha d dim1 = match alpha, dim1 with 
   | D_Alpha a, D_Alpha b when a = b -> d
   | D_Alpha _, D_Alpha b -> D_Alpha b
   | D_Alpha _, _ -> dim1
-  | _, _ -> failwith "Must be D_Alpha"
+  | _, _ -> internal "Cannot substitute non fresh dimention type"
 
 let subDim alpha d lst =
   let walk (dim1, dim2) = (singleSubDim alpha d dim1, singleSubDim alpha d dim2) in
@@ -83,9 +89,14 @@ let subArray alpha d lst =
   let walk (dim1, dim2) = (singleSubArray alpha d dim1, singleSubArray alpha d dim2) in
   List.map walk lst
 
-let equalsType tau1 tau2  = match tau1, tau2 with
+(* let equalsType tau1 tau2  = match tau1, tau2 with       
   | T_Ord, tau | tau, T_Ord -> (tau = T_Int) || (tau = T_Float) || (tau = T_Char)
-  | tau1, tau2 -> tau1 = tau2
+  | T_Nofun, tau | tau, T_Nofun -> 
+      begin 
+        match tau with
+          | T_Arrow (_,_) -> false 
+          |  
+  | tau1, tau2 -> tau1 = tau2 *)
 
 let unify c =
   let rec unifyDims dims acc = match dims with
@@ -95,39 +106,54 @@ let unify c =
     | (dim1, D_Alpha alpha) :: lst -> unifyDims (subDim (D_Alpha alpha) dim1 lst) (subArray (D_Alpha alpha) dim1 acc)
     | (dim1, dim2) :: lst -> printf "Could not match dim %a with dim %a \n" pretty_dim dim1 pretty_dim dim2; raise Exit
   in 
+  (* ** Old unifyOrd **
   let rec unifyOrd ord acc = match ord with
     | [] -> acc 
     | (tau1, tau2) :: c when (equalsType tau1 tau2) -> unifyOrd c acc
     | (T_Alpha alpha, T_Ord) :: c | (T_Ord, T_Alpha alpha) :: c -> 
       unifyOrd (subc (T_Alpha alpha) T_Ord c) ((T_Alpha alpha, T_Ord) :: (subc (T_Alpha alpha) T_Ord acc))
     | (typ1, typ2) :: lst -> printf "Could not match type %a with type %a \n" pretty_typ typ1 pretty_typ typ2; raise Exit  
+  in *)
+  let rec unifyOrd ord = match ord with
+    | [] -> ()
+    | T_Int :: c | T_Float :: c | T_Bool :: c | (T_Alpha _) :: c ->
+        unifyOrd c
+    | typ :: _ -> 
+        raise (TypeError ("Type does not support ordering", typ))
   in
-  let rec unifyAux c ord dims acc = match c with
+  let rec unifyNofun nofun = match nofun with
+    | [] -> ()
+    | (T_Arrow (a, b)) :: c -> 
+        raise (TypeError ("Cannot return function type", T_Arrow(a, b)))
+    | _ :: c -> 
+        unifyNofun c
+  in
+  let rec unifyAux c ord dims nofun acc = match c with
     | [] -> 
-      let acc' = unifyOrd ord acc in 
-      let solved = unifyDims dims acc' in
-      if (debug_typeinf) then print_constraints solved;
-      solved
-    | (tau1, tau2) :: c when equalsType tau1 tau2 -> 
-      unifyAux c ord dims acc
+      unifyOrd ord;
+      unifyNofun nofun;
+      unifyDims dims acc
+    | (tau1, tau2) :: c when tau1 = tau2 -> 
+      unifyAux c ord dims nofun acc
+    | (T_Nofun, tau1) :: c | (tau1, T_Nofun) :: c ->
+      unifyAux c ord dims (tau1 :: nofun) acc 
+    | (T_Ord, tau1) :: c | (tau1, T_Ord) :: c -> 
+      unifyAux c (tau1 :: ord) dims nofun acc
     | (T_Ref tau1, T_Ref tau2) :: c -> 
-      unifyAux ((tau1, tau2) :: c) ord dims acc
+      unifyAux ((tau1, tau2) :: c) ord dims nofun acc
     | (T_Array (tau1, dim1), T_Array (tau2, dim2)) :: c -> 
-      unifyAux ((tau1, tau2) :: c) ord ((dim1, dim2) :: dims) acc
-    | (tau1, tau2) :: c when equalsType tau1 tau2 -> 
-      unifyAux c ord dims acc
-    | (T_Ord, tau2) :: c -> 
-      unifyAux c ((T_Ord, tau2) :: ord) dims acc
-    | (tau1, T_Ord) :: c -> 
-      unifyAux c ((tau1, T_Ord) :: ord) dims acc
-    | (T_Alpha alpha, tau2) :: c when notIn (T_Alpha alpha) tau2 ->
-      unifyAux (subc (T_Alpha alpha) tau2 c) (subc (T_Alpha alpha) tau2 ord) dims ((T_Alpha alpha, tau2) :: (subc (T_Alpha alpha) tau2 acc))
-    | (tau1, T_Alpha alpha) :: c when notIn (T_Alpha alpha) tau1 ->
-      unifyAux (subc (T_Alpha alpha) tau1 c) (subc (T_Alpha alpha) tau1 ord) dims ((T_Alpha alpha, tau1) :: (subc (T_Alpha alpha) tau1 acc))
+      unifyAux ((tau1, tau2) :: c) ord ((dim1, dim2) :: dims) nofun acc
     | (T_Arrow (tau11, tau12), T_Arrow (tau21, tau22)) :: c ->
-      unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord dims acc
-    | (typ1, typ2) :: lst -> printf "Could not match type %a with type %a \n" pretty_typ typ1  pretty_typ typ2; raise Exit
+      unifyAux ((tau11, tau21) :: (tau12, tau22) :: c) ord dims nofun acc
+    | (T_Alpha alpha, tau1) :: c 
+    | (tau1, T_Alpha alpha) :: c when notIn (T_Alpha alpha) tau1 -> (* When applies to both patterns *)
+        let sub_tlist = subc (T_Alpha alpha) tau1 in
+        let sub_list = subl (T_Alpha alpha) tau1 in
+          unifyAux (sub_tlist c) (sub_list ord) dims (sub_list nofun) ((T_Alpha alpha, tau1) :: (sub_tlist acc))
+    | (typ1, typ2) :: lst -> raise (UnifyError (typ1,  typ2))
   in
-  unifyAux c [] [] []
+  let solved = unifyAux c [] [] [] [] in
+    if (debug_typeinf) then print_constraints solved;
+    solved
 
 

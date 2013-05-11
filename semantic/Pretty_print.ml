@@ -1,6 +1,5 @@
 open Format
 open Types
-open SymbTypes
 
 let rec pretty_dim ppf dim1 =
   match dim1 with 
@@ -25,6 +24,8 @@ let rec pretty_typ ppf typ =
         fprintf ppf "undefined"
     | T_Ord -> 
         fprintf ppf "ord"
+    | T_Nofun ->
+        fprintf ppf "nofun"
     | T_Arrow (a,b) ->
         fprintf ppf "(%a -> %a)" pretty_typ a pretty_typ b
     | T_Ref a -> 
@@ -36,11 +37,7 @@ let rec pretty_typ ppf typ =
     | T_Alpha a ->
         fprintf ppf "@@%d" a
 
-let pretty_mode ppf mode =
-  match mode with
-    | PASS_BY_REFERENCE ->
-        fprintf ppf "reference "
-    | _ -> ()
+
 
 let print_solved lst = 
   let rec pp_solved ppf solved = 

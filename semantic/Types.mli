@@ -7,13 +7,14 @@ type typ =
   | T_Str
   | T_Bool
   | T_Float
-  | T_Notype
-  | T_Ord
   | T_Arrow of typ * typ
   | T_Ref of typ
   | T_Array of typ * dim
   | T_Id of string
   | T_Alpha of int
+  | T_Notype
+  | T_Ord
+  | T_Nofun
 type string_const = { sval : string; spos : int * int; }
 type char_const = { cval : string; cpos : int * int; }
 type int_const = { ival : int; ipos : int * int; }

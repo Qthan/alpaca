@@ -28,6 +28,7 @@ val tempNumber : int ref
 val tab : SymbTypes.entry H.t ref
 val initSymbolTable : int -> unit
 val show_offsets : bool
+val pretty_mode : Format.formatter -> SymbTypes.pass_mode -> unit
 val printSymbolTable : unit -> unit
 val printState : string -> unit
 val openScope : unit -> unit

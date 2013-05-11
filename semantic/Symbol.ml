@@ -1,10 +1,9 @@
+open Format
 open Identifier
 open Error
 open Types
-open SymbTypes
 open Pretty_print
-open Printf
-open Format
+open SymbTypes
 
 module H = Hashtbl.Make (
   struct
@@ -14,7 +13,7 @@ module H = Hashtbl.Make (
   end
   )
 
-let debug_symbol = false
+let debug_symbol = true
 
 (* Symbol table definitions *)
 
@@ -48,6 +47,12 @@ let initSymbolTable size =
 (* Functions for debugging symbol table *)
 
 let show_offsets = true
+
+let pretty_mode ppf mode =
+  match mode with
+    | PASS_BY_REFERENCE ->
+        fprintf ppf "reference "
+    | _ -> ()
 
 let printSymbolTable () =
   let rec walk ppf scp =

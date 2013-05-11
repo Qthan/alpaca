@@ -1,4 +1,6 @@
-let f x y = x + y
+let f x y = x y
+
+let g x = x+2 
 
 let main = 
-	if (if (3<4) then true else false) then (f 1 2) else (f 30 40)
+	(f g 3)

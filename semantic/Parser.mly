@@ -1,5 +1,6 @@
 %{
     open Printf
+    open Error
     open Types
     open AstTypes
     open Ast
@@ -138,7 +139,9 @@ program     : stmt_list T_EOF
     {  
         let ast = List.rev $1 in
         let solved = walk_program ast in
-            gen_program ast solved
+          match solved with 
+            | Some subs -> gen_program ast subs
+            | None -> error "Type inference failed."
     }
         
             ;
