@@ -51,3 +51,4 @@ val forwardFunction : SymbTypes.entry -> unit
 val endFunctionHeader : SymbTypes.entry -> Types.typ -> unit
 val setType : SymbTypes.entry -> Types.typ -> unit
 val getType : SymbTypes.entry -> Types.typ
+val getResType : SymbTypes.entry -> Types.typ

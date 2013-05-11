@@ -43,20 +43,6 @@ let library_funs =
    ("strcat", T_Unit, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
   ]
 
-let entry_typ id_entry = match id_entry.entry_info with                (* retrieve entry type XXX: needs update *)
-  | ENTRY_function f ->
-      let params = f.function_paramlist in
-      let res_typ = f.function_result in
-      let param_typ p = match p.entry_info with
-        | ENTRY_parameter p -> p.parameter_type
-        | _ -> internal "Formal parameters must be parameter entries"
-      in
-      let t = List.fold_right (fun param ty -> T_Arrow (param_typ param, ty)) params res_typ in
-        t
-  | ENTRY_parameter p -> p.parameter_type
-  | ENTRY_variable v -> v.variable_type
-  | _ -> internal "Cannot find typ"
-
 let rec walk_program ls =
   initSymbolTable 10009;
   (* printSymbolTable (); *)
@@ -197,7 +183,7 @@ and walk_recdef_params t = match t.def with
         | (id, ty) :: []  -> ()
         | (id, ty) :: tl  -> 
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-          let new_ty = getType p in
+          let new_ty = getResType p in
           openScope ();
           walk_par_list tl p;
           hideScope !currentScope true;
@@ -216,16 +202,12 @@ and walk_recdef t = match t.def with
           let constraints = walk_expr e in 
           hideScope !currentScope false;
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-          let new_ty = getType p in
+          let new_ty = getResType p in
           t.def_entry <- Some p;
           (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl  -> 
-          (* let p = newFunction (id_make id) true in *) 
-          (*   openScope (); *)
-          (*   walk_par_list tl p; *)
-          (*   endFunctionHeader p new_ty; *)
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-          let new_ty = getType p in
+          let new_ty = getResType p in
           hideScope !currentScope false;
           let constraints = walk_expr e in
           closeScope ();
@@ -351,19 +333,11 @@ and walk_expr expr_node = match expr_node.expr with
     expr_node.expr_typ <- T_Unit;
     (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) :: (expr3.expr_typ, T_Unit) :: constraints1 @ constraints2 @ constraints3
   | E_Dim (a, id)      ->
-    begin
-      let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in     (* XXX Consider updating to entry_typ *)
-      match id_entry.entry_info with
-        | ENTRY_variable var -> 
-          expr_node.expr_typ <- T_Int;
-          expr_node.expr_entry <- Some id_entry;
-          [(var.variable_type, T_Array (fresh (), freshDim ()))]
-        | ENTRY_parameter par ->
-          expr_node.expr_typ <- T_Int;
-          expr_node.expr_entry <- Some id_entry;
-          [(par.parameter_type, T_Array (fresh (), freshDim()))]
-        | _ -> error "Array type must be variable or parameter"; raise Exit;
-    end
+      let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in     (* XXX Consider check whether a >= (dims a) *)
+      let typ = getType id_entry in
+        expr_node.expr_typ <- T_Int;
+        expr_node.expr_entry <- Some id_entry;
+        [(typ, T_Array (fresh (), freshDim ()))]
   | E_Ifthenelse (expr1, expr2, expr3)  ->
     let constraints1 = walk_expr expr1 in
     let constraints2 = walk_expr expr2 in 
@@ -377,7 +351,7 @@ and walk_expr expr_node = match expr_node.expr with
     (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Unit) :: constraints1 @ constraints2
   | E_Id (id, l)      ->                                    (* function application *)
       let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-      let fun_typ = entry_typ id_entry in
+      let fun_typ = getType id_entry in
       let res_typ = fresh () in
       let rec walk_params params = match params with (* walk parameters construct function type and generate constraints *)
         | [] -> (res_typ, [])
@@ -452,7 +426,7 @@ and walk_atom t = match t.atom with
   | A_Var v           -> 
     begin
       let id_entry = lookupEntry (id_make v) LOOKUP_ALL_SCOPES true in 
-      let id_typ = entry_typ id_entry in
+      let id_typ = getType id_entry in
         t.atom_typ <- id_typ;
         t.atom_entry <- Some id_entry;
         []
@@ -473,17 +447,11 @@ and walk_atom t = match t.atom with
           walk_array_expr xs ((expr.expr_typ, T_Int) :: constraints @ acc)
     in
     let array_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-    begin
-      let typ_arr = match array_entry.entry_info with       (* XXX consider updating to entry_typ *) 
-        | ENTRY_variable arr -> arr.variable_type 
-        | ENTRY_parameter arr -> arr.parameter_type 
-        | _ -> error "must be an array\n"; raise Exit;  
-      in
-      let typ = fresh() in
+    let typ_arr = getType array_entry in
+    let typ = fresh() in
       t.atom_typ <- T_Ref typ;
       t.atom_entry <- Some array_entry;
       walk_array_expr expr_list [(typ_arr, T_Array (typ, D_Int (List.length expr_list)))] (* List.length was freshDim *)
-    end
   | A_Expr expr          -> 
     let constraints = walk_expr expr in
     t.atom_typ <- expr.expr_typ;

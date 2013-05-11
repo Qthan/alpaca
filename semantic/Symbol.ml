@@ -13,7 +13,7 @@ module H = Hashtbl.Make (
   end
   )
 
-let debug_symbol = false
+let debug_symbol = true
 
 (* Symbol table definitions *)
 
@@ -366,8 +366,27 @@ let setType entry typ = match entry.entry_info with
   | ENTRY_function func_info -> func_info.function_result <- typ
   | _ -> ()
 
-let getType entry = match entry.entry_info with
-  | ENTRY_function func_info -> func_info.function_result
-  | ENTRY_variable var -> var.variable_type
-  | _ -> internal "not a function or var"
+let getType e = 
+  match e.entry_info with
+    | ENTRY_variable v -> v.variable_type
+    | ENTRY_function f -> 
+      let params = f.function_paramlist in
+      let res_typ = f.function_result in
+      let param_typ p = match p.entry_info with
+        | ENTRY_parameter p -> p.parameter_type
+        | _ -> internal "Formal parameters must be parameter entries"
+      in
+      let t = List.fold_right (fun param ty -> T_Arrow (param_typ param, ty)) params res_typ in
+        t
+    | ENTRY_parameter p -> p.parameter_type
+    | ENTRY_temporary t -> t.temporary_type
+    | ENTRY_udt -> T_Id (id_name e.entry_id)
+    | ENTRY_constructor c -> c.constructor_type
+    | ENTRY_none -> internal "Invalid entry %s\n" (id_name e.entry_id)
+
+let getResType e = 
+  match e.entry_info with 
+    | ENTRY_function f -> f.function_result 
+    | _ -> getType e 
+
 (* raise Exit *)

@@ -2,6 +2,7 @@ open Identifier
 open Types
 open AstTypes
 open SymbTypes
+open Symbol
 open Typeinf
 open Quads
 open Error
@@ -12,17 +13,7 @@ let solved_types = Hashtbl.create 1009
 let lookup_type entry =
   match entry with
     | None -> internal "Entry not found\n"
-    | Some e ->
-      begin
-        match e.entry_info with
-          | ENTRY_variable v -> v.variable_type
-          | ENTRY_function f -> f.function_result
-          | ENTRY_parameter p -> p.parameter_type
-          | ENTRY_temporary t -> t.temporary_type
-          | ENTRY_udt -> T_Id (id_name e.entry_id)
-          | ENTRY_constructor c -> c.constructor_type
-          | ENTRY_none -> internal "Invalid entry %s\n" (id_name e.entry_id)
-      end
+    | Some e -> getType e
 
 (* unsolved to solved type *)
 
