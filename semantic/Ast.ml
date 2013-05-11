@@ -96,21 +96,19 @@ and walk_def_list t =
   in
   walk_def_list_aux t []
 
-and walk_recdef_list t  = 
-  let rec walk_recdef_list_aux t acc = match t with
-    | []                -> acc
-    | h :: t            ->
+and walk_recdef_list t  = match t with
+  | [] -> []
+  | h :: t ->
       walk_recdef_params h;
-      walk_recdef_list_aux t ((walk_recdef h) @ acc) 
-  in
-  walk_recdef_list_aux t []
+      let constraints = walk_recdef_list t in
+      (walk_recdef h) @ constraints  
 
 and walk_def t = match t.def with
-  | D_Var (l, e)      ->
+  | D_Var (l, e) ->
     begin
       match l with
-        | []            -> internal "Definition cannot be empty";
-        | (id, ty) :: []  ->
+        | [] -> internal "Definition cannot be empty";
+        | (id, ty) :: [] ->
           let new_ty = refresh ty in
           let p = newVariable (id_make id) new_ty true in
           hideScope !currentScope true;
@@ -119,7 +117,7 @@ and walk_def t = match t.def with
           hideScope !currentScope false;
           t.def_entry <- Some p;
           (new_ty, e.expr_typ) :: constraints
-        | (id, ty) :: tl  ->
+        | (id, ty) :: tl ->
           let p = newFunction (id_make id) true in 
           (* printState "Before opening" "After opening" (openScope()); *)
           hideScope !currentScope true;
