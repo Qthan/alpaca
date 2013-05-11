@@ -43,7 +43,7 @@ let rec lookup_solved tvar ty_table =
     | T_Array (t, d) ->  T_Array (lookup_solved t ty_table, d)
     | T_Ref t -> T_Ref (lookup_solved t ty_table)
     | T_Notype -> internal "Invalid type \n"
-    | T_Arrow _ -> internal "I used to be a valid type but then I took an arrow to the knee \n"
+    | T_Arrow (t1, t2) -> T_Arrow(lookup_solved t1 ty_table, lookup_solved t2 ty_table) 
     | _ -> tvar
 
 (* XXX Check if type is unit XXX*)
@@ -72,7 +72,8 @@ and gen_def_list outer lst = List.fold_left gen_def outer lst
 and gen_def quads def_node = match def_node.def with
   | D_Var (lst, expr) -> 
     begin 
-      match lst with 
+      match lst with
+        | [] -> internal "Definition cannot be empty."
         | (id, _) :: []     ->
           let fresh_typ = lookup_type (def_node.def_entry) in
           let typ = lookup_solved fresh_typ solved_types in
@@ -117,7 +118,7 @@ and gen_def quads def_node = match def_node.def with
           let quads2 = genQuad (Q_Par, e_info.place, O_ByVal, O_Empty) quads1 in
           gen_array_dims xs quads2
     in
-    let quads1 = gen_array_dims (List.rev lst) quads in
+    let quads1 = gen_array_dims lst quads in
     let ty = lookup_type def_node.def_entry in
     let solved_ty = lookup_solved ty solved_types in
     let size = sizeOfType ty in  (* Size of an array element *)
@@ -152,7 +153,7 @@ and gen_expr quads expr_node = match expr_node.expr with
           (quads5, e_info)
         | Seq | Nseq | Eq | Neq
         | L | Le | G | Ge 
-        | And | Or as oper ->
+        | And | Or ->
           let (quads1, cond_info) = gen_cond quads expr_node in
           let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
           let temp = newTemp expr_node.expr_typ in
@@ -241,12 +242,40 @@ and gen_expr quads expr_node = match expr_node.expr with
       let quads9 = genQuad(Q_Assign, expr3_info.place, O_Empty, temp) quads8 in
       let next = mergeLabels expr2_info.next_expr l1 in
         (quads9, setExprInfo temp next)
+  | E_Letin (def, expr) ->
+      let quads1 = gen_decl quads def in
+      let (quads2, expr_info) = gen_expr quads1 expr in
+        (quads2, expr_info)
+  | E_Dim (i, id) ->
+      let temp = newTemp T_Int in
+      let id_entry = expr_node.expr_entry in
+      let fresh_id_typ = lookup_type id_entry in
+      let id_typ = lookup_solved fresh_id_typ solved_types in
+      let obj = O_Obj (id, id_typ) in
+      let dim = match i with 
+        | Nonum -> 1
+        | Yesnum i -> i
+      in
+      let quads1 = genQuad (Q_Dim, obj, O_Int dim, temp) quads in
+        (quads1, setExprInfo temp (newLabelList ()))
+  | E_New t -> 
+      let size = sizeOfType t in
+      let temp = newTemp (T_Ref t) in
+      let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
+      let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
+      let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun "_new") quads2 in
+        (quads3, setExprInfo temp (newLabelList ()))
   | E_Atom a -> gen_atom quads a
+  | E_While _ | E_For _ -> internal "While/For not expressions" 
+  | E_Match _ | E_Cid _ -> (quads, setExprInfo (O_Empty) (newLabelList ()))   (* dummy return value TODO *) 
 
 and gen_cond quads expr_node = match expr_node.expr with
   | E_Binop (expr1, op, expr2) ->
     begin
       match op with 
+        | Plus | Minus | Times | Div | Mod
+        | Fplus | Fminus | Ftimes | Fdiv | Power ->
+            internal "Arithmetic operators cannot be conditions"
         | Seq | Nseq | Eq | Neq
         | L | Le | G | Ge as oper ->
           let (quads1, e1_info) = gen_expr quads expr1 in
@@ -282,7 +311,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           let quads2 = backpatch quads1 stmt_info.next_stmt (nextLabel ()) in
           let (quads3, cond_info) = gen_cond quads2 expr2 in
           (quads3, cond_info)
-        | Assign -> internal "unreachable: Assign in gen_cond"
+        | Assign -> internal "Assign cannot be condition"
     end
   | E_Unop (op, expr1) ->
     begin
@@ -293,6 +322,8 @@ and gen_cond quads expr_node = match expr_node.expr with
           let f = c_inf.true_lst in
           let cond_info = setCondInfo t f in
           (quads1, cond_info)
+        | U_Plus | U_Minus | U_Fplus | U_Fminus | U_Del ->
+            internal "Unary operators with no boolean type cannot be conditions"
     end
   | E_Ifthen (expr1, expr2) -> internal "If then from gen_cond"
   | E_Ifthenelse (expr1, expr2, expr3) ->
@@ -314,9 +345,18 @@ and gen_cond quads expr_node = match expr_node.expr with
       let quads4 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads3 in
       let cond_info = setCondInfo true_lst false_lst in
         (quads4, cond_info)
+  | E_While _ | E_For _ | E_Dim _ | E_New _ | E_Cid _ ->
+      internal "These expressions cannot have type bool"
+  | E_Match _ -> (quads, setCondInfo (newLabelList ()) (newLabelList ()))  (* TODO dummy return value XXX *)
+  | E_Letin (def, expr) ->
+      let quads1 = gen_decl quads def in
+      let (quads2, cond_info) = gen_cond quads1 expr in
+        (quads2, cond_info)
   | E_Atom a ->
     begin
       match a.atom with
+        | A_Num _ | A_Dec _ | A_Chr _ | A_Str _ | A_Par | A_Cid _ ->
+            internal "Constants with non boolean type cannot be conditions"
         | A_Bool b ->
           let cond_lst = makeLabelList (nextLabel ()) in
           let quads1 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads in
@@ -339,6 +379,8 @@ and gen_cond quads expr_node = match expr_node.expr with
           let quads4 = genQuad(Q_Jump, O_Empty, O_Empty, O_Backpatch) quads3 in
           let cond_info = setCondInfo true_lst false_lst in
           (quads4, cond_info)
+        | A_Array _ ->
+            internal "Expression with reference type cannot be a condition"
         | A_Expr e -> gen_cond quads e
     end
 
@@ -347,13 +389,13 @@ and gen_stmt quads expr_node = match expr_node.expr with
     begin 
       match op with 
         | Plus | Minus | Times | Div | Mod
-        | Fplus | Fminus | Ftimes | Fdiv | Power as oper -> 
+        | Fplus | Fminus | Ftimes | Fdiv | Power -> 
           let (quads1, e1_info) = gen_expr quads expr_node in
           let s_info = setStmtInfo (e1_info.next_expr) in 
           (quads1, s_info)
         | Seq | Nseq | Eq | Neq
         | L | Le | G | Ge 
-        | And | Or as oper ->
+        | And | Or ->
           let (quads1, cond_info) = gen_cond quads expr_node in
           let n = mergeLabels cond_info.true_lst cond_info.false_lst in
           let s_info = setStmtInfo n in
@@ -381,7 +423,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
   | E_Unop (op, expr1) ->
     begin
       match op with
-        | U_Plus | U_Minus | U_Fplus | U_Fminus as oper ->
+        | U_Plus | U_Minus | U_Fplus | U_Fminus ->
           let (quads1, e_info) = gen_expr quads expr_node in
           (quads1, setStmtInfo e_info.next_expr)
         | U_Del -> 
@@ -422,6 +464,25 @@ and gen_stmt quads expr_node = match expr_node.expr with
       let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Label q) quads4 in
       let next = setStmtInfo (cond_info.false_lst) in
         (quads5, next)
+  | E_For (id, expr1, cnt, expr2, expr3) ->
+      let (relop, op) = match cnt with 
+        | To -> (Q_G, Q_Plus)
+        | Downto -> (Q_L, Q_Minus) 
+      in
+      let (quads1, expr1_info) = gen_expr quads expr1 in
+      let quads2 = backpatch quads1 expr1_info.next_expr (nextLabel ()) in
+      let obj = O_Obj (id, T_Int) in
+      let quads3 = genQuad (Q_Assign, expr1_info.place, O_Empty, obj) quads2 in
+      let (quads4, expr2_info) = gen_expr quads3 expr2 in
+      let quads5 = backpatch quads4 expr2_info.next_expr (nextLabel ()) in
+      let condLabel = nextLabel () in
+      let next = makeLabelList condLabel in
+      let quads6 = genQuad (relop, obj, expr2_info.place, O_Backpatch) quads5 in
+      let (quads7, stmt_info) = gen_stmt quads6 expr3 in
+      let quads8 = backpatch quads7 stmt_info.next_stmt (nextLabel ()) in
+      let quads9 = genQuad (op, obj, O_Int 1, obj) quads8 in
+      let quads10 = genQuad (Q_Jump, O_Empty, O_Empty, O_Label condLabel) quads9 in
+        (quads10, setStmtInfo next)
   | E_Id (id, l) -> 
     let quads1 =
       List.fold_left 
@@ -442,7 +503,20 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let quads2 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun id) quads1 in
     let s_info = setStmtInfo (newLabelList ()) in
       (quads2, s_info)
-  | E_Block e -> gen_stmt quads e 
+  | E_Dim _ -> 
+      let (quads1, e_info) = gen_expr quads expr_node in
+        (quads1, setStmtInfo e_info.next_expr)
+  | E_Letin (def, expr) ->
+      let quads1 = gen_decl quads def in
+      let (quads2, stmt_info) = gen_stmt quads1 expr in
+        (quads2, stmt_info)
+  | E_New t ->
+      let (quads1, expr_info) = gen_expr quads expr_node in
+        (quads1, setStmtInfo expr_info.next_expr)
+  | E_Match _ | E_Cid _ -> (quads, setStmtInfo (newLabelList ()))  (* TODO dummy return value XXX *)
+  | E_Block e -> gen_stmt quads e
+  | E_Atom a -> gen_atom_stmt quads a
+
     
 and gen_atom quads atom_node = match atom_node.atom with
   | A_Num n -> (quads, setExprInfo (O_Int n) (newLabelList ()))

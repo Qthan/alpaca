@@ -12,7 +12,7 @@ exception DimError of dim * dim
 
 (* Function for type inference debugging *)
 
-let debug_typeinf = true
+let debug_typeinf = false
 
 let print_constraints lst = 
   let rec pp_constraints ppf solved = 

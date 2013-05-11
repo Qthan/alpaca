@@ -40,17 +40,17 @@ rule lexer = parse
   | digit+ as num       { T_INT { ival = (int_of_string num); ipos = get_pos lexbuf } } 
   | digit+( '.'digit+('e'['-''+']?digit+)? ) as fnum
                         { T_FLOAT { fval = (float_of_string fnum ); fpos = get_pos lexbuf } }
-  | "and"               { T_ANDDEF}
+  | "and"               { T_ANDDEF }
   | "array"             { T_ARRAY }
   | "begin"             { T_BEGIN { pos = get_pos lexbuf } } 
   | "bool"              { T_BOOL }
-  | "char"              { T_CHAR  }
+  | "char"              { T_CHAR }
   | "delete"            { T_DELETE { pos = get_pos lexbuf } }
   | "dim"               { T_DIM { pos = get_pos lexbuf } }
   | "do"                { T_DO }
-  | "done"              { T_DONE  }
+  | "done"              { T_DONE }
   | "downto"            { T_DOWNTO }
-  | "else"              { T_ELSE  }
+  | "else"              { T_ELSE }
   | "end"               { T_END }
   | "false"             { T_FALSE { bval = false; bpos = get_pos lexbuf } }
   | "float"             { T_FLOATST }
@@ -106,19 +106,20 @@ rule lexer = parse
   | ":"                 { T_COLON }
   | lowCase+id* as id   { T_ID { id_name = id; id_pos = get_pos lexbuf } }
   | upCase+id* as cid   { T_CID { cid_name = cid; cid_pos = get_pos lexbuf } }
-  | '\''constChar '\'' as c_char  
+  | '\'' (constChar as c_char) '\''  
                         { T_CONSTCHAR { cval = c_char; cpos = get_pos lexbuf } }
-  | '\"'([^'\n' '\"'] | '\\' '\"')* '\"' as c_string  
+  | '\"' (([^'\n' '\"'] | '\\' '\"')* as c_string) '\"'  
                         { T_STRING { sval = c_string; spos = get_pos lexbuf } }
   | "--"[^'\n']*        { lexer lexbuf } 
-  | "(*"                {  comments 0 lexbuf }
+  | "(*"                { comments 0 lexbuf }
   | _ as chr            { print_error lexbuf chr ; lexer lexbuf }
   | eof                 { T_EOF }
 
 and comments level = parse
   | "*)"                { 
-                          if level = 0 then lexer lexbuf
-	                        else comments (level-1) lexbuf
+                          if level = 0 
+                          then lexer lexbuf
+	                      else comments (level-1) lexbuf
 	                    }
   | "(*"                { 
                           comments (level+1) lexbuf
@@ -126,6 +127,3 @@ and comments level = parse
   | '\n'                { incr_linenum lexbuf ; comments level lexbuf }
   | _                   { comments level lexbuf  }
   | eof                 { raise ( EOF "File ended before comments were closed") }
-
-
-

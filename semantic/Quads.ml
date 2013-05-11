@@ -56,7 +56,7 @@ type quad_operators =
   | Q_Eq | Q_Neq (* Physical equality *)
   | Q_Assign | Q_Ifb | Q_Array
   | Q_Jump | Q_Jumpl | Q_Label
-  | Q_Call | Q_Par | Q_Ret
+  | Q_Call | Q_Par | Q_Ret | Q_Dim
 
 type quad_operands = 
   | O_Int of int
@@ -193,6 +193,7 @@ let string_of_operator = function
   | Q_Nseq -> "<>"
   | Q_Eq -> "==" 
   | Q_Neq -> "!=" (* Physical equality *)
+  | Q_Dim -> "dim"
   | Q_Assign -> ":=" | Q_Ifb -> "ifb" | Q_Array -> "Array"
   | Q_Jump -> "Jump" | Q_Jumpl -> "Jumpl" | Q_Label -> "Label??"
   | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 

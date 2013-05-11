@@ -91,10 +91,10 @@ let arrayDims a =
 (* is this working? *)
 let rec checkType typ =
   match typ with
-    | T_Alpha _ | T_Ord -> raise PolymorphicTypes
+    | T_Alpha _ | T_Ord | T_Nofun -> raise PolymorphicTypes
     | T_Array (_, D_Alpha _) -> raise PolymorphicTypes
     | T_Array (t, _) -> checkType t 
     | T_Ref t -> checkType t
     | T_Notype -> internal "Invalid type \n"
-    | T_Arrow _ -> internal "I used to be a valid type but then I took an arrow to the knee \n"
+    | T_Arrow (t1, t2) -> checkType t1; checkType t2 
     | _ -> ()
