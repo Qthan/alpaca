@@ -57,7 +57,7 @@ and gen_decl_list ast =
 
 and gen_decl outer stmt = match stmt with
   | S_Let l | S_Rec l -> gen_def_list outer l
-  | S_Type l          -> newQuadList ()    (* dummy value, kouo-kouo-kouo dld kotopouleiro*)
+  | S_Type l          -> outer    (* dummy value, kouo-kouo-kouo dld kotopouleiro*)
 
 and gen_def_list outer lst = List.fold_left gen_def outer lst
 
@@ -516,7 +516,7 @@ and gen_atom quads atom_node = match atom_node.atom with
   | A_Chr c -> (quads, setExprInfo (O_Char c) (newLabelList ()))
   | A_Str str -> (quads, setExprInfo (O_Str str) (newLabelList ()))
   | A_Bool b -> (quads, setExprInfo (O_Bool b) (newLabelList ()))
-  | A_Cid cid -> ([], setExprInfo O_Empty  (newLabelList ()))  (*Dummy return value*)
+  | A_Cid cid -> (quads, setExprInfo O_Empty  (newLabelList ()))  (*Dummy return value*)
   | A_Var v -> 
     let fresh_typ = atom_node.atom_typ in
     let typ = lookup_solved fresh_typ solved_types in
