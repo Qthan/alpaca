@@ -46,7 +46,8 @@ let isUnit fresh_typ =
 let rec gen_program ast subst =
   add_solved_table subst solved_types;
   let quads = gen_decl_list ast in
-    printQuads (List.rev quads)
+  let finalQuads = normalizeQuads (List.rev quads) in
+    printQuads finalQuads
 
 and gen_decl_list ast = 
   let outer = genQuad (Q_Unit, O_Fun "outer", O_Empty, O_Empty) (newQuadList ()) in
@@ -244,8 +245,8 @@ and gen_expr quads expr_node = match expr_node.expr with
       let id_typ = lookup_solved fresh_id_typ solved_types in
       let obj = O_Obj (id, id_typ) in
       let dim = match i with 
-        | Nonum -> 1
-        | Yesnum i -> i
+        | None -> 1
+        | Some i -> i
       in
       let quads1 = genQuad (Q_Dim, obj, O_Int dim, temp) quads in
         (quads1, setExprInfo temp (newLabelList ()))

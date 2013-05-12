@@ -222,11 +222,33 @@ let rec print_operand chan op = match op with
   | O_Size i -> fprintf chan "Size %d" i
   | O_Dims i -> fprintf chan "Dims %d" i
 
+(* Make quad labels consequent *)
+
+let normalizeQuads quads =
+  let map = Array.make (nextLabel()) 0 in
+  let quads1 = List.mapi (fun i q -> map.(q.label) <- (i+1);
+                                     { label = i+1;
+                                       operator = q.operator;
+                                       arg1 = q.arg1;
+                                       arg2 = q.arg2;
+                                       arg3 = q.arg3
+                                     }) quads
+  in
+  let rec updateLabel quad = match quad.arg3 with
+    | O_Label n -> quad.arg3 <- (O_Label map.(n))
+    | _ -> ()
+  in
+    List.iter updateLabel quads1;
+    quads1
+
 
 let printQuad chan quad =
   fprintf chan "%d:\t %a, %a, %a, %a\n" 
     quad.label print_operator quad.operator 
-    print_operand quad.arg1 print_operand quad.arg2 print_operand quad.arg3
+    print_operand quad.arg1 print_operand quad.arg2 print_operand quad.arg3;
+  match quad.operator with
+    | Q_Endu -> fprintf chan "\n"
+    | _ -> ()
 
 let printQuads quads = 
   List.iter (fun q -> printf "%a" printQuad q) quads

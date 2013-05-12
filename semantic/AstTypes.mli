@@ -30,10 +30,6 @@ type count =
     | To
     | Downto
 
-type intmb =
-    | Yesnum of int
-    | Nonum
-
 and ast_atom_node = {
   atom                   : ast_atom;
   atom_pos               : (int * int);
@@ -68,7 +64,7 @@ and ast_expr =
     | E_While of ast_expr_node * ast_expr_node
     | E_For of string * ast_expr_node * count * ast_expr_node * ast_expr_node
     | E_Atom of ast_atom_node
-    | E_Dim of intmb * string
+    | E_Dim of int option * string
     | E_Ifthenelse of ast_expr_node * ast_expr_node * ast_expr_node
     | E_Ifthen of ast_expr_node * ast_expr_node
     | E_Id of string * ast_atom_node list

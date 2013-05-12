@@ -127,7 +127,6 @@
 %type <ast_expr_node list> comaexpr
 %type <ast_atom_node list> atomstar
 %type <count> count
-%type <intmb> intmb
 %type <ast_clause> clause
 %type <ast_clause list> clausestar
 %type <ast_pattern_node> pattern
@@ -296,8 +295,8 @@ count:
             ;
 
 intmb: 
-            | /* nothing */                                             { Nonum }
-            | T_INT                                                     { Yesnum ($1.ival) } 
+            | /* nothing */                                             { None }
+            | T_INT                                                     { Some ($1.ival) } 
             ;
 clausestar:
             | /* nothing */                                              { [] }
