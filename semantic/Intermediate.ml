@@ -104,7 +104,7 @@ and gen_def quads def_node = match def_node.def with
   | D_Array (id, _, lst)  -> 
     let rec gen_array_dims lst quads =
       match lst with
-        | [] -> quads
+        | [] -> quads  (* XXX: maybe internal here *)
         | dim :: xs ->
           let (quads1, e_info) = gen_expr quads dim in
           let quads2 = genQuad (Q_Par, e_info.place, O_ByVal, O_Empty) quads1 in
