@@ -51,7 +51,7 @@ let show_offsets = true
 let pretty_mode ppf mode =
   match mode with
     | PASS_BY_REFERENCE ->
-        fprintf ppf "reference "
+      fprintf ppf "reference "
     | _ -> ()
 
 let printSymbolTable () =
@@ -88,9 +88,26 @@ let printSymbolTable () =
                       fprintf ppf "%a; %a" param p params ps;
                     | [] ->
                       () in
-                fprintf ppf "(%a) : %a"
-                  params inf.function_paramlist
-                  pretty_typ inf.function_result
+                let local ppf e =
+                    match e.entry_info with
+                        | ENTRY_variable inf ->
+                            fprintf ppf "%a: %a"
+                            pretty_id e.entry_id
+                            pretty_typ inf.variable_type
+                        | _ ->
+                            fprintf ppf "<invalid>" in
+                let rec locals ppf ls =
+                  match ls with
+                    | [l] ->
+                      fprintf ppf "%a" local l
+                    | l :: ls ->
+                      fprintf ppf "%a; %a" local l locals ls;
+                    | [] -> ()
+                in
+                  fprintf ppf "(%a) : %a - locals : %a"
+                    params inf.function_paramlist
+                    pretty_typ inf.function_result
+                    locals inf.function_varlist
               | ENTRY_parameter inf ->
                 if show_offsets then
                   fprintf ppf "[%d]" inf.parameter_offset
@@ -100,7 +117,7 @@ let printSymbolTable () =
               | ENTRY_udt -> ()
               | ENTRY_constructor inf ->
                 let pp_list ppf l = List.iter (fprintf ppf "%a " pretty_typ) l in
-                fprintf ppf " Type: %a Parameters: %a" pretty_typ inf.constructor_type pp_list inf.constructor_paramlist
+                  fprintf ppf " Type: %a Parameters: %a" pretty_typ inf.constructor_type pp_list inf.constructor_paramlist
           end
       in
       let rec entries ppf es =
@@ -108,16 +125,16 @@ let printSymbolTable () =
           | [e] ->
             fprintf ppf "%a" entry e
           | e :: es ->
-            fprintf ppf "%a, %a" entry e entries es;
+            fprintf ppf "%a \n %a" entry e entries es;
           | [] ->
             () in
-      match scp.sco_parent with
-        | Some scpar ->
-          fprintf ppf "%a\n%a"
-            entries scp.sco_entries
-            walk scpar
-        | None ->
-          fprintf ppf "<impossible>\n"
+        match scp.sco_parent with
+          | Some scpar ->
+            fprintf ppf "%a\n%a"
+              entries scp.sco_entries
+              walk scpar
+          | None ->
+            fprintf ppf "<impossible>\n"
     end 
   in
   let scope ppf scp =
@@ -125,8 +142,8 @@ let printSymbolTable () =
       fprintf ppf "no scope\n"
     else
       walk ppf scp in
-  printf "%a----------------------------------------\n"
-    scope !currentScope
+    printf "%a----------------------------------------\n"
+      scope !currentScope
 
 let printState msg =
   Printf.printf "%s:\n" msg;
@@ -142,19 +159,19 @@ let openScope () =
     sco_negofs = start_negative_offset;
     sco_hidden = false
   } in
-  currentScope := sco;
-  if (debug_symbol) then printState "Opened scope"
+    currentScope := sco;
+    if (debug_symbol) then printState "Opened scope"
 
 let closeScope () =
   let sco = !currentScope in
   let manyentry e = H.remove !tab e.entry_id in
-  List.iter manyentry sco.sco_entries;
-  match sco.sco_parent with
-    | Some scp ->
-      currentScope := scp;
-      if (debug_symbol) then printState "Closed scope"
-    | None ->
-      internal "cannot close the outer scope!"
+    List.iter manyentry sco.sco_entries;
+    match sco.sco_parent with
+      | Some scp ->
+        currentScope := scp;
+        if (debug_symbol) then printState "Closed scope"
+      | None ->
+        internal "cannot close the outer scope!"
 
 let hideScope sco flag =
   sco.sco_hidden <- flag;
@@ -167,8 +184,8 @@ let newEntry id inf err =
     if err then begin
       try
         let e = H.find !tab id in
-        if e.entry_scope.sco_nesting = !currentScope.sco_nesting then
-          raise (Failure_NewEntry e)
+          if e.entry_scope.sco_nesting = !currentScope.sco_nesting then
+            raise (Failure_NewEntry e)
       with Not_found ->
         ()
     end;
@@ -177,10 +194,10 @@ let newEntry id inf err =
       entry_scope = !currentScope;
       entry_info = inf
     } in
-    H.add !tab id e;
-    !currentScope.sco_entries <- e :: !currentScope.sco_entries;
-    if (debug_symbol) then printState "Added new entry";
-    e
+      H.add !tab id e;
+      !currentScope.sco_entries <- e :: !currentScope.sco_entries;
+      if (debug_symbol) then printState "Added new entry";
+      e
   with Failure_NewEntry e ->
     error "duplicate identifier %a" pretty_id id;
     e
@@ -191,10 +208,10 @@ let lookupEntry id how err =
     match how with
       | LOOKUP_CURRENT_SCOPE ->
         let e = H.find !tab id in
-        if e.entry_scope.sco_nesting = scc.sco_nesting then
-          e
-        else
-          raise Not_found
+          if e.entry_scope.sco_nesting = scc.sco_nesting then
+            e
+          else
+            raise Not_found
       | LOOKUP_ALL_SCOPES ->
         let rec walk es =
           match es with
@@ -205,18 +222,18 @@ let lookupEntry id how err =
                 e
               else
                 walk es in
-        walk (H.find_all !tab id) in
-  if err then
-    try
+          walk (H.find_all !tab id) in
+    if err then
+      try
+        lookup ()
+      with Not_found ->
+        error "unknown identifier %a (first occurrence)"
+          pretty_id id;
+        (* put it in, so we don't see more errors *)
+        H.add !tab id (no_entry id);
+        raise Exit
+    else
       lookup ()
-    with Not_found ->
-      error "unknown identifier %a (first occurrence)"
-        pretty_id id;
-      (* put it in, so we don't see more errors *)
-      H.add !tab id (no_entry id);
-      raise Exit
-  else
-    lookup ()
 
 let newParameter id typ mode f err =
   match f.entry_info with
@@ -229,8 +246,8 @@ let newParameter id typ mode f err =
               parameter_mode = mode
             } in
             let e = newEntry id (ENTRY_parameter inf_p) err in
-            inf.function_paramlist <- e :: inf.function_paramlist;
-            e
+              inf.function_paramlist <- e :: inf.function_paramlist;
+              e
           | PARDEF_COMPLETE ->
             internal "Cannot add a parameter to an already defined function"
       end
@@ -240,11 +257,11 @@ let newParameter id typ mode f err =
 let newVariable id typ f err =
   match f.entry_info with
     | ENTRY_function fn ->
-        let inf = {
-          variable_type = typ;
-          variable_offset = 0;
-        } in
-        let e = newEntry id (ENTRY_variable inf) err in
+      let inf = {
+        variable_type = typ;
+        variable_offset = 0;
+      } in
+      let e = newEntry id (ENTRY_variable inf) err in
         fn.function_varlist <- e :: fn.function_varlist;
         e
     | _ -> internal "Cannot add a variable to a non-function"
@@ -257,19 +274,19 @@ let newConstructor id typ typ_list err =
     constructor_type = typ;
     constructor_paramlist = typ_list
   } in
-  newEntry id (ENTRY_constructor inf) err  
+    newEntry id (ENTRY_constructor inf) err  
 
 let newFunction id err =
   try
     let e = lookupEntry id LOOKUP_CURRENT_SCOPE false in
-    match e.entry_info with
-      | ENTRY_function inf when inf.function_isForward ->
-        inf.function_isForward <- false;
-        e
-      | _ ->
-        if err then
-          error "duplicate identifier: %a" pretty_id id;
-        raise Exit
+      match e.entry_info with
+        | ENTRY_function inf when inf.function_isForward ->
+          inf.function_isForward <- false;
+          e
+        | _ ->
+          if err then
+            error "duplicate identifier: %a" pretty_id id;
+          raise Exit
   with Not_found ->
     let inf = {
       function_isForward = false;
@@ -279,18 +296,18 @@ let newFunction id err =
       function_pstatus = PARDEF_DEFINE;
       function_initquad = 0
     } in
-    newEntry id (ENTRY_function inf) false
+      newEntry id (ENTRY_function inf) false
 
 
 let newTemporary typ =
   let id = id_make ("$" ^ string_of_int !tempNumber) in
-  !currentScope.sco_negofs <- !currentScope.sco_negofs - sizeOfType typ;
-  let inf = {
-    temporary_type = typ;
-    temporary_offset = !currentScope.sco_negofs
-  } in
-  incr tempNumber;
-  newEntry id (ENTRY_temporary inf) false
+    !currentScope.sco_negofs <- !currentScope.sco_negofs - sizeOfType typ;
+    let inf = {
+      temporary_type = typ;
+      temporary_offset = !currentScope.sco_negofs
+    } in
+      incr tempNumber;
+      newEntry id (ENTRY_temporary inf) false
 
 let forwardFunction e =
   match e.entry_info with
@@ -308,19 +325,6 @@ let endFunctionHeader e typ =
             internal "Cannot end parameters in an already defined function"
           | PARDEF_DEFINE ->
             inf.function_result <- typ;
-            let offset = ref start_positive_offset in
-            let fix_offset e =
-              match e.entry_info with
-                | ENTRY_parameter inf ->
-                  inf.parameter_offset <- !offset;
-                  let size =
-                    match inf.parameter_mode with
-                      | PASS_BY_VALUE     -> sizeOfType inf.parameter_type
-                      | PASS_BY_REFERENCE -> 2 in
-                  offset := !offset + size
-                | _ ->
-                  internal "Cannot fix offset to a non parameter" in
-            List.iter fix_offset inf.function_paramlist;
             inf.function_paramlist <- List.rev inf.function_paramlist
       end;
       inf.function_pstatus <- PARDEF_COMPLETE
@@ -353,5 +357,3 @@ let getResType e =
   match e.entry_info with 
     | ENTRY_function f -> f.function_result 
     | _ -> getType e 
-
-(* raise Exit *)

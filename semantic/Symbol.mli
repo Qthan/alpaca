@@ -37,15 +37,16 @@ val hideScope : SymbTypes.scope -> bool -> unit
 exception Failure_NewEntry of SymbTypes.entry
 val newEntry : H.key -> SymbTypes.entry_info -> bool -> SymbTypes.entry
 val lookupEntry : H.key -> SymbTypes.lookup_type -> bool -> SymbTypes.entry
-val newVariable : H.key -> Types.typ -> bool -> SymbTypes.entry
-val newUdt : H.key -> bool -> SymbTypes.entry
-val newConstructor :
-  H.key -> Types.typ -> Types.typ list -> bool -> SymbTypes.entry
-val newFunction : H.key -> bool -> SymbTypes.entry
 val newParameter :
   H.key ->
   Types.typ ->
   SymbTypes.pass_mode -> SymbTypes.entry -> bool -> SymbTypes.entry
+val newVariable :
+  H.key -> Types.typ -> SymbTypes.entry -> bool -> SymbTypes.entry
+val newUdt : H.key -> bool -> SymbTypes.entry
+val newConstructor :
+  H.key -> Types.typ -> Types.typ list -> bool -> SymbTypes.entry
+val newFunction : H.key -> bool -> SymbTypes.entry
 val newTemporary : Types.typ -> SymbTypes.entry
 val forwardFunction : SymbTypes.entry -> unit
 val endFunctionHeader : SymbTypes.entry -> Types.typ -> unit
