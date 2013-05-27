@@ -43,11 +43,16 @@ let library_funs =
    ("strcat", T_Unit, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
   ]
 
+let function_stack = Stack.create ()
+
 let rec walk_program ls =
   initSymbolTable 10009;
-  (* printSymbolTable (); *)
+  openScope();
   List.iter insert_function library_funs;
+  let f = newFunction (id_make "_outer") true in 
+  let () = Stack.push f function_stack in
   let constraints = walk_stmt_list ls in
+  let () = closeScope() in
   let solved = 
     try 
       (Some unify constraints)
@@ -69,13 +74,13 @@ and insert_function (id, result_ty, params) =
   closeScope ();
 
 and walk_stmt_list ls = 
-  let constraints = ref [] in
+  let constraints = ref [] in 
   let rec walk_stmt_list_aux ls acc = match ls with
     | []                  ->  constraints := acc
     | h :: t              ->
       openScope ();
       let constraints1 = walk_stmt h in
-      walk_stmt_list_aux t (constraints1 @ acc);
+        walk_stmt_list_aux t (constraints1 @ acc);
       closeScope ();
   in
   walk_stmt_list_aux ls [];
@@ -119,7 +124,6 @@ and walk_def t = match t.def with
           (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl ->
           let p = newFunction (id_make id) true in 
-          (* printState "Before opening" "After opening" (openScope()); *)
           hideScope !currentScope true;
           openScope ();
           walk_par_list tl p;
@@ -156,7 +160,7 @@ and walk_def t = match t.def with
     constraints
 
 and walk_recdef_names t = match t.def with
-  | D_Var (l, e)       ->
+  | D_Var (l, e) ->
     begin 
       match l with
         | [] -> internal "Definition cannot be empty";
@@ -170,16 +174,16 @@ and walk_recdef_names t = match t.def with
           setType p new_ty;
           forwardFunction p
     end
-  | D_Mut (id, t)       -> error "Mutable cannot be rec\n";
+  | D_Mut (id, t) -> error "Mutable cannot be rec\n";
   | D_Array (id, t, l)  -> error "Array cannot be rec\n";
 
 and walk_recdef_params t = match t.def with
   | D_Var(l, e)  ->
     begin 
       match l with
-        | [] -> internal "too many problems\n"; 
-        | (id, ty) :: []  -> ()
-        | (id, ty) :: tl  -> 
+        | [] -> internal "Definition cannot be empty"; 
+        | (id, ty) :: [] -> ()
+        | (id, ty) :: tl -> 
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           let new_ty = getResType p in
           openScope ();
@@ -187,15 +191,15 @@ and walk_recdef_params t = match t.def with
           hideScope !currentScope true;
           endFunctionHeader p new_ty;
     end
-  | D_Mut (id, t)       -> error "Mutable cannot be rec\n";
+  | D_Mut (id, t) -> error "Mutable cannot be rec\n";
   | D_Array (id, t, l)  -> error "Array cannot be rec\n";   
 
 and walk_recdef t = match t.def with
   | D_Var (l, e)      ->
     begin 
       match l with
-        | []            -> internal "Definition cannot be empty\n";
-        | (id, ty) :: []  -> 
+        | [] -> internal "Definition cannot be empty\n";
+        | (id, ty) :: [] -> 
           hideScope !currentScope true;
           let constraints = walk_expr e in 
           hideScope !currentScope false;
@@ -203,7 +207,7 @@ and walk_recdef t = match t.def with
           let new_ty = getResType p in
           t.def_entry <- Some p;
           (new_ty, e.expr_typ) :: constraints
-        | (id, ty) :: tl  -> 
+        | (id, ty) :: tl -> 
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           let new_ty = getResType p in
           hideScope !currentScope false;
@@ -212,11 +216,11 @@ and walk_recdef t = match t.def with
           t.def_entry <- Some p; 
           (new_ty, e.expr_typ) :: constraints
     end
-  | D_Mut (id, t)       -> error "Mutable cannot be rec\n"; raise Exit;
-  | D_Array (id, t, l)  -> error "Array cannot be rec\n";   raise Exit;
+  | D_Mut (id, t) -> error "Mutable cannot be rec\n"; raise Exit;
+  | D_Array (id, t, l) -> error "Array cannot be rec\n";   raise Exit;
 
 and walk_par_list l p = match l with
-  | []                -> ()
+  | [] -> ()
   | (hid, ht) :: tl      -> 
     let new_ty = refresh ht in
     let f = newParameter (id_make hid) new_ty PASS_BY_VALUE p true in

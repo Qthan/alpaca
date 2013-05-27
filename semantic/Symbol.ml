@@ -218,13 +218,36 @@ let lookupEntry id how err =
   else
     lookup ()
 
-let newVariable id typ err =
-  !currentScope.sco_negofs <- !currentScope.sco_negofs - sizeOfType typ;
-  let inf = {
-    variable_type = typ;
-    variable_offset = !currentScope.sco_negofs
-  } in
-  newEntry id (ENTRY_variable inf) err
+let newParameter id typ mode f err =
+  match f.entry_info with
+    | ENTRY_function inf -> begin
+        match inf.function_pstatus with
+          | PARDEF_DEFINE ->
+            let inf_p = {
+              parameter_type = typ;
+              parameter_offset = 0;
+              parameter_mode = mode
+            } in
+            let e = newEntry id (ENTRY_parameter inf_p) err in
+            inf.function_paramlist <- e :: inf.function_paramlist;
+            e
+          | PARDEF_COMPLETE ->
+            internal "Cannot add a parameter to an already defined function"
+      end
+    | _ ->
+      internal "Cannot add a parameter to a non-function"
+
+let newVariable id typ f err =
+  match f.entry_info with
+    | ENTRY_function fn ->
+        let inf = {
+          variable_type = typ;
+          variable_offset = 0;
+        } in
+        let e = newEntry id (ENTRY_variable inf) err in
+        fn.function_varlist <- e :: fn.function_varlist;
+        e
+    | _ -> internal "Cannot add a variable to a non-function"
 
 let newUdt id err =
   newEntry id ENTRY_udt err
@@ -242,8 +265,6 @@ let newFunction id err =
     match e.entry_info with
       | ENTRY_function inf when inf.function_isForward ->
         inf.function_isForward <- false;
-        (* inf.function_pstatus <- PARDEF_CHECK; *)
-        (* inf.function_redeflist <- inf.function_paramlist; *)
         e
       | _ ->
         if err then
@@ -253,62 +274,13 @@ let newFunction id err =
     let inf = {
       function_isForward = false;
       function_paramlist = [];
-      function_redeflist = [];
+      function_varlist = [];
       function_result = T_Notype;
       function_pstatus = PARDEF_DEFINE;
       function_initquad = 0
     } in
     newEntry id (ENTRY_function inf) false
 
-let newParameter id typ mode f err =
-  match f.entry_info with
-    | ENTRY_function inf -> begin
-        match inf.function_pstatus with
-          | PARDEF_DEFINE ->
-            let inf_p = {
-              parameter_type = typ;
-              parameter_offset = 0;
-              parameter_mode = mode
-            } in
-            let e = newEntry id (ENTRY_parameter inf_p) err in
-            inf.function_paramlist <- e :: inf.function_paramlist;
-            e
-          | PARDEF_CHECK -> begin
-              match inf.function_redeflist with
-                | p :: ps -> begin
-                    inf.function_redeflist <- ps;
-                    match p.entry_info with
-                      | ENTRY_parameter inf ->
-                        if not (equalType inf.parameter_type typ) then
-                          error "Parameter type mismatch in redeclaration \
-                                 of function %a" pretty_id f.entry_id
-                        else if inf.parameter_mode != mode then
-                          error "Parameter passing mode mismatch in redeclaration \
-                                 of function %a" pretty_id f.entry_id
-                        else if p.entry_id != id then
-                          error "Parameter name mismatch in redeclaration \
-                                 of function %a" pretty_id f.entry_id
-                        else begin
-                          H.add !tab id p;
-                          !currentScope.sco_entries <- p :: !currentScope.sco_entries
-                        end;
-                        p
-                      | _ ->
-                        internal "I found a parameter that is not a parameter!"
-                        (* raise Exit *)
-                  end
-                | [] ->
-                  error "More parameters than expected in redeclaration \
-                         of function %a" pretty_id f.entry_id;
-                  raise Exit
-            end
-          | PARDEF_COMPLETE ->
-            internal "Cannot add a parameter to an already defined function"
-            (* raise Exit *)
-      end
-    | _ ->
-      internal "Cannot add a parameter to a non-function"
-(* raise Exit *)
 
 let newTemporary typ =
   let id = id_make ("$" ^ string_of_int !tempNumber) in
@@ -350,13 +322,6 @@ let endFunctionHeader e typ =
                   internal "Cannot fix offset to a non parameter" in
             List.iter fix_offset inf.function_paramlist;
             inf.function_paramlist <- List.rev inf.function_paramlist
-          | PARDEF_CHECK ->
-            if inf.function_redeflist <> [] then
-              error "Fewer parameters than expected in redeclaration \
-                     of function %a" pretty_id e.entry_id;
-            if not (equalType inf.function_result typ) then
-              error "Result type mismatch in redeclaration of function %a"
-                pretty_id e.entry_id;
       end;
       inf.function_pstatus <- PARDEF_COMPLETE
     | _ ->

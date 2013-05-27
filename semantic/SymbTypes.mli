@@ -8,7 +8,6 @@ type pass_mode = PASS_BY_VALUE | PASS_BY_REFERENCE
 type param_status =
   | PARDEF_COMPLETE
   | PARDEF_DEFINE
-  | PARDEF_CHECK
 
 type scope = {
   sco_parent : scope option;
@@ -26,7 +25,7 @@ and variable_info = {
 and function_info = {
   mutable function_isForward : bool;
   mutable function_paramlist : entry list;
-  mutable function_redeflist : entry list;
+  mutable function_varlist   : entry list;
   mutable function_result    : typ;
   mutable function_pstatus   : param_status;
   mutable function_initquad  : int
