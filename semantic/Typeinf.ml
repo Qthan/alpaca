@@ -28,12 +28,36 @@ let print_constraints lst =
 
 (* Save inferred types on a hashtable for fast look-ups *)
 
-let add_solved_table solved tbl = 
-  List.iter (fun (tvar, typ) -> Hashtbl.add tbl tvar typ) solved 
+let solved_types = Hashtbl.create 1009 
+
+let add_solved_table solved = 
+  List.iter (fun (tvar, typ) -> Hashtbl.add solved_types tvar typ) solved 
+
+(* unsolved to solved type *)
+
+let rec lookup_solved tvar = 
+  match tvar with
+    | T_Alpha _ ->
+      begin 
+        match (try Some (Hashtbl.find solved_types tvar) with Not_found -> None) with
+          | None -> internal "Failed to locate inferred type\n"
+          | Some typ -> 
+            begin
+              match (try Some (checkType typ) with PolymorphicTypes -> None) with
+                | None -> warning "Unused polymorphic type"; raise Exit (* print the type too *)
+                | Some () -> typ
+            end
+      end
+    | T_Ord -> internal "error\n"
+    | T_Array (t, d) ->  T_Array (lookup_solved t, d)
+    | T_Ref t -> T_Ref (lookup_solved t)
+    | T_Notype -> internal "Invalid type \n"
+    | T_Arrow (t1, t2) -> T_Arrow(lookup_solved t1, lookup_solved t2) 
+    | _ -> tvar
 
 (* Type inference functions *)
 
-let fresh =                                             (* Return a frech type variable *)
+let fresh =                                             (* Return a fresh type variable *)
   let k = ref 0 in
   fun () -> incr k; T_Alpha !k
 
@@ -155,6 +179,5 @@ let unify c =
     print_constraints c;
   let solved = unifyAux c [] [] [] [] in
     if (debug_typeinf) then print_constraints solved;
-    solved
-
-
+    add_solved_table solved;
+    solved   (*TODO : to be deleted *)

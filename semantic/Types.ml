@@ -66,17 +66,19 @@ type op = {
 }
 
 
-
-
 let rec sizeOfType t =
   match t with
     | T_Int            -> 2
     | T_Float          -> 10
-    (*| TYPE_byte           -> 1*)
     | T_Array (et, sz) -> (sizeOfType et)
     | T_Char           -> 1
     | T_Bool           -> 1
-    | _                -> 0
+    | T_Unit           -> 0
+    | T_Ref typ        -> 2
+    | T_Arrow (_, _)   -> 2
+    | T_Id _           -> 0
+    | T_Alpha _ | T_Notype 
+    | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"
 
 let rec equalType t1 t2 =
   match t1, t2 with

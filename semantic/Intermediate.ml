@@ -7,8 +7,6 @@ open Typeinf
 open Quads
 open Error
 
-let solved_types = Hashtbl.create 1009 
-
 (* Symbol entry to unsolved type *)
 let lookup_type entry =
   match entry with
@@ -20,36 +18,15 @@ let lookup_res_type entry =
     | None -> internal "Entry not found\n"
     | Some e -> getResType e
 
-(* unsolved to solved type *)
 
-let rec lookup_solved tvar ty_table = 
-  match tvar with
-    | T_Alpha _ ->
-      begin 
-        match (try Some (Hashtbl.find ty_table tvar) with Not_found -> None) with
-          | None -> internal "Failed to locate inferred type\n"
-          | Some typ -> 
-            begin
-              match (try Some (checkType typ) with PolymorphicTypes -> None) with
-                | None -> warning "Unused polymorphic type"; raise Exit (* print the type too *)
-                | Some () -> typ
-            end
-      end
-    | T_Ord -> internal "error\n"
-    | T_Array (t, d) ->  T_Array (lookup_solved t ty_table, d)
-    | T_Ref t -> T_Ref (lookup_solved t ty_table)
-    | T_Notype -> internal "Invalid type \n"
-    | T_Arrow (t1, t2) -> T_Arrow(lookup_solved t1 ty_table, lookup_solved t2 ty_table) 
-    | _ -> tvar
       
 (* XXX Check if type is unit XXX*)
 let isUnit fresh_typ = 
-  match (lookup_solved fresh_typ solved_types) with 
+  match (lookup_solved fresh_typ) with 
     | T_Unit -> true
     | _ -> false
 
 let rec gen_program ast subst =
-  add_solved_table subst solved_types;
   let quads = gen_decl_list ast in
   let finalQuads = normalizeQuads (List.rev quads) in
     printQuads finalQuads
@@ -75,7 +52,7 @@ and gen_def quads def_node delete_quads = match def_node.def with
         | [] -> internal "Definition cannot be empty."
         | (id, _) :: []     ->
           let fresh_typ = lookup_res_type (def_node.def_entry) in
-          let typ = lookup_solved fresh_typ solved_types in
+          let typ = lookup_solved fresh_typ  in
             if (isUnit typ)
             then
               let (quads1, s_info) = gen_stmt quads expr in
@@ -88,7 +65,7 @@ and gen_def quads def_node delete_quads = match def_node.def with
                 quads3
         | (id, _) :: params ->
           let fresh_typ = lookup_res_type (def_node.def_entry) in
-          let typ = lookup_solved fresh_typ solved_types in
+          let typ = lookup_solved fresh_typ  in
           let fQuads = newQuadList () in
           let fQuads1 = 
             genQuad (Q_Unit, O_Fun id, O_Empty, O_Empty) fQuads 
@@ -119,7 +96,7 @@ and gen_def quads def_node delete_quads = match def_node.def with
     in
     let quads1 = gen_array_dims lst quads in
     let ty = lookup_type def_node.def_entry in
-    let solved_ty = lookup_solved ty solved_types in
+    let solved_ty = lookup_solved ty  in
     let size = sizeOfType solved_ty in  (* Size of an array element *)
     let quads2 = genQuad (Q_Par, O_Size size, O_ByVal, O_Empty) quads1 in
     let dims = (* --- Need to get an int out of Dim type --- *)
@@ -145,7 +122,7 @@ and gen_expr quads expr_node = match expr_node.expr with
           let (quads3, e2_info) = gen_expr quads2 expr2 in
           let quads4 = backpatch quads3 (e2_info.next_expr) (nextLabel ()) in
           let typ = expr_node.expr_typ in
-          (* let solved = lookup_solved typ solved_types in -- reduntant*) 
+          (* let solved = lookup_solved typ  in -- reduntant*) 
           let temp = newTemp typ in
           let quads5 = 
             genQuad (getQuadBop oper, e1_info.place, e2_info.place, temp) quads4
@@ -219,7 +196,7 @@ and gen_expr quads expr_node = match expr_node.expr with
         quads l
     in
     let fresh_typ = expr_node.expr_typ in
-    let typ = lookup_solved fresh_typ solved_types in
+    let typ = lookup_solved fresh_typ  in
     let temp = newTemp typ in
     let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
     let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun id) quads2 in
@@ -232,7 +209,7 @@ and gen_expr quads expr_node = match expr_node.expr with
       let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
       let (quads3, expr2_info) = gen_expr quads2 expr2 in
       let fresh_typ = expr_node.expr_typ in 
-      let typ = lookup_solved fresh_typ solved_types in
+      let typ = lookup_solved fresh_typ  in
       let temp = newTemp typ in
       let quads4 = genQuad (Q_Assign, expr2_info.place, O_Empty, temp) quads3 in
       let l1 = makeLabelList (nextLabel ()) in
@@ -253,7 +230,7 @@ and gen_expr quads expr_node = match expr_node.expr with
       let temp = newTemp T_Int in
       let id_entry = expr_node.expr_entry in
       let fresh_id_typ = lookup_type id_entry in
-      let id_typ = lookup_solved fresh_id_typ solved_types in
+      let id_typ = lookup_solved fresh_id_typ  in
       let obj = O_Obj (id, id_typ) in
       let dim = match i with 
         | None -> 1
@@ -534,14 +511,14 @@ and gen_atom quads atom_node = match atom_node.atom with
   | A_Cid cid -> (quads, setExprInfo O_Empty  (newLabelList ()))  (*Dummy return value*)
   | A_Var v -> 
     let fresh_typ = atom_node.atom_typ in
-    let typ = lookup_solved fresh_typ solved_types in
+    let typ = lookup_solved fresh_typ  in
     let place = O_Obj (v, typ) in
       (quads, setExprInfo place (newLabelList ()))
   | A_Par -> internal "Reached unreachable point. Unit in gen_atom.\n"
   | A_Bang a -> 
     let (quads1, expr_info) = gen_atom quads a in   
     let fresh_typ = a.atom_typ in
-    let typ = lookup_solved fresh_typ solved_types in
+    let typ = lookup_solved fresh_typ  in
     let temp = newTemp typ in
     let quads2 = backpatch quads1 (expr_info.next_expr) (nextLabel ()) in
     let quads3 = genQuad (Q_Assign, expr_info.place, O_Empty, temp) quads2 in
@@ -549,9 +526,9 @@ and gen_atom quads atom_node = match atom_node.atom with
       (quads3, setExprInfo place (newLabelList ()))
   | A_Array (id, expr_list) ->
     let fresh_typ = atom_node.atom_typ in
-    let typ = lookup_solved fresh_typ solved_types in
+    let typ = lookup_solved fresh_typ  in
     let fresh_arr_typ = lookup_type (atom_node.atom_entry) in
-    let arr_typ = lookup_solved fresh_arr_typ solved_types in
+    let arr_typ = lookup_solved fresh_arr_typ  in
     let (quads1, e_info) = 
       List.fold_left 
         (fun (quads, e_info) e ->

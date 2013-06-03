@@ -4,6 +4,7 @@ open Error
 open Types
 open Pretty_print
 open SymbTypes
+open Typeinf
 
 module H = Hashtbl.Make (
   struct
@@ -294,7 +295,9 @@ let newFunction id err =
       function_varlist = [];
       function_result = T_Notype;
       function_pstatus = PARDEF_DEFINE;
-      function_initquad = 0
+      function_initquad = 0;
+      function_varsize = 0; 
+      function_paramsize = 0;
     } in
       newEntry id (ENTRY_function inf) false
 
@@ -356,4 +359,37 @@ let getType e =
 let getResType e = 
   match e.entry_info with 
     | ENTRY_function f -> f.function_result 
-    | _ -> getType e 
+    | _ -> getType e
+
+let setOffset e offset = 
+  match e.entry_info with
+    | ENTRY_variable v -> v.variable_offset <-  - offset
+    | ENTRY_parameter p -> p.parameter_offset <- offset
+    | _ -> internal "cannot fix offset in a non variable or parameter entry"
+
+let getParamList e =
+  match e.entry_info with
+    | ENTRY_function f -> f.function_paramlist
+    | _ -> internal "cannot find parameters in a non function"
+
+let getVarList e =
+  match e.entry_info with
+    | ENTRY_function f -> f.function_varlist
+    | _ -> internal "cannot find variables in a non function"
+
+let fixOffsets fun_entry =
+  let rec fixOffsetsAux varlist acc =
+    match varlist with 
+      | [] -> acc
+      | v :: vs ->
+          let s = sizeOfType (lookup_solved (getType v)) in
+            setOffset v acc;
+            fixOffsetsAux vs (acc+s)
+  in
+    match fun_entry.entry_info with
+      | ENTRY_function f ->
+          let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
+          let var_size = fixOffsetsAux f.function_paramlist 0 in
+            f.function_paramsize <- par_size;
+            f.function_varsize <- var_size;
+      | _ -> internal "cannot fix offsets in a non function"
