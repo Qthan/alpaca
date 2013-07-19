@@ -90,7 +90,7 @@ type quad_operands =
   | O_Res (* $$ *)
   | O_Ret (* RET *)
   | O_ByVal
-  | O_Fun of fun_header (* XXX *)
+  | O_Fun of entry (* XXX *)
   | O_Obj of var_header (* XXX *)
   | O_Empty
   | O_Ref of quad_operands
@@ -127,6 +127,7 @@ let label = ref 0
 let newLabel = fun () -> incr label; !label
 
 let nextLabel = fun () -> !label + 1
+
 
 let newTemp =
   let k = ref 1 in
@@ -273,8 +274,19 @@ let string_of_operator = function
 
 let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 
-let print_fun_head chan head = 
-  fprintf chan "[%s, ind %d, params %d, vars %d, nest %d]" head.fun_name head.index head.param_size !(head.var_size) head.nesting 
+let print_fun_head chan entry =
+  match entry.entry_info with
+    | ENTRY_function f ->
+        let parent_id = match f.function_parent with
+          | Some e -> e.entry_id
+          | None -> id_make "None"
+        in
+  fprintf chan "[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
+    f.function_index f.function_paramsize 
+    !(f.function_varsize) f.function_nesting
+    pretty_id parent_id
+    | _ -> 
+        internal "Attempted to print a function entry of something that's not a function. Bizzare"
 
 let print_var_head chan head = 
   fprintf chan "[%s, %a, %d]" head.var_name pretty_typ head.var_type head.var_offset 

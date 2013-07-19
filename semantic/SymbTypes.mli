@@ -31,7 +31,8 @@ and function_info = {
   mutable function_result    : typ;
   mutable function_pstatus   : param_status;
   mutable function_nesting   : int;
-  mutable function_parent    : entry option
+  mutable function_parent    : entry option;
+  mutable function_index     : int
 }
 
 and parameter_info = {

@@ -18,8 +18,18 @@ let lookup_res_type entry =
     | None -> internal "Entry not found\n"
     | Some e -> getResType e
 
+(* Function's local variables size*)
+let get_var_size entry =
+  match entry with
+    | None -> internal "Looked for local variables of - Some thing - that's not a function"
+    | Some e ->
+      (match e.entry_info with
+        | ENTRY_function f -> f.function_varsize
+        | _ -> internal "Looked for local variables of - Some thing - that's not a function")
 
-      
+
+
+
 (* XXX Check if type is unit XXX*)
 let isUnit fresh_typ = 
   match (lookup_solved fresh_typ) with 
@@ -36,12 +46,12 @@ let rec gen_program ast subst outer_entry =
 and gen_decl_list ast outer_entry = 
   let delete_quads = ref (newQuadList ()) in
   let () = fixOffsets (Some outer_entry) in              (* Stupid Some *)
-  let outerHead = funHeader "_outer" (Some outer_entry) in
-  let () = Stack.push outerHead.var_size offset_stack in
-  let outer = genQuad (Q_Unit, O_Fun outerHead, O_Empty, O_Empty) (newQuadList ()) in
+  let outer_size = get_var_size (Some outer_entry) in
+  let () = Stack.push outer_size offset_stack in
+  let outer = genQuad (Q_Unit, O_Fun outer_entry, O_Empty, O_Empty) (newQuadList ()) in
   let quads = List.fold_left (fun o a -> gen_decl o a delete_quads) outer ast in
   let quads2 = mergeQuads !delete_quads quads in
-  let final = genQuad (Q_Endu, O_Fun outerHead, O_Empty, O_Empty) quads2 in
+  let final = genQuad (Q_Endu, O_Fun outer_entry, O_Empty, O_Empty) quads2 in
     final
 
 and gen_decl outer stmt delete_quads = match stmt with
@@ -50,92 +60,129 @@ and gen_decl outer stmt delete_quads = match stmt with
 
 and gen_def_list outer lst delete_quads = List.fold_left (fun o l -> gen_def o l delete_quads ) outer lst
 
+
 and gen_def quads def_node delete_quads = 
   let entry = def_node.def_entry in 
     match def_node.def with
-  | D_Var (lst, expr) -> 
-    begin 
-      match lst with
-        | [] -> internal "Definition cannot be empty."
-        | (id, _) :: []     ->
-          let fresh_typ = lookup_res_type entry in
-          let typ = lookup_solved fresh_typ  in
-            if (isUnit typ)
-            then
-              let (quads1, s_info) = gen_stmt quads expr in
-              let quads2 = backpatch quads1 s_info.next_stmt (nextLabel ()) in
-                quads2
-            else
-              let (quads1, e_info) = gen_expr quads expr in
-              let quads2 = backpatch quads1 e_info.next_expr (nextLabel ()) in
-              let quads3 = genQuad (Q_Assign, e_info.place, O_Empty, O_Obj (varHeader id entry typ)) quads2 in
-                quads3
-        | (id, _) :: params ->
-          let () = fixOffsets entry in
-          let fresh_typ = lookup_res_type entry in
-          let typ = lookup_solved fresh_typ  in
-          let fQuads = newQuadList () in
-          let funHead = funHeader id entry in
-          let () = Stack.push funHead.var_size offset_stack in
-          let fQuads1 = 
-            genQuad (Q_Unit, O_Fun funHead, O_Empty, O_Empty) fQuads 
-          in
-            if (isUnit typ)
-            then
-              let (fQuads2, s_info) = gen_stmt fQuads1 expr in
-              let fQuads3 = backpatch fQuads2 s_info.next_stmt (nextLabel ()) in
-              let fQuads4 = genQuad (Q_Endu, O_Fun funHead, O_Empty, O_Empty) fQuads3 in 
-              let _ = Stack.pop offset_stack in
-                mergeQuads quads fQuads4 
-            else
-              let (fQuads2, e_info) = gen_expr fQuads1 expr in
-              let fQuads3 = backpatch fQuads2 e_info.next_expr (nextLabel ()) in
-              let fQuads4 = genQuad (Q_Assign, e_info.place, O_Empty, O_Res) fQuads3
+      | D_Var (lst, expr) -> 
+        begin 
+          match lst with
+            | [] -> internal "Definition cannot be empty."
+            | (id, _) :: []     ->
+              let fresh_typ = lookup_res_type entry in
+              let typ = lookup_solved fresh_typ  in
+                if (isUnit typ)
+                then
+                  let (quads1, s_info) = gen_stmt quads expr in
+                  let quads2 = backpatch quads1 s_info.next_stmt (nextLabel ()) in
+                    quads2
+                else
+                  let (quads1, e_info) = gen_expr quads expr in
+                  let quads2 = backpatch quads1 e_info.next_expr (nextLabel ()) in
+                  let quads3 = genQuad (Q_Assign, e_info.place, O_Empty, O_Obj (varHeader id entry typ)) quads2 in
+                    quads3
+            | (id, _) :: params ->
+              let () = fixOffsets entry in
+              let fresh_typ = lookup_res_type entry in
+              let locals_size = get_var_size entry in
+              let e = match entry with
+                | Some e -> e
+                | None -> internal "Not a function"
               in
-              let fQuads5 = genQuad (Q_Endu, O_Fun funHead, O_Empty, O_Empty) fQuads4 in 
-              let _ = Stack.pop offset_stack in
-                mergeQuads quads fQuads5 
-    end
-  | D_Mut (_, _)    -> quads
-  | D_Array (id, _, lst)  -> 
-    let rec gen_array_dims lst quads =
-      match lst with
-        | [] -> quads  (* XXX: maybe internal here *)
-        | dim :: xs ->
-          let (quads1, e_info) = gen_expr quads dim in
-          let quads2 = genQuad (Q_Par, e_info.place, O_ByVal, O_Empty) quads1 in
-            gen_array_dims xs quads2
-    in
-    let quads1 = gen_array_dims lst quads in
-    let ty = lookup_type def_node.def_entry in
-    let solved_ty = lookup_solved ty  in
-    let size = sizeOfType solved_ty in  (* Size of an array element *)
-    let quads2 = genQuad (Q_Par, O_Size size, O_ByVal, O_Empty) quads1 in
-    let makearr_head = { (* XXX dummy values here *)
-      fun_name = "_make_array";
-      index = 0;
-      param_size = 0;
-      var_size = ref 0;
-      nesting = 0;
-    } in
-    let delete_head = { (* XXX dummy values here *)
-      fun_name = "_delete";
-      index = 0;
-      param_size = 0;
-      var_size = ref 0;
-      nesting = 0;
-    } in
-    let dims = (* --- Need to get an int out of Dim type --- *)
-      match arrayDims solved_ty with
-        | D_Int d -> d
-        | D_Alpha _ -> internal "Unknown array dimensions\n"
-    in
-    let quads3 = genQuad (Q_Par, O_Dims dims, O_ByVal, O_Empty) quads2 in
-    let quads4 = genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry solved_ty) , O_Ret, O_Empty) quads3 in (* --- changed Obj type --- *)
-    let quads5 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun makearr_head) quads4 in
-      delete_quads := genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry solved_ty), O_ByVal, O_Empty) !delete_quads;
-      delete_quads := genQuad (Q_Call, O_Empty, O_Empty, O_Fun delete_head) !delete_quads;
-      quads5
+              let typ = lookup_solved fresh_typ  in
+              let fQuads = newQuadList () in
+              let () = Stack.push locals_size offset_stack in
+              let fQuads1 = 
+                genQuad (Q_Unit, O_Fun e, O_Empty, O_Empty) fQuads 
+              in
+                if (isUnit typ)
+                then
+                  let (fQuads2, s_info) = gen_stmt fQuads1 expr in
+                  let fQuads3 = backpatch fQuads2 s_info.next_stmt (nextLabel ()) in
+                  let fQuads4 = genQuad (Q_Endu, O_Fun e, O_Empty, O_Empty) fQuads3 in 
+                  let _ = Stack.pop offset_stack in
+                    mergeQuads quads fQuads4 
+                else
+                  let (fQuads2, e_info) = gen_expr fQuads1 expr in
+                  let fQuads3 = backpatch fQuads2 e_info.next_expr (nextLabel ()) in
+                  let fQuads4 = genQuad (Q_Assign, e_info.place, O_Empty, O_Res) fQuads3
+                  in
+                  let fQuads5 = genQuad (Q_Endu, O_Fun e, O_Empty, O_Empty) fQuads4 in 
+                  let _ = Stack.pop offset_stack in
+                    mergeQuads quads fQuads5 
+        end
+      | D_Mut (_, _)    -> quads
+      | D_Array (id, _, lst)  -> 
+        let rec gen_array_dims lst quads =
+          match lst with
+            | [] -> quads  (* XXX: maybe internal here *)
+            | dim :: xs ->
+              let (quads1, e_info) = gen_expr quads dim in
+              let quads2 = genQuad (Q_Par, e_info.place, O_ByVal, O_Empty) quads1 in
+                gen_array_dims xs quads2
+        in
+        let quads1 = gen_array_dims lst quads in
+        let ty = lookup_type def_node.def_entry in
+        let solved_ty = lookup_solved ty  in
+        let size = sizeOfType solved_ty in  (* Size of an array element *)
+        let quads2 = genQuad (Q_Par, O_Size size, O_ByVal, O_Empty) quads1 in
+        let makearr_entry = { (* XXX dummy values here *)
+          entry_id = (id_make "_make_array");
+          entry_scope = 
+            {
+              sco_parent = None;
+              sco_nesting = 0;
+              sco_entries = [];
+              sco_negofs  = 0;
+              sco_hidden = false;
+            };
+          entry_info = 
+            ENTRY_function {
+              function_isForward = false;
+              function_paramlist = [];
+              function_varlist = [];
+              function_varsize = ref 0;
+              function_paramsize = 0;       
+              function_result = T_Unit;
+              function_pstatus = PARDEF_COMPLETE;
+              function_nesting = 0;
+              function_parent = None;
+              function_index = -1
+            } }in
+        let delete_entry = { (* XXX dummy values here *)
+          entry_id = (id_make "_delete_array");
+          entry_scope = 
+            {
+              sco_parent = None;
+              sco_nesting = 0;
+              sco_entries = [];
+              sco_negofs  = 0;
+              sco_hidden = false;
+            };
+          entry_info = 
+            ENTRY_function {
+              function_isForward = false;
+              function_paramlist = [];
+              function_varlist = [];
+              function_varsize = ref 0;
+              function_paramsize = 0;      
+              function_result = T_Unit;
+              function_pstatus = PARDEF_COMPLETE;
+              function_nesting = 0;
+              function_parent = None;
+              function_index = -1
+            } } in
+        let dims = (* --- Need to get an int out of Dim type --- *)
+          match arrayDims solved_ty with
+            | D_Int d -> d
+            | D_Alpha _ -> internal "Unknown array dimensions\n"
+        in
+        let quads3 = genQuad (Q_Par, O_Dims dims, O_ByVal, O_Empty) quads2 in
+        let quads4 = genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry solved_ty) , O_Ret, O_Empty) quads3 in (* --- changed Obj type --- *)
+        let quads5 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun makearr_entry) quads4 in
+          delete_quads := genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry solved_ty), O_ByVal, O_Empty) !delete_quads;
+          delete_quads := genQuad (Q_Call, O_Empty, O_Empty, O_Fun delete_entry) !delete_quads;
+          quads5
 
 and gen_expr quads expr_node = match expr_node.expr with 
   | E_Binop (expr1, op, expr2) ->
@@ -184,7 +231,7 @@ and gen_expr quads expr_node = match expr_node.expr with
           let temp = newTemp typ (Stack.top offset_stack) in
           let quads3 = genQuad (getQuadUnop oper, e1_info.place, O_Empty, temp) quads2 in
           let e_info = setExprInfo temp (newLabelList ()) in
-          (quads3, e_info)
+            (quads3, e_info)
         | U_Del -> internal "Unreachable point: Delete is not an expression"
                      (* Will create gen_stm and U_Del will go there*)
                      (*let (quads1, e1_info) = gen_expr quads expr1 in
@@ -225,27 +272,31 @@ and gen_expr quads expr_node = match expr_node.expr with
     let typ = lookup_solved fresh_typ  in
     let temp = newTemp typ (Stack.top offset_stack) in
     let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
-    let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun (funHeader id expr_node.expr_entry)) quads2 in
+    let callee_entry = match expr_node.expr_entry with
+      | Some e -> e
+      | None -> internal "Callee is not a function"
+    in
+    let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun callee_entry) quads2 in
     let e_info = setExprInfo temp (newLabelList ()) in
       (quads3, e_info)
   | E_Block e -> gen_expr quads e
   | E_Ifthen (expr1, expr2) -> internal "If then from gen_expr"
   | E_Ifthenelse (expr1, expr2, expr3) ->
-      let (quads1, cond_info) = gen_cond quads expr1 in
-      let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
-      let (quads3, expr2_info) = gen_expr quads2 expr2 in
-      let fresh_typ = expr_node.expr_typ in 
-      let typ = lookup_solved fresh_typ  in
-      let temp = newTemp typ (Stack.top offset_stack) in
-      let quads4 = genQuad (Q_Assign, expr2_info.place, O_Empty, temp) quads3 in
-      let l1 = makeLabelList (nextLabel ()) in
-      let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 in
-      let quads6 = backpatch quads5 (cond_info.false_lst) (nextLabel ()) in
-      let (quads7, expr3_info) = gen_expr quads6 expr3 in
-      let quads8 = backpatch quads7 expr3_info.next_expr (nextLabel ()) in
-      let quads9 = genQuad(Q_Assign, expr3_info.place, O_Empty, temp) quads8 in
-      let next = mergeLabels expr2_info.next_expr l1 in
-        (quads9, setExprInfo temp next)
+    let (quads1, cond_info) = gen_cond quads expr1 in
+    let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
+    let (quads3, expr2_info) = gen_expr quads2 expr2 in
+    let fresh_typ = expr_node.expr_typ in 
+    let typ = lookup_solved fresh_typ  in
+    let temp = newTemp typ (Stack.top offset_stack) in
+    let quads4 = genQuad (Q_Assign, expr2_info.place, O_Empty, temp) quads3 in
+    let l1 = makeLabelList (nextLabel ()) in
+    let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 in
+    let quads6 = backpatch quads5 (cond_info.false_lst) (nextLabel ()) in
+    let (quads7, expr3_info) = gen_expr quads6 expr3 in
+    let quads8 = backpatch quads7 expr3_info.next_expr (nextLabel ()) in
+    let quads9 = genQuad(Q_Assign, expr3_info.place, O_Empty, temp) quads8 in
+    let next = mergeLabels expr2_info.next_expr l1 in
+      (quads9, setExprInfo temp next)
   | E_Letin (def, expr) ->
     let delete_quads = ref (newQuadList ()) in
     let quads1 = gen_decl quads def delete_quads in
@@ -253,31 +304,47 @@ and gen_expr quads expr_node = match expr_node.expr with
     let quads3 = mergeQuads !delete_quads quads2 in
       (quads3, expr_info)
   | E_Dim (i, id) ->
-      let temp = newTemp T_Int (Stack.top offset_stack) in
-      let id_entry = expr_node.expr_entry in
-      let fresh_id_typ = lookup_type id_entry in
-      let id_typ = lookup_solved fresh_id_typ  in
-      let obj = O_Obj (varHeader id expr_node.expr_entry id_typ) in
-      let dim = match i with 
-        | None -> 1
-        | Some i -> i
-      in
-      let quads1 = genQuad (Q_Dim, obj, O_Int dim, temp) quads in
-        (quads1, setExprInfo temp (newLabelList ()))
+    let temp = newTemp T_Int (Stack.top offset_stack) in
+    let id_entry = expr_node.expr_entry in
+    let fresh_id_typ = lookup_type id_entry in
+    let id_typ = lookup_solved fresh_id_typ  in
+    let obj = O_Obj (varHeader id expr_node.expr_entry id_typ) in
+    let dim = match i with 
+      | None -> 1
+      | Some i -> i
+    in
+    let quads1 = genQuad (Q_Dim, obj, O_Int dim, temp) quads in
+      (quads1, setExprInfo temp (newLabelList ()))
   | E_New t -> 
-      let size = sizeOfType t in
-      let new_head = { (* XXX dummy values here *)
-        fun_name = "_delete";
-        index = 0;
-        param_size = 0;
-        var_size = ref 0;
-        nesting = 0;
-      } in
-      let temp = newTemp (T_Ref t) (Stack.top offset_stack) in
-      let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
-      let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
-      let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun new_head) quads2 in
-        (quads3, setExprInfo temp (newLabelList ()))
+    let size = sizeOfType t in
+        let new_entry = { (* XXX dummy values here *)
+          entry_id = (id_make "_new");
+          entry_scope = 
+            {
+              sco_parent = None;
+              sco_nesting = 0;
+              sco_entries = [];
+              sco_negofs  = 0;
+              sco_hidden = false;
+            };
+          entry_info = 
+            ENTRY_function {
+              function_isForward = false;
+              function_paramlist = [];
+              function_varlist = [];
+              function_varsize = ref 0;
+              function_paramsize = 0;      
+              function_result = T_Unit;
+              function_pstatus = PARDEF_COMPLETE;
+              function_nesting = 0;
+              function_parent = None;
+              function_index = -1
+            } } in
+    let temp = newTemp (T_Ref t) (Stack.top offset_stack) in
+    let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
+    let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
+    let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun new_entry) quads2 in
+      (quads3, setExprInfo temp (newLabelList ()))
   | E_Atom a -> gen_atom quads a
   | E_While _ | E_For _ -> internal "While/For not expressions"
   | E_Match _ | E_Cid _ -> (quads, setExprInfo (O_Empty) (newLabelList ()))   (* dummy return value TODO *)
@@ -288,7 +355,7 @@ and gen_cond quads expr_node = match expr_node.expr with
       match op with
         | Plus | Minus | Times | Div | Mod
         | Fplus | Fminus | Ftimes | Fdiv | Power ->
-            internal "Arithmetic operators cannot be conditions"
+          internal "Arithmetic operators cannot be conditions"
         | Seq | Nseq | Eq | Neq
         | L | Le | G | Ge as oper ->
           let (quads1, e1_info) = gen_expr quads expr1 in
@@ -302,7 +369,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           let f = makeLabelList (nextLabel ()) in
           let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in
           let cond_info = setCondInfo t f in
-          (quads6, cond_info)
+            (quads6, cond_info)
         | And -> 
           let (quads1, c1_info) = gen_cond quads expr1 in
           let quads2 = backpatch quads1 c1_info.true_lst (nextLabel ()) in
@@ -310,7 +377,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           let t = c2_info.true_lst in
           let f = mergeLabels c1_info.false_lst c2_info.false_lst in
           let cond_info = setCondInfo t f in
-          (quads3, cond_info) 
+            (quads3, cond_info) 
         | Or -> 
           let (quads1, c1_info) = gen_cond quads expr1 in
           let quads2 = backpatch quads1 c1_info.false_lst (nextLabel ()) in
@@ -318,12 +385,12 @@ and gen_cond quads expr_node = match expr_node.expr with
           let f = c2_info.false_lst in
           let t = mergeLabels c1_info.true_lst c2_info.true_lst in
           let cond_info = setCondInfo t f in
-          (quads3, cond_info)
+            (quads3, cond_info)
         | Semicolon ->
           let (quads1, stmt_info) = gen_stmt quads expr1 in
           let quads2 = backpatch quads1 stmt_info.next_stmt (nextLabel ()) in
           let (quads3, cond_info) = gen_cond quads2 expr2 in
-          (quads3, cond_info)
+            (quads3, cond_info)
         | Assign -> internal "Assign cannot be condition"
     end
   | E_Unop (op, expr1) ->
@@ -334,20 +401,20 @@ and gen_cond quads expr_node = match expr_node.expr with
           let t = c_inf.false_lst in
           let f = c_inf.true_lst in
           let cond_info = setCondInfo t f in
-          (quads1, cond_info)
+            (quads1, cond_info)
         | U_Plus | U_Minus | U_Fplus | U_Fminus | U_Del ->
-            internal "Unary operators with no boolean type cannot be conditions"
+          internal "Unary operators with no boolean type cannot be conditions"
     end
   | E_Ifthen (expr1, expr2) -> internal "If then from gen_cond"
   | E_Ifthenelse (expr1, expr2, expr3) ->
-      let (quads1, cond1_info) = gen_cond quads expr1 in
-      let quads2 = backpatch quads1 cond1_info.true_lst (nextLabel ()) in
-      let (quads3, cond2_info) = gen_cond quads2 expr2 in
-      let quads4 = backpatch quads3 (cond1_info.false_lst) (nextLabel ()) in
-      let (quads5, cond3_info) = gen_cond quads4 expr3 in
-      let t = mergeLabels cond2_info.true_lst cond3_info.true_lst in
-      let f = mergeLabels cond2_info.false_lst cond3_info.false_lst in
-        (quads5, setCondInfo t f)
+    let (quads1, cond1_info) = gen_cond quads expr1 in
+    let quads2 = backpatch quads1 cond1_info.true_lst (nextLabel ()) in
+    let (quads3, cond2_info) = gen_cond quads2 expr2 in
+    let quads4 = backpatch quads3 (cond1_info.false_lst) (nextLabel ()) in
+    let (quads5, cond3_info) = gen_cond quads4 expr3 in
+    let t = mergeLabels cond2_info.true_lst cond3_info.true_lst in
+    let f = mergeLabels cond2_info.false_lst cond3_info.false_lst in
+      (quads5, setCondInfo t f)
   | E_Block e -> gen_cond quads e 
   | E_Id (e, l) ->
     let (quads1, e_info) = gen_expr quads expr_node in
@@ -398,7 +465,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           internal "Expression with reference type cannot be a condition"
         | A_Expr e -> gen_cond quads e
     end
-      
+
 and gen_stmt quads expr_node = match expr_node.expr with
   | E_Binop (expr1, op, expr2) ->
     begin 
@@ -427,13 +494,13 @@ and gen_stmt quads expr_node = match expr_node.expr with
             then
               let (quads3, s_info) = gen_stmt quads2 expr2 in
               let n = s_info.next_stmt in
-		(quads2, setStmtInfo n)
+                (quads2, setStmtInfo n)
             else
               let (quads3, expr2_info) = gen_expr quads2 expr2 in
               let quads4 = backpatch quads3 expr2_info.next_expr (nextLabel ()) in
               let quads5 = genQuad (Q_Assign, expr2_info.place, O_Empty, O_Deref expr1_info.place) quads4 in
               let n = newLabelList () in
-		(quads5, setStmtInfo n)
+                (quads5, setStmtInfo n)
     end
   | E_Unop (op, expr1) ->
     begin
@@ -443,16 +510,33 @@ and gen_stmt quads expr_node = match expr_node.expr with
             (quads1, setStmtInfo e_info.next_expr)
         | U_Del -> 
           let (quads1, e1_info) = gen_expr quads expr1 in
-          let delete_head = { (* XXX dummy values here *)
-            fun_name = "_delete";
-            index = 0;
-            param_size = 0;
-            var_size = ref 0;
-            nesting = 0;
-          } in
+        let delete_entry = { (* XXX dummy values here *)
+          entry_id = (id_make "_delete");
+          entry_scope = 
+            {
+              sco_parent = None;
+              sco_nesting = 0;
+              sco_entries = [];
+              sco_negofs  = 0;
+              sco_hidden = false;
+            };
+          entry_info = 
+            ENTRY_function {
+              function_isForward = false;
+              function_paramlist = [];
+              function_varlist = [];
+              function_varsize = ref 0;
+              function_paramsize = 0;      
+              function_result = T_Unit;
+              function_pstatus = PARDEF_COMPLETE;
+              function_nesting = 0;
+              function_parent = None;
+              function_index = -1
+            } } in
+
           let quads2 = backpatch quads1 e1_info.next_expr (nextLabel ()) in
           let quads3 = genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads2 in
-          let quads4 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun delete_head) quads3 in
+          let quads4 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun delete_entry) quads3 in
           let s_info = setStmtInfo (newLabelList ()) in
             (quads4, s_info)
         | U_Not -> 
@@ -509,20 +593,24 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let quads1 =
       List.fold_left 
         (fun quads e ->
-          if (isUnit e.atom_typ)
-          then
-            let (quads1, s_info) = gen_atom_stmt quads e in
-            let quads2 = backpatch quads1 s_info.next_stmt (nextLabel ()) in
-              quads2
-          else
-            let (quads1, e_info) = gen_atom quads e in
-            let quads2 = backpatch quads1 e_info.next_expr (nextLabel ()) in
-            let quads3 = genQuad (Q_Par, e_info.place, O_ByVal, O_Empty) quads2 in
-              quads3
+           if (isUnit e.atom_typ)
+           then
+             let (quads1, s_info) = gen_atom_stmt quads e in
+             let quads2 = backpatch quads1 s_info.next_stmt (nextLabel ()) in
+               quads2
+           else
+             let (quads1, e_info) = gen_atom quads e in
+             let quads2 = backpatch quads1 e_info.next_expr (nextLabel ()) in
+             let quads3 = genQuad (Q_Par, e_info.place, O_ByVal, O_Empty) quads2 in
+               quads3
         )
         quads l
     in
-    let quads2 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun (funHeader id expr_node.expr_entry)) quads1 in
+    let callee_entry = match expr_node.expr_entry with
+      | Some e -> e
+      | None -> internal "Callee is not a function"
+    in
+    let quads2 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun callee_entry) quads1 in
     let s_info = setStmtInfo (newLabelList ()) in
       (quads2, s_info)
   | E_Dim _ -> 
@@ -541,7 +629,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
   | E_Block e -> gen_stmt quads e
   | E_Atom a -> gen_atom_stmt quads a
 
-    
+
 and gen_atom quads atom_node = match atom_node.atom with
   | A_Num n -> (quads, setExprInfo (O_Int n) (newLabelList ()))
   | A_Dec f -> (quads, setExprInfo (O_Float f) (newLabelList ()))  
@@ -576,7 +664,7 @@ and gen_atom quads atom_node = match atom_node.atom with
            let quads2 = backpatch quads1 e_info1.next_expr (nextLabel ()) in
            let temp = newTemp typ (Stack.top offset_stack) in
            let quads3 = genQuad (Q_Array, e_info.place, e_info1.place, temp) quads2 in
-           (quads3, setExprInfo temp (newLabelList ()))
+             (quads3, setExprInfo temp (newLabelList ()))
         )
         (quads, setExprInfo (O_Obj (varHeader id atom_node.atom_entry arr_typ)) (newLabelList ())) expr_list
     in

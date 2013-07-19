@@ -38,6 +38,7 @@ let no_entry id = {
 let currentScope = ref the_outer_scope
 let quadNext = ref 1
 let tempNumber = ref 1
+let fun_index = ref (-1) 
 
 let tab = ref (H.create 0)
 
@@ -308,6 +309,7 @@ let newFunction id parent err =
       function_paramsize = 0;
       function_nesting = nesting;
       function_parent = parent;
+      function_index = (incr fun_index; !fun_index)
     } in
       newEntry id (ENTRY_function inf) false
 
