@@ -137,9 +137,9 @@
 program     : stmt_list T_EOF                                           
     {  
         let ast = List.rev $1 in
-        let solved = walk_program ast in
+        let (solved, outer_entry) = walk_program ast in
           match solved with 
-            | Some subs -> gen_program ast subs
+            | Some subs -> gen_program ast subs outer_entry
             | None -> error "Type inference failed."
     }
         

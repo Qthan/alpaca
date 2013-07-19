@@ -49,7 +49,7 @@ let rec walk_program ls =
   initSymbolTable 10009;
   openScope();
   List.iter insert_function library_funs;
-  let f = newFunction (id_make "_outer") true in 
+  let f = newFunction (id_make "_outer") None true in 
   let () = endFunctionHeader f (T_Unit) in   (* XXX changes *)
   let () = Stack.push f function_stack in
   let constraints = walk_stmt_list ls in
@@ -65,10 +65,10 @@ let rec walk_program ls =
       | DimError (dim1, dim2) ->
         error "Array dimentions error. Cannot match dimention size %a with %a" pretty_dim dim1 pretty_dim dim2; None
   in
-    solved
+    (solved, f)
       
 and insert_function (id, result_ty, params) =
-  let p = newFunction (id_make id) true in
+  let p = newFunction (id_make id) None true in
     openScope ();
     walk_par_list params p;
     endFunctionHeader p result_ty;
@@ -125,7 +125,7 @@ and walk_def t = match t.def with
               t.def_entry <- Some p;
               (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl ->
-          let p = newFunction (id_make id) true in
+          let p = newFunction (id_make id) (Some (Stack.top function_stack)) true in
           let () = Stack.push p function_stack in (* XXX changes *)
           let () = hideScope !currentScope true in
           let () =  openScope () in
@@ -174,7 +174,7 @@ and walk_recdef_names t = match t.def with
             ignore p;
         | (id, ty) :: tl  -> 
           let new_ty = refresh ty in
-          let p = newFunction (id_make id) true in
+          let p = newFunction (id_make id) (Some (Stack.top function_stack)) true in
             setType p new_ty;
             forwardFunction p
     end
@@ -551,4 +551,3 @@ and walk_pattom t = match t.pattom with
     let constraints = walk_pattern p in
       t.pattom_typ <- p.pattern_typ;
       constraints
-

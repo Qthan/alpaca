@@ -3,7 +3,9 @@ exception UnifyError of Types.typ * Types.typ
 exception DimError of Types.dim * Types.dim
 val debug_typeinf : bool
 val print_constraints : (Types.typ * Types.typ) list -> unit
-val add_solved_table : ('a * 'b) list -> ('a, 'b) Hashtbl.t -> unit
+val solved_types : (Types.typ, Types.typ) Hashtbl.t
+val add_solved_table : (Types.typ * Types.typ) list -> unit
+val lookup_solved : Types.typ -> Types.typ
 val fresh : unit -> Types.typ
 val freshDim : unit -> Types.dim
 val refresh : Types.typ -> Types.typ
