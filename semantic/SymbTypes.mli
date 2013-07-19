@@ -26,11 +26,12 @@ and function_info = {
   mutable function_isForward : bool;
   mutable function_paramlist : entry list;
   mutable function_varlist   : entry list;
-  mutable function_varsize   : int;
+  mutable function_varsize   : int ref;          
   mutable function_paramsize : int;
   mutable function_result    : typ;
   mutable function_pstatus   : param_status;
-  mutable function_initquad  : int
+  mutable function_nesting   : int;
+  mutable function_parent    : entry option
 }
 
 and parameter_info = {

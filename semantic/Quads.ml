@@ -3,6 +3,7 @@ open Types
 open AstTypes
 open Identifier
 open Error
+open SymbTypes
 open Pretty_print
 
 (* Label lists interface *)
@@ -47,6 +48,25 @@ let mergeLabels (l1 : labelList) (l2 : labelList) =
 
 
 (* Intermediate Types *)
+type fun_header = {
+    fun_name : string;
+    index : int;
+    param_size : int;
+    var_size : int ref;
+    mutable nesting : int
+}
+
+type var_header = {
+    var_name : string;
+    var_type : typ;
+    var_offset: int
+}
+
+type temp_header = {
+    temp_name : int;
+    temp_type : typ;
+    temp_offset : int
+}
 
 type quad_operators =
   | Q_Unit | Q_Endu
@@ -66,12 +86,12 @@ type quad_operands =
   | O_Str of string 
   | O_Backpatch
   | O_Label of int
-  | O_Temp of int * typ
+  | O_Temp of temp_header (* XXX *)
   | O_Res (* $$ *)
   | O_Ret (* RET *)
   | O_ByVal
-  | O_Fun of string
-  | O_Obj of string * typ 
+  | O_Fun of fun_header (* XXX *)
+  | O_Obj of var_header (* XXX *)
   | O_Empty
   | O_Ref of quad_operands
   | O_Deref of quad_operands
@@ -109,8 +129,60 @@ let newLabel = fun () -> incr label; !label
 let nextLabel = fun () -> !label + 1
 
 let newTemp =
-  let k = ref 0 in
-  fun typ -> incr k; O_Temp (!k, typ)
+  let k = ref 1 in
+    fun typ size -> 
+      let tempsize = sizeOfType typ in 
+        size := !size + tempsize;  
+        let header = { 
+          temp_name = !k;
+          temp_type = typ;
+          temp_offset = - !size;
+        } in 
+          incr k;
+          O_Temp header
+
+let funHeader id entrymb = 
+  match entrymb with
+    | Some entry -> 
+        begin
+          match entry.entry_info with
+            | ENTRY_function f ->
+                let header = { 
+                  fun_name = id;
+                  index = 0;
+                  param_size = f.function_paramsize;
+                  var_size = f.function_varsize;
+                  nesting = 0
+                } in
+                  header
+            | ENTRY_variable _ -> internal "Must think about it!!!" (* TODO what to do with function obs?? *)
+            | _ -> internal "function header only for functions"
+        end 
+    | None -> internal "Too much maybe will kill you"
+
+let varHeader id entrymb typ = (* It is better to update the type in the ST so we dont need this extra arg, also we msh match at maybe entry earlier *)
+  match entrymb with
+    | Some entry -> 
+        begin
+          match entry.entry_info with
+            | ENTRY_variable v ->
+                let header = {
+                  var_name = id;
+                  var_type = typ;
+                  var_offset = v.variable_offset;
+                } in
+                  header
+            | ENTRY_parameter p ->
+                let header = {
+                  var_name = id;
+                  var_type = typ;
+                  var_offset = p.parameter_offset;
+                } in
+                  header
+            | ENTRY_function _ -> internal "Must think abou it too!" (* TODO what to do with functions treated as variables?? *)
+            | _ -> internal "variable header only for variables"
+        end 
+    | None -> internal "Too much maybe will kill you"
 
 (* Return quad operator from Llama binary operator *)
 let getQuadBop bop = match bop with 
@@ -146,9 +218,9 @@ let getQuadUnop unop = match unop with
  * quad list thus avoiding all the quads1,2,3... pollution. Moo XXX*)
 let backpatch quads lst patch =
   List.iter (fun quad_label -> 
-      match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
-        | None -> internal "Quad label not found, can't backpatch\n"
-        | Some quad -> quad.arg3 <- O_Label patch) lst;
+               match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
+                 | None -> internal "Quad label not found, can't backpatch\n"
+                 | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
 
 let newQuadList () = []
@@ -162,7 +234,7 @@ let genQuad (op, ar1, ar2, ar3) quad_lst =
     arg3 = ar3
   } 
   in
-  (quad :: quad_lst) 
+    (quad :: quad_lst) 
 
 let mergeQuads quads new_quads = quads @ new_quads
 
@@ -201,6 +273,14 @@ let string_of_operator = function
 
 let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 
+let print_fun_head chan head = 
+  fprintf chan "[%s, ind %d, params %d, vars %d, nest %d]" head.fun_name head.index head.param_size !(head.var_size) head.nesting 
+
+let print_var_head chan head = 
+  fprintf chan "[%s, %a, %d]" head.var_name pretty_typ head.var_type head.var_offset 
+
+let print_temp_head chan head = 
+  fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
 
 let rec print_operand chan op = match op with
   | O_Int i -> fprintf chan "%d" i 
@@ -210,12 +290,12 @@ let rec print_operand chan op = match op with
   | O_Str str -> fprintf chan "\"%s\"" str  
   | O_Backpatch -> fprintf chan "*"  
   | O_Label i -> fprintf chan "l: %d" i 
-  | O_Temp (i, t) -> fprintf chan "temp[$%d, %a]" i pretty_typ t
+  | O_Temp t -> fprintf chan "temp%a" print_temp_head t
   | O_Res -> fprintf chan "$$" 
   | O_Ret -> fprintf chan "RET" 
   | O_ByVal -> fprintf chan "V"
-  | O_Fun n -> fprintf chan "fun[%s]" n 
-  | O_Obj (n, t) -> fprintf chan "Obj[%s, %a]" n pretty_typ t
+  | O_Fun n -> fprintf chan "fun%a" print_fun_head n 
+  | O_Obj n-> fprintf chan "Obj%a" print_var_head n
   | O_Empty ->  fprintf chan "-"
   | O_Ref op -> fprintf chan "{%a}" print_operand op
   | O_Deref op -> fprintf chan "[%a]" print_operand op

@@ -46,10 +46,14 @@ val newVariable :
 val newUdt : H.key -> bool -> SymbTypes.entry
 val newConstructor :
   H.key -> Types.typ -> Types.typ list -> bool -> SymbTypes.entry
-val newFunction : H.key -> bool -> SymbTypes.entry
+val newFunction : H.key -> SymbTypes.entry option -> bool -> SymbTypes.entry
 val newTemporary : Types.typ -> SymbTypes.entry
 val forwardFunction : SymbTypes.entry -> unit
 val endFunctionHeader : SymbTypes.entry -> Types.typ -> unit
 val setType : SymbTypes.entry -> Types.typ -> unit
 val getType : SymbTypes.entry -> Types.typ
 val getResType : SymbTypes.entry -> Types.typ
+val setOffset : SymbTypes.entry -> int -> unit
+val getParamList : SymbTypes.entry -> SymbTypes.entry list
+val getVarList : SymbTypes.entry -> SymbTypes.entry list
+val fixOffsets : SymbTypes.entry option -> unit

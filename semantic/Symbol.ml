@@ -14,7 +14,7 @@ module H = Hashtbl.Make (
   end
   )
 
-let debug_symbol = true
+let debug_symbol = false
 
 (* Symbol table definitions *)
 
@@ -277,7 +277,7 @@ let newConstructor id typ typ_list err =
   } in
     newEntry id (ENTRY_constructor inf) err  
 
-let newFunction id err =
+let newFunction id parent err =
   try
     let e = lookupEntry id LOOKUP_CURRENT_SCOPE false in
       match e.entry_info with
@@ -289,15 +289,25 @@ let newFunction id err =
             error "duplicate identifier: %a" pretty_id id;
           raise Exit
   with Not_found ->
+    let nesting =
+      match parent with
+        | None -> -1
+        | Some parent ->
+          (match parent.entry_info with
+            | ENTRY_function p -> p.function_nesting + 1
+            | _ -> internal "Parent is not a function"
+            )
+    in
     let inf = {
       function_isForward = false;
       function_paramlist = [];
       function_varlist = [];
       function_result = T_Notype;
       function_pstatus = PARDEF_DEFINE;
-      function_initquad = 0;
-      function_varsize = 0; 
+      function_varsize = ref 0; 
       function_paramsize = 0;
+      function_nesting = nesting;
+      function_parent = parent;
     } in
       newEntry id (ENTRY_function inf) false
 
@@ -377,7 +387,7 @@ let getVarList e =
     | ENTRY_function f -> f.function_varlist
     | _ -> internal "cannot find variables in a non function"
 
-let fixOffsets fun_entry =
+let fixOffsets entrymb =
   let rec fixOffsetsAux varlist acc =
     match varlist with 
       | [] -> acc
@@ -386,10 +396,15 @@ let fixOffsets fun_entry =
             setOffset v acc;
             fixOffsetsAux vs (acc+s)
   in
-    match fun_entry.entry_info with
-      | ENTRY_function f ->
-          let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
-          let var_size = fixOffsetsAux f.function_paramlist 0 in
-            f.function_paramsize <- par_size;
-            f.function_varsize <- var_size;
-      | _ -> internal "cannot fix offsets in a non function"
+    match entrymb with
+      | Some fun_entry -> 
+          begin 
+            match fun_entry.entry_info with
+              | ENTRY_function f ->
+                  let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
+                  let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
+                    f.function_paramsize <- par_size;
+                    f.function_varsize <- ref var_size;
+              | _ -> internal "cannot fix offsets in a non function"
+          end
+      | None -> internal "So many maybe. I am bored."
