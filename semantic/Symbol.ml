@@ -91,13 +91,13 @@ let printSymbolTable () =
                     | [] ->
                       () in
                 let local ppf e =
-                    match e.entry_info with
-                        | ENTRY_variable inf ->
-                            fprintf ppf "%a: %a"
-                            pretty_id e.entry_id
-                            pretty_typ inf.variable_type
-                        | _ ->
-                            fprintf ppf "<invalid>" in
+                  match e.entry_info with
+                    | ENTRY_variable inf ->
+                      fprintf ppf "%a: %a"
+                        pretty_id e.entry_id
+                        pretty_typ inf.variable_type
+                    | _ ->
+                      fprintf ppf "<invalid>" in
                 let rec locals ppf ls =
                   match ls with
                     | [l] ->
@@ -239,16 +239,17 @@ let lookupEntry id how err =
 
 let newParameter id typ mode f err =
   match f.entry_info with
-    | ENTRY_function inf -> begin
-        match inf.function_pstatus with
+    | ENTRY_function fn -> begin
+        match fn.function_pstatus with
           | PARDEF_DEFINE ->
-            let inf_p = {
+            let inf = {
               parameter_type = typ;
               parameter_offset = 0;
-              parameter_mode = mode
+              parameter_mode = mode;
+              parameter_nesting = fn.function_nesting
             } in
-            let e = newEntry id (ENTRY_parameter inf_p) err in
-              inf.function_paramlist <- e :: inf.function_paramlist;
+            let e = newEntry id (ENTRY_parameter inf) err in
+              fn.function_paramlist <- e :: fn.function_paramlist;
               e
           | PARDEF_COMPLETE ->
             internal "Cannot add a parameter to an already defined function"
@@ -262,6 +263,7 @@ let newVariable id typ f err =
       let inf = {
         variable_type = typ;
         variable_offset = 0;
+        variable_nesting = fn.function_nesting
       } in
       let e = newEntry id (ENTRY_variable inf) err in
         fn.function_varlist <- e :: fn.function_varlist;
@@ -297,7 +299,7 @@ let newFunction id parent err =
           (match parent.entry_info with
             | ENTRY_function p -> p.function_nesting + 1
             | _ -> internal "Parent is not a function"
-            )
+          )
     in
     let inf = {
       function_isForward = false;
@@ -347,8 +349,10 @@ let endFunctionHeader e typ =
       internal "Cannot end parameters in a non-function"
 
 let setType entry typ = match entry.entry_info with
-  | ENTRY_function func_info -> func_info.function_result <- typ
-  | _ -> ()
+  | ENTRY_function f -> f.function_result <- typ
+  | ENTRY_variable v -> v.variable_type <- typ
+  | ENTRY_parameter p -> p.parameter_type <- typ
+  | _ -> internal "Cannot update type."
 
 let getType e = 
   match e.entry_info with
@@ -394,19 +398,19 @@ let fixOffsets entrymb =
     match varlist with 
       | [] -> acc
       | v :: vs ->
-          let s = sizeOfType (lookup_solved (getType v)) in
-            setOffset v acc;
-            fixOffsetsAux vs (acc+s)
+        let s = sizeOfType (lookup_solved (getType v)) in
+          setOffset v acc;
+          fixOffsetsAux vs (acc+s)
   in
     match entrymb with
       | Some fun_entry -> 
-          begin 
-            match fun_entry.entry_info with
-              | ENTRY_function f ->
-                  let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
-                  let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
-                    f.function_paramsize <- par_size;
-                    f.function_varsize <- ref var_size;
-              | _ -> internal "cannot fix offsets in a non function"
-          end
+        begin 
+          match fun_entry.entry_info with
+            | ENTRY_function f ->
+              let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
+              let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
+                f.function_paramsize <- par_size;
+                f.function_varsize <- ref var_size;
+            | _ -> internal "cannot fix offsets in a non function"
+        end
       | None -> internal "So many maybe. I am bored."

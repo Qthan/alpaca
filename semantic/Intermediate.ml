@@ -7,7 +7,7 @@ open Typeinf
 open Quads
 open Error
 
-(* Symbol entry to unsolved type *)
+(*  Symbol entry option to unsolved type *)
 let lookup_type entry =
   match entry with
     | None -> internal "Entry not found\n"
@@ -18,6 +18,20 @@ let lookup_res_type entry =
     | None -> internal "Entry not found\n"
     | Some e -> getResType e
 
+let update_entry_typ entry =
+  let fresh_typ = getResType entry in
+  let typ = lookup_solved fresh_typ in
+    setType entry typ
+
+let update_def_typ def = 
+  match def.def_entry with 
+    | None -> internal "Definition must have an entry"
+    | Some e -> 
+      update_entry_typ e;
+      match e.entry_info with
+        | ENTRY_function f -> List.iter update_entry_typ f.function_paramlist
+        | _ -> ()
+
 (* Function's local variables size*)
 let get_var_size entry =
   match entry with
@@ -26,9 +40,6 @@ let get_var_size entry =
       (match e.entry_info with
         | ENTRY_function f -> f.function_varsize
         | _ -> internal "Looked for local variables of - Some thing - that's not a function")
-
-
-
 
 (* XXX Check if type is unit XXX*)
 let isUnit fresh_typ = 
@@ -55,11 +66,12 @@ and gen_decl_list ast outer_entry =
     final
 
 and gen_decl outer stmt delete_quads = match stmt with
-  | S_Let l | S_Rec l -> gen_def_list outer l delete_quads
+  | S_Let l | S_Rec l -> 
+    List.iter update_def_typ l;
+    gen_def_list outer l delete_quads
   | S_Type l -> outer (* dummy value, kouo-kouo-kouo dld kotopouleiro*)
 
 and gen_def_list outer lst delete_quads = List.fold_left (fun o l -> gen_def o l delete_quads ) outer lst
-
 
 and gen_def quads def_node delete_quads = 
   let entry = def_node.def_entry in 
@@ -69,8 +81,7 @@ and gen_def quads def_node delete_quads =
           match lst with
             | [] -> internal "Definition cannot be empty."
             | (id, _) :: []     ->
-              let fresh_typ = lookup_res_type entry in
-              let typ = lookup_solved fresh_typ  in
+              let typ = lookup_res_type entry in
                 if (isUnit typ)
                 then
                   let (quads1, s_info) = gen_stmt quads expr in
@@ -83,13 +94,12 @@ and gen_def quads def_node delete_quads =
                     quads3
             | (id, _) :: params ->
               let () = fixOffsets entry in
-              let fresh_typ = lookup_res_type entry in
+              let typ = lookup_res_type entry in
               let locals_size = get_var_size entry in
-              let e = match entry with
+              let e = match entry with 
                 | Some e -> e
-                | None -> internal "Not a function"
+                | None -> internal "No entry for function"
               in
-              let typ = lookup_solved fresh_typ  in
               let fQuads = newQuadList () in
               let () = Stack.push locals_size offset_stack in
               let fQuads1 = 
@@ -123,8 +133,7 @@ and gen_def quads def_node delete_quads =
         in
         let quads1 = gen_array_dims lst quads in
         let ty = lookup_type def_node.def_entry in
-        let solved_ty = lookup_solved ty  in
-        let size = sizeOfType solved_ty in  (* Size of an array element *)
+        let size = sizeOfType ty in  (* Size of an array element *)
         let quads2 = genQuad (Q_Par, O_Size size, O_ByVal, O_Empty) quads1 in
         let makearr_entry = { (* XXX dummy values here *)
           entry_id = (id_make "_make_array");
@@ -173,14 +182,14 @@ and gen_def quads def_node delete_quads =
               function_index = -1
             } } in
         let dims = (* --- Need to get an int out of Dim type --- *)
-          match arrayDims solved_ty with
+          match arrayDims ty with
             | D_Int d -> d
             | D_Alpha _ -> internal "Unknown array dimensions\n"
         in
         let quads3 = genQuad (Q_Par, O_Dims dims, O_ByVal, O_Empty) quads2 in
-        let quads4 = genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry solved_ty) , O_Ret, O_Empty) quads3 in (* --- changed Obj type --- *)
+        let quads4 = genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry ty) , O_Ret, O_Empty) quads3 in (* --- changed Obj type --- *)
         let quads5 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun makearr_entry) quads4 in
-          delete_quads := genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry solved_ty), O_ByVal, O_Empty) !delete_quads;
+          delete_quads := genQuad (Q_Par, O_Obj (varHeader id def_node.def_entry ty), O_ByVal, O_Empty) !delete_quads;
           delete_quads := genQuad (Q_Call, O_Empty, O_Empty, O_Fun delete_entry) !delete_quads;
           quads5
 
@@ -306,8 +315,7 @@ and gen_expr quads expr_node = match expr_node.expr with
   | E_Dim (i, id) ->
     let temp = newTemp T_Int (Stack.top offset_stack) in
     let id_entry = expr_node.expr_entry in
-    let fresh_id_typ = lookup_type id_entry in
-    let id_typ = lookup_solved fresh_id_typ  in
+    let id_typ = lookup_type id_entry in
     let obj = O_Obj (varHeader id expr_node.expr_entry id_typ) in
     let dim = match i with 
       | None -> 1
@@ -317,29 +325,29 @@ and gen_expr quads expr_node = match expr_node.expr with
       (quads1, setExprInfo temp (newLabelList ()))
   | E_New t -> 
     let size = sizeOfType t in
-        let new_entry = { (* XXX dummy values here *)
-          entry_id = (id_make "_new");
-          entry_scope = 
-            {
-              sco_parent = None;
-              sco_nesting = 0;
-              sco_entries = [];
-              sco_negofs  = 0;
-              sco_hidden = false;
-            };
-          entry_info = 
-            ENTRY_function {
-              function_isForward = false;
-              function_paramlist = [];
-              function_varlist = [];
-              function_varsize = ref 0;
-              function_paramsize = 0;      
-              function_result = T_Unit;
-              function_pstatus = PARDEF_COMPLETE;
-              function_nesting = 0;
-              function_parent = None;
-              function_index = -1
-            } } in
+    let new_entry = { (* XXX dummy values here *)
+      entry_id = (id_make "_new");
+      entry_scope = 
+        {
+          sco_parent = None;
+          sco_nesting = 0;
+          sco_entries = [];
+          sco_negofs  = 0;
+          sco_hidden = false;
+        };
+      entry_info = 
+        ENTRY_function {
+          function_isForward = false;
+          function_paramlist = [];
+          function_varlist = [];
+          function_varsize = ref 0;
+          function_paramsize = 0;      
+          function_result = T_Unit;
+          function_pstatus = PARDEF_COMPLETE;
+          function_nesting = 0;
+          function_parent = None;
+          function_index = -1
+        } } in
     let temp = newTemp (T_Ref t) (Stack.top offset_stack) in
     let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
     let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
@@ -510,29 +518,29 @@ and gen_stmt quads expr_node = match expr_node.expr with
             (quads1, setStmtInfo e_info.next_expr)
         | U_Del -> 
           let (quads1, e1_info) = gen_expr quads expr1 in
-        let delete_entry = { (* XXX dummy values here *)
-          entry_id = (id_make "_delete");
-          entry_scope = 
-            {
-              sco_parent = None;
-              sco_nesting = 0;
-              sco_entries = [];
-              sco_negofs  = 0;
-              sco_hidden = false;
-            };
-          entry_info = 
-            ENTRY_function {
-              function_isForward = false;
-              function_paramlist = [];
-              function_varlist = [];
-              function_varsize = ref 0;
-              function_paramsize = 0;      
-              function_result = T_Unit;
-              function_pstatus = PARDEF_COMPLETE;
-              function_nesting = 0;
-              function_parent = None;
-              function_index = -1
-            } } in
+          let delete_entry = { (* XXX dummy values here *)
+            entry_id = (id_make "_delete");
+            entry_scope = 
+              {
+                sco_parent = None;
+                sco_nesting = 0;
+                sco_entries = [];
+                sco_negofs  = 0;
+                sco_hidden = false;
+              };
+            entry_info = 
+              ENTRY_function {
+                function_isForward = false;
+                function_paramlist = [];
+                function_varlist = [];
+                function_varsize = ref 0;
+                function_paramsize = 0;      
+                function_result = T_Unit;
+                function_pstatus = PARDEF_COMPLETE;
+                function_nesting = 0;
+                function_parent = None;
+                function_index = -1
+              } } in
 
           let quads2 = backpatch quads1 e1_info.next_expr (nextLabel ()) in
           let quads3 = genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads2 in
@@ -655,8 +663,7 @@ and gen_atom quads atom_node = match atom_node.atom with
   | A_Array (id, expr_list) ->
     let fresh_typ = atom_node.atom_typ in
     let typ = lookup_solved fresh_typ  in
-    let fresh_arr_typ = lookup_type (atom_node.atom_entry) in
-    let arr_typ = lookup_solved fresh_arr_typ  in
+    let arr_typ = lookup_type (atom_node.atom_entry) in
     let (quads1, e_info) = 
       List.fold_left 
         (fun (quads, e_info) e ->

@@ -88,7 +88,7 @@ and walk_stmt_list ls =
     !constraints
 
 and walk_stmt t = match t with
-  | S_Let  l -> walk_def_list l
+  | S_Let l -> walk_def_list l
   | S_Rec l -> 
     List.iter walk_recdef_names l;      
     let constraints = walk_recdef_list l in

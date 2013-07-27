@@ -18,8 +18,9 @@ type scope = {
 }
 
 and variable_info = {
-  mutable variable_type   : typ;
-  mutable variable_offset : int
+  mutable variable_type    : typ;
+  mutable variable_offset  : int;
+  mutable variable_nesting : int
 }
 
 and function_info = {
@@ -36,9 +37,10 @@ and function_info = {
 }
 
 and parameter_info = {
-  mutable parameter_type   : typ;
-  mutable parameter_offset : int;
-  parameter_mode           : pass_mode
+  mutable parameter_type    : typ;
+  mutable parameter_offset  : int;
+  mutable parameter_nesting : int;
+  parameter_mode            : pass_mode
 }
 
 and temporary_info = {
