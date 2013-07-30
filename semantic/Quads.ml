@@ -48,20 +48,6 @@ let mergeLabels (l1 : labelList) (l2 : labelList) =
 
 
 (* Intermediate Types *)
-type fun_header = {
-    fun_name : string;
-    index : int;
-    param_size : int;
-    var_size : int ref;
-    mutable nesting : int
-}
-
-type var_header = {
-    var_name : string;
-    var_type : typ;
-    var_offset: int
-}
-
 type temp_header = {
     temp_name : int;
     temp_type : typ;
@@ -90,8 +76,7 @@ type quad_operands =
   | O_Res (* $$ *)
   | O_Ret (* RET *)
   | O_ByVal
-  | O_Fun of entry (* XXX *)
-  | O_Obj of var_header (* XXX *)
+  | O_Entry of entry (* XXX *)
   | O_Empty
   | O_Ref of quad_operands
   | O_Deref of quad_operands
@@ -141,49 +126,6 @@ let newTemp =
         } in 
           incr k;
           O_Temp header
-
-let funHeader id entrymb = 
-  match entrymb with
-    | Some entry -> 
-        begin
-          match entry.entry_info with
-            | ENTRY_function f ->
-                let header = { 
-                  fun_name = id;
-                  index = 0;
-                  param_size = f.function_paramsize;
-                  var_size = f.function_varsize;
-                  nesting = 0
-                } in
-                  header
-            | ENTRY_variable _ -> internal "Must think about it!!!" (* TODO what to do with function obs?? *)
-            | _ -> internal "function header only for functions"
-        end 
-    | None -> internal "Too much maybe will kill you"
-
-let varHeader id entrymb typ = (* It is better to update the type in the ST so we dont need this extra arg, also we msh match at maybe entry earlier *)
-  match entrymb with
-    | Some entry -> 
-        begin
-          match entry.entry_info with
-            | ENTRY_variable v ->
-                let header = {
-                  var_name = id;
-                  var_type = typ;
-                  var_offset = v.variable_offset;
-                } in
-                  header
-            | ENTRY_parameter p ->
-                let header = {
-                  var_name = id;
-                  var_type = typ;
-                  var_offset = p.parameter_offset;
-                } in
-                  header
-            | ENTRY_function _ -> internal "Must think abou it too!" (* TODO what to do with functions treated as variables?? *)
-            | _ -> internal "variable header only for variables"
-        end 
-    | None -> internal "Too much maybe will kill you"
 
 (* Return quad operator from Llama binary operator *)
 let getQuadBop bop = match bop with 
@@ -274,22 +216,24 @@ let string_of_operator = function
 
 let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 
-let print_fun_head chan entry =
+let print_entry chan entry =
   match entry.entry_info with
     | ENTRY_function f ->
         let parent_id = match f.function_parent with
           | Some e -> e.entry_id
           | None -> id_make "None"
         in
-  fprintf chan "[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
-    f.function_index f.function_paramsize 
-    !(f.function_varsize) f.function_nesting
-    pretty_id parent_id
-    | _ -> 
-        internal "Attempted to print a function entry of something that's not a function. Bizzare"
+          fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
+            f.function_index f.function_paramsize 
+            !(f.function_varsize) f.function_nesting
+            pretty_id parent_id
+    | ENTRY_variable v -> 
+      fprintf chan "Var[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ v.variable_type 
+        v.variable_offset v.variable_nesting
+    | ENTRY_parameter p -> 
+      fprintf chan "Par[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ p.parameter_type 
+        p.parameter_offset p.parameter_nesting
 
-let print_var_head chan head = 
-  fprintf chan "[%s, %a, %d]" head.var_name pretty_typ head.var_type head.var_offset 
 
 let print_temp_head chan head = 
   fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
@@ -306,8 +250,7 @@ let rec print_operand chan op = match op with
   | O_Res -> fprintf chan "$$" 
   | O_Ret -> fprintf chan "RET" 
   | O_ByVal -> fprintf chan "V"
-  | O_Fun n -> fprintf chan "fun%a" print_fun_head n 
-  | O_Obj n-> fprintf chan "Obj%a" print_var_head n
+  | O_Entry e -> fprintf chan "%a" print_entry e 
   | O_Empty ->  fprintf chan "-"
   | O_Ref op -> fprintf chan "{%a}" print_operand op
   | O_Deref op -> fprintf chan "[%a]" print_operand op
@@ -344,3 +287,4 @@ let printQuad chan quad =
 
 let printQuads quads = 
   List.iter (fun q -> printf "%a" printQuad q) quads
+

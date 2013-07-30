@@ -25,6 +25,7 @@ val no_entry : Identifier.id -> SymbTypes.entry
 val currentScope : SymbTypes.scope ref
 val quadNext : int ref
 val tempNumber : int ref
+val fun_index : int ref
 val tab : SymbTypes.entry H.t ref
 val initSymbolTable : int -> unit
 val show_offsets : bool
@@ -56,4 +57,4 @@ val getResType : SymbTypes.entry -> Types.typ
 val setOffset : SymbTypes.entry -> int -> unit
 val getParamList : SymbTypes.entry -> SymbTypes.entry list
 val getVarList : SymbTypes.entry -> SymbTypes.entry list
-val fixOffsets : SymbTypes.entry option -> unit
+val fixOffsets : SymbTypes.entry -> unit

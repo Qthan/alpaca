@@ -393,7 +393,7 @@ let getVarList e =
     | ENTRY_function f -> f.function_varlist
     | _ -> internal "cannot find variables in a non function"
 
-let fixOffsets entrymb =
+let fixOffsets entry =
   let rec fixOffsetsAux varlist acc =
     match varlist with 
       | [] -> acc
@@ -402,15 +402,10 @@ let fixOffsets entrymb =
           setOffset v acc;
           fixOffsetsAux vs (acc+s)
   in
-    match entrymb with
-      | Some fun_entry -> 
-        begin 
-          match fun_entry.entry_info with
-            | ENTRY_function f ->
-              let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
-              let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
-                f.function_paramsize <- par_size;
-                f.function_varsize <- ref var_size;
-            | _ -> internal "cannot fix offsets in a non function"
-        end
-      | None -> internal "So many maybe. I am bored."
+    match entry.entry_info with
+      | ENTRY_function f ->
+        let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
+        let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
+          f.function_paramsize <- par_size;
+          f.function_varsize <- ref var_size;
+      | _ -> internal "cannot fix offsets in a non function"

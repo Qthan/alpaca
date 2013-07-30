@@ -12,7 +12,7 @@ exception DimError of dim * dim
 
 (* Function for type inference debugging *)
 
-let debug_typeinf = false
+let debug_typeinf = true
 
 let print_constraints lst = 
   let rec pp_constraints ppf solved = 
@@ -176,7 +176,6 @@ let unify c =
           unifyAux (sub_tlist c) (sub_list ord) dims (sub_list nofun) ((T_Alpha alpha, tau1) :: (sub_tlist acc))
     | (typ1, typ2) :: lst -> raise (UnifyError (typ1,  typ2))
   in
-    print_constraints c;
   let solved = unifyAux c [] [] [] [] in
     if (debug_typeinf) then print_constraints solved;
     add_solved_table solved;
