@@ -75,7 +75,7 @@ let rec sizeOfType t =
     | T_Bool           -> 1
     | T_Unit           -> 0
     | T_Ref typ        -> 2
-    | T_Arrow (_, _)   -> 2
+    | T_Arrow (_, _)   -> 4  (* 2 bytes for code pointer and 2 bytes for enviroment pointer *)
     | T_Id _           -> 0
     | T_Alpha _ | T_Notype 
     | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"
