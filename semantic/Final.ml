@@ -1,23 +1,21 @@
 open Symbtypes
-
 type register = Ax | Bx | Cx | Dx | Di | Si | Bp | Sp
               | Al | Ah | Bl | Bh | Cl | Ch | Dl | Dh
               
-type operand = Reg of register | Immediate of int
+type size = Byte | Word | TByte
 
-type size = Byte | Word 
-
-type address =
+type operand =
   | Reg of register
   | Pointer of (size * register * int)
+  | LabelPtr of (size * string)
   | Label of string
   | Immediate of string
   
 type instruction =
   | Prelude
   | Epilogue
-  | Mov of address * address
-  | Lea of address * address
+  | Mov of operand * operand
+  | Lea of operand * operand
   | Add of operand * operand
   | Sub of operand * operand
   | Neg of operand
@@ -30,12 +28,13 @@ type instruction =
   | Xor of operand * operand
   | Not of operand
   | Test of operand * operand
-  | Jmp of address
-  | CondJmp of string * address
-  | Push of address
+  | Jmp of operand
+  | CondJmp of string * operand
+  | Push of operand
   | Pop of operand
-  | Call of address
+  | Call of operand
   | Ret
+  | Fld of operand
   
 let word_size = 2
 
@@ -51,6 +50,15 @@ let getNesting entry =
     | ENTRY_variable v -> v.variable_nesting
     | ENTRY_parameter p -> p.parameter_nesting
     | _ -> internal "Nesting not applicable at not function/variable/parameter"
+
+let str_lst = ref []
+
+let saveString =
+  let str_no = ref 0 in
+    fun str -> incr str_no; 
+      str_lst := (str, str_no) :: !str_lst;
+      Printf.sprintf "@str%d" str_no
+
 
 let getAR a instr_lst =
   let a_nest = getNesting a in
@@ -88,7 +96,7 @@ let updateAL callee_entry instr_lst =
         let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
           instr_lst2
 
-let load r a instr_lst =
+let rec load r a instr_lst =
   match a with
     | O_Int i -> genInstr (Mov (Reg r, Immediate (string_of_int i))) instr_lst
     | O_Bool b when b = true -> genInstr (Mov (Reg r, Immediate "1")) instr_lst
@@ -97,30 +105,93 @@ let load r a instr_lst =
     | O_Entry e -> 
         let c_nest = getNesting (!current_fun) in
         let e_nest = getNesting e in
-          match c_nest - e_nest with
+          (match c_nest - e_nest with
             | 0 -> 
-                genInstr (Mov (Reg r, s
+	      let size = getSize e in
+	      let offset = getOffset e in
+		genInstr (Mov (Reg r, Pointer (size, Reg Bp, offset))) instr_lst  
+	    | n when n > 0 ->
+	      let instr_lst1 = getAR e instr_lst in
+	      let size = getSize e in
+	      let offset = getOffset e in
+	      genInstr (Mov (Reg r, Pointer (size, Reg Si, offset))) instr_lst1
+	    | n when n < 0 -> internal "too internal to judge")
+    | O_Temp t -> 
+      let size = getTypeSize t in
+      let offset = t.temp_offset in
+	genInstr (Mov (Reg r, Pointer (size, Reg Bp, offset))) instr_lst
+    | O_Deref op ->
+      let size = 
+	match op with 
+	  | O_Entry e -> getSize e 
+	  | O_Temp t -> getTypeSize t.temp_type
+	  | _ -> internal "Cannot load Deref: requires O_Entry" 
+      in
+      let instr_lst1 = load (Di, op) instr_lst in
+	genInstr (Mov (Reg r, Pointer (size, Reg Di, 0))) instr_lst1
+    | O_Str _ -> internal "Cannot load string"
+    | _ -> internal "Cannot load: unmatched operand"
 
+let loadAddress r a instr_list =
+  match a with 
+    | O_Str str -> 
+      let operand = saveString str in
+	genInstr (Lea (Reg r, LabelPtr (Byte, operand))) instr_list
+    | O_Entry e ->
+      let c_nest = getNesting (!current_fun) in
+      let e_nest = getNesting e in
+	(match c_nest - e_nest with
+          | 0 -> 
+	    let size = getSize e in
+	    let offset = getOffset e in
+	      genInstr (Lea (Reg r, Pointer (size, Reg Bp, offset))) instr_lst  
+	  | n when n > 0 ->
+	    let instr_lst1 = getAR e instr_lst in
+	    let size = getSize e in
+	    let offset = getOffset e in
+	      genInstr (Lea (Reg r, Pointer (size, Reg Si, offset))) instr_lst1
+	  | n when n < 0 -> internal "too internal to judge")
+    | O_Deref op -> load r op instr_lst
 
-let rec sizeOfType t =
-  match t with
-    | T_Int            -> 2
-    | T_Float          -> 10
-    | T_Array (et, sz) -> (sizeOfType et)
-    | T_Char           -> 1
-    | T_Bool           -> 1
-    | T_Unit           -> 0
-    | T_Ref typ        -> 2
-    | T_Arrow (_, _)   -> 4  (* 2 bytes for code pointer and 2 bytes for enviroment pointer *)
-    | T_Id _           -> 0
-    | T_Alpha _ | T_Notype 
-    | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"
-let rec getSize e =
+let loadReal a instr_lst =
+  match a with
+    | O_Float f -> 
+      genInstr (Fld string_of_float f) instr_lst
+    | O_Entry e ->
+      let c_nest = getNesting (!current_fun) in
+      let e_nest = getNesting e in
+	(match c_nest - e_nest with
+          | 0 -> 
+	    let size = getSize e in
+	    let offset = getOffset e in
+	      genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst  
+	  | n when n > 0 ->
+	    let instr_lst1 = getAR e instr_lst in
+	    let size = getSize e in
+	    let offset = getOffset e in
+	      genInstr (Fld (Pointer (size, Reg Si, offset))) instr_lst1
+	  | n when n < 0 -> internal "too internal to judge")
+    | O_Deref op -> 
+      let size = 
+	match op with 
+	  | O_Entry e -> getSize e 
+	  | O_Temp t -> getTypeSize t.temp_type
+	  | _ -> internal "Cannot load Deref: requires O_Entry" 
+      in
+      let instr_lst1 = load Di op instr_lst in
+	genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
+let getSize e =
   let typ = getType e in
-    match typ with
-      | T_Int | T_Ref _ | T_Array (_, _) -> Word
-      | T_Char | T_Bool -> Byte
-      | T_Arrow -> internal "Cannot load function"
+    getTypeSize typ
+
+let getTypeSize typ =
+  match typ with
+    | T_Int | T_Ref _ | T_Array (_, _) -> Word
+    | T_Char | T_Bool -> Byte
+    | T_Arrow _ -> internal "Cannot load function"
+    | T_Float -> TByte
+    | _ -> internal "Wrong type in getSize"
+
 (*
 f : 1
 add : 2

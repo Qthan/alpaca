@@ -383,6 +383,13 @@ let setOffset e offset =
     | ENTRY_parameter p -> p.parameter_offset <- offset
     | _ -> internal "cannot fix offset in a non variable or parameter entry"
 
+let getOffset e = 
+  match e.entry_info with 
+    | ENTRY_variable v -> v.variable_offset
+    | ENTRY_parameter p -> p.parameter_offset
+    | _ -> internal "cannot get offset in a non variable or parameter entry"
+
+
 let getParamList e =
   match e.entry_info with
     | ENTRY_function f -> f.function_paramlist

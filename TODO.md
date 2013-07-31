@@ -5,4 +5,5 @@ Things to do
 - [x] Change intmb to int option.
 - [x] Make quads consequent.
 - [Symbol Table is now ready, need to update offsets] Offsets: symbol table??
-- [ ] Fun/Obj
+- [x] Fun/Obj
+- [] Change temp header with entry
