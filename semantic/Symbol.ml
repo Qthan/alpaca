@@ -400,6 +400,11 @@ let getVarList e =
     | ENTRY_function f -> f.function_varlist
     | _ -> internal "cannot find variables in a non function"
 
+let getVarSize e = 
+  match e.entry_info with
+    | ENTRY_function f -> !(f.function_varsize)
+    | _ -> internal "Not a function"
+
 let fixOffsets entry =
   let rec fixOffsetsAux varlist acc =
     match varlist with 

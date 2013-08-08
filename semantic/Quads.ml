@@ -4,6 +4,7 @@ open AstTypes
 open Identifier
 open Error
 open SymbTypes
+open Symbol
 open Pretty_print
 
 (* Label lists interface *)
@@ -72,7 +73,6 @@ type quad_operands =
   | O_Str of string 
   | O_Backpatch
   | O_Label of int
-  | O_Temp of temp_header (* XXX *)
   | O_Res (* $$ *)
   | O_Ret (* RET *)
   | O_ByVal
@@ -113,19 +113,36 @@ let newLabel = fun () -> incr label; !label
 
 let nextLabel = fun () -> !label + 1
 
+let labelsTbl = Hashtbl.create 101 
+
+(* Modularity *)
+let memLabelTbl label = Hashtbl.mem labelsTbl label 
+let addLabelTbl label = Hashtbl.replace labelsTbl label 0
 
 let newTemp =
   let k = ref 1 in
     fun typ size -> 
       let tempsize = sizeOfType typ in 
-        size := !size + tempsize;  
-        let header = { 
-          temp_name = !k;
-          temp_type = typ;
-          temp_offset = - !size;
-        } in 
+        size := !size + tempsize; 
+        let header = {  
+          entry_id = id_make ("$" ^ string_of_int !k);
+          entry_scope = 
+            {
+              sco_parent = None;
+              sco_nesting = 0;
+              sco_entries = [];
+              sco_negofs  = 0;
+              sco_hidden = false;
+            };
+          entry_info = 
+            ENTRY_temporary {
+              temporary_type = typ;
+              temporary_offset = - !size
+            }
+          }
+        in
           incr k;
-          O_Temp header
+          O_Entry header
 
 (* Return quad operator from Llama binary operator *)
 let getQuadBop bop = match bop with 
@@ -157,16 +174,30 @@ let getQuadUnop unop = match unop with
   | U_Fminus -> Q_Fminus
   | U_Not | U_Del -> internal "no operator for not/delete"
 
-(* XXX Backpatch, changes a mutable field so we can maybe avoid returning a new
- * quad list thus avoiding all the quads1,2,3... pollution. Moo XXX*)
-let backpatch quads lst patch =
-  List.iter (fun quad_label -> 
-               match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
-                 | None -> internal "Quad label not found, can't backpatch\n"
-                 | Some quad -> quad.arg3 <- O_Label patch) lst;
-  quads
+let rec getQuadOpType operand =
+  match operand with
+  | O_Int _ -> T_Int
+  | O_Float _ -> T_Float
+  | O_Char _ -> T_Char
+  | O_Bool _ -> T_Bool
+  | O_Str _ -> T_Array (T_Char, D_Int 1)
+  | O_Backpatch -> internal "Backpatch? Here?"
+  | O_Label _ -> internal "But a label? Here?"
+  | O_Res -> internal "Res? Here?" (* $$ *)
+  | O_Ret -> internal "Ret? Here?" (* RET *)
+  | O_ByVal -> internal "By Val? Here?"
+  | O_Entry e -> getType e
+  | O_Empty -> internal "Empty? Here"
+  | O_Ref op -> T_Ref (getQuadOpType op)
+  | O_Deref op -> 
+    (match getQuadOpType op with
+      | T_Ref typ -> typ 
+      | _ -> internal "Cannot dereference a no reference")
+  | O_Size _ -> internal "Size? Here?"
+  | O_Dims _ -> internal "Dims? Dims here?"
 
 let newQuadList () = []
+let isEmptyQuadList quads = quads = []
 
 let genQuad (op, ar1, ar2, ar3) quad_lst =
   let quad = {
@@ -186,6 +217,16 @@ let setExprInfo p n = { place = p; next_expr = n }
 let setCondInfo t f = { true_lst = t; false_lst = f }
 
 let setStmtInfo n = { next_stmt = n }
+
+(* XXX Backpatch, changes a mutable field so we can maybe avoid returning a new
+ * quad list thus avoiding all the quads1,2,3... pollution. Moo XXX*)
+let backpatch quads lst patch =
+  if (not (isEmptyQuadList quads)) then addLabelTbl patch; 
+  List.iter (fun quad_label -> 
+               match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
+                 | None -> internal "Quad label not found, can't backpatch\n"
+                 | Some quad -> quad.arg3 <- O_Label patch) lst;
+  quads
 
 let string_of_operator = function 
   | Q_Unit -> "Unit" 
@@ -233,7 +274,9 @@ let print_entry chan entry =
     | ENTRY_parameter p -> 
       fprintf chan "Par[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ p.parameter_type 
         p.parameter_offset p.parameter_nesting
-
+    | ENTRY_temporary t ->
+      fprintf chan "Temp[%a, type %a, offset %d]" pretty_id entry.entry_id pretty_typ t.temporary_type 
+        t.temporary_offset
 
 let print_temp_head chan head = 
   fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
@@ -246,7 +289,6 @@ let rec print_operand chan op = match op with
   | O_Str str -> fprintf chan "\"%s\"" str  
   | O_Backpatch -> fprintf chan "*"  
   | O_Label i -> fprintf chan "l: %d" i 
-  | O_Temp t -> fprintf chan "temp%a" print_temp_head t
   | O_Res -> fprintf chan "$$" 
   | O_Ret -> fprintf chan "RET" 
   | O_ByVal -> fprintf chan "V"
@@ -287,4 +329,3 @@ let printQuad chan quad =
 
 let printQuads quads = 
   List.iter (fun q -> printf "%a" printQuad q) quads
-

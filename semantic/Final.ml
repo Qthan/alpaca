@@ -1,6 +1,11 @@
 open Symbtypes
+open Quads
+open Symbol
+open Error
+
 type register = Ax | Bx | Cx | Dx | Di | Si | Bp | Sp
               | Al | Ah | Bl | Bh | Cl | Ch | Dl | Dh
+              | ST of int
               
 type size = Byte | Word | TByte
 
@@ -35,6 +40,13 @@ type instruction =
   | Call of operand
   | Ret
   | Fld of operand
+  | Faddp of operand * operand
+  | Fsubp of operand * operand
+  | Fmulp of operand * operand
+  | Fdiv of operand * operand
+  | Fcompp
+  | Fstsw operand
+  | Fun of string
   
 let word_size = 2
 
@@ -44,13 +56,6 @@ let newInstrList () = []
 
 let genInstr instr instr_lst = instr :: instr_lst 
 
-let getNesting entry =
-  match entry.entry_info with
-    | ENTRY_function f -> f.function_nesting
-    | ENTRY_variable v -> v.variable_nesting
-    | ENTRY_parameter p -> p.parameter_nesting
-    | _ -> internal "Nesting not applicable at not function/variable/parameter"
-
 let str_lst = ref []
 
 let saveString =
@@ -58,6 +63,26 @@ let saveString =
     fun str -> incr str_no; 
       str_lst := (str, str_no) :: !str_lst;
       Printf.sprintf "@str%d" str_no
+
+let rec getNesting entry =
+  match entry.entry_info with
+    | ENTRY_function f -> f.function_nesting
+    | ENTRY_variable v -> v.variable_nesting
+    | ENTRY_parameter p -> p.parameter_nesting
+    | ENTRY_temporary _ -> getNesting !current_fun
+    | _ -> internal "Nesting not applicable at not function/variable/parameter"
+
+let getSize e =
+  let typ = getType e in
+    getTypeSize typ
+
+let getTypeSize typ =
+  match typ with
+    | T_Int | T_Ref _ | T_Array (_, _) -> Word
+    | T_Char | T_Bool -> Byte
+    | T_Arrow _ -> internal "Cannot load function"
+    | T_Float -> TByte
+    | _ -> internal "Wrong type in getSize"
 
 
 let getAR a instr_lst =
@@ -107,7 +132,7 @@ let rec load r a instr_lst =
         let e_nest = getNesting e in
           (match c_nest - e_nest with
             | 0 -> 
-	      let size = getSize e in
+        let size = getSize e in
 	      let offset = getOffset e in
 		genInstr (Mov (Reg r, Pointer (size, Reg Bp, offset))) instr_lst  
 	    | n when n > 0 ->
@@ -116,15 +141,10 @@ let rec load r a instr_lst =
 	      let offset = getOffset e in
 	      genInstr (Mov (Reg r, Pointer (size, Reg Si, offset))) instr_lst1
 	    | n when n < 0 -> internal "too internal to judge")
-    | O_Temp t -> 
-      let size = getTypeSize t in
-      let offset = t.temp_offset in
-	genInstr (Mov (Reg r, Pointer (size, Reg Bp, offset))) instr_lst
     | O_Deref op ->
       let size = 
 	match op with 
 	  | O_Entry e -> getSize e 
-	  | O_Temp t -> getTypeSize t.temp_type
 	  | _ -> internal "Cannot load Deref: requires O_Entry" 
       in
       let instr_lst1 = load (Di, op) instr_lst in
@@ -160,10 +180,10 @@ let loadReal a instr_lst =
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
-	(match c_nest - e_nest with
+        (match c_nest - e_nest with
           | 0 -> 
-	    let size = getSize e in
-	    let offset = getOffset e in
+              let size = getSize e in
+              let offset = getOffset e in
 	      genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst  
 	  | n when n > 0 ->
 	    let instr_lst1 = getAR e instr_lst in
@@ -173,24 +193,78 @@ let loadReal a instr_lst =
 	  | n when n < 0 -> internal "too internal to judge")
     | O_Deref op -> 
       let size = 
-	match op with 
-	  | O_Entry e -> getSize e 
-	  | O_Temp t -> getTypeSize t.temp_type
-	  | _ -> internal "Cannot load Deref: requires O_Entry" 
+        match op with 
+          | O_Entry e -> getSize e 
+          | _ -> internal "Cannot load Deref: requires O_Entry" 
       in
       let instr_lst1 = load Di op instr_lst in
-	genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
-let getSize e =
-  let typ = getType e in
-    getTypeSize typ
+        genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
 
-let getTypeSize typ =
-  match typ with
-    | T_Int | T_Ref _ | T_Array (_, _) -> Word
-    | T_Char | T_Bool -> Byte
-    | T_Arrow _ -> internal "Cannot load function"
-    | T_Float -> TByte
-    | _ -> internal "Wrong type in getSize"
+let store r a instr_lst =
+  match a with
+    | O_Entry e ->
+        let c_nest = getNesting (!current_fun) in
+        let e_nest = getNesting e in
+          (match c_nest - e_nest with
+            | 0 ->
+                let size = getSize e in
+                let offset = getOffset e in
+                  genInstr (Mov (Pointer (size, Reg Bp, offset), Reg r)) instr_lst
+            | n when n > 0 ->
+                let instr_lst1 = getAR e instr_lst in
+                  genInstr (Mov (Pointer (size, Reg Si, offset), Reg r)) instr_lst1
+            | _ -> internal "Can't do that")
+    | O_Deref op ->
+        let size =
+          match op with
+            | O_Entry e -> getSize e
+            | _ -> internal "Must be Entry"
+        in
+        let instr_lst1 = load Di op instr_lst in
+          genInstr (Move (Pointer (size, Reg Di, 0), Reg r)) instr_lst1
+
+let storeReal a instr_lst =
+  match a with
+    | O_Entry e ->
+        let c_nest = getNesting (!current_fun) in
+        let e_nest = getNesting e in
+          (match c_nest - e_nest with
+             | 0 ->
+                let size = getSize e in
+                let offset = getOffset e in
+                  genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
+            | n when n > 0 ->
+                let instr_lst1 = getAR e instr_lst in
+                  genInstr (Fld (Pointer (size, Reg Si, offset))) instr_lst1
+            | _ -> internal "Can't do that")
+    | O_Deref op ->
+        let size =
+          match op with
+            | O_Entry e -> getSize e
+            | _ -> internal "Must be entry"
+        in
+        let instr_lst1 = load Di op instr_lst in
+          genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
+        
+let makeFunctionLabel e = 
+  match e.entry_info with
+    | ENTRY_function f -> "_p_" ^ (id_name e.id) ^ "_" ^ (int_of_string f.function_index)
+    | ENTRY_parameter _ | ENTRY_variable _ -> internal "Cannot call this like that"
+    | _ -> internal "cannot call non function"
+    
+let makeLabel n = 
+  match n with 
+  | O_Label n -> "@" ^ (string_of_int n) 
+  | _ -> internal "expecting label"
+  
+let relOpJmp = function 
+  | Q_L -> "jl"
+  | Q_Le -> "jle" 
+  | Q_G -> "jg"
+  | Q_Ge -> "jge"
+  | Q_Seq -> "je"
+  | Q_Nseq -> "jne"
+  | _ -> internal "Not a relative operator"
 
 (*
 f : 1
@@ -225,3 +299,4 @@ let addXY x =
         let addz z = x+y+z in
         addz 5 in
     addY x*)
+

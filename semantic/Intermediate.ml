@@ -579,6 +579,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let quads4 = backpatch quads3 stmt_info.next_stmt q in
     let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Label q) quads4 in
     let next = setStmtInfo (cond_info.false_lst) in
+      addLabelTbl q;
       (quads5, next)
   | E_For (id, expr1, cnt, expr2, expr3) ->
     let (relop, op) = match cnt with 
@@ -602,6 +603,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let quads8 = backpatch quads7 stmt_info.next_stmt (nextLabel ()) in
     let quads9 = genQuad (op, obj, O_Int 1, obj) quads8 in
     let quads10 = genQuad (Q_Jump, O_Empty, O_Empty, O_Label condLabel) quads9 in
+      addLabelTbl condLabel;
       (quads10, setStmtInfo next)
   | E_Id (id, l) -> 
     let quads1 =
