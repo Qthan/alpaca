@@ -4,7 +4,6 @@ open AstTypes
 open Identifier
 open Error
 open SymbTypes
-open Symbol
 open Pretty_print
 
 (* Label lists interface *)
@@ -50,9 +49,9 @@ let mergeLabels (l1 : labelList) (l2 : labelList) =
 
 (* Intermediate Types *)
 type temp_header = {
-    temp_name : int;
-    temp_type : typ;
-    temp_offset : int
+  temp_name : int;
+  temp_type : typ;
+  temp_offset : int
 }
 
 type quad_operators =
@@ -139,7 +138,7 @@ let newTemp =
               temporary_type = typ;
               temporary_offset = - !size
             }
-          }
+        }
         in
           incr k;
           O_Entry header
@@ -176,25 +175,25 @@ let getQuadUnop unop = match unop with
 
 let rec getQuadOpType operand =
   match operand with
-  | O_Int _ -> T_Int
-  | O_Float _ -> T_Float
-  | O_Char _ -> T_Char
-  | O_Bool _ -> T_Bool
-  | O_Str _ -> T_Array (T_Char, D_Int 1)
-  | O_Backpatch -> internal "Backpatch? Here?"
-  | O_Label _ -> internal "But a label? Here?"
-  | O_Res -> internal "Res? Here?" (* $$ *)
-  | O_Ret -> internal "Ret? Here?" (* RET *)
-  | O_ByVal -> internal "By Val? Here?"
-  | O_Entry e -> getType e
-  | O_Empty -> internal "Empty? Here"
-  | O_Ref op -> T_Ref (getQuadOpType op)
-  | O_Deref op -> 
-    (match getQuadOpType op with
-      | T_Ref typ -> typ 
-      | _ -> internal "Cannot dereference a no reference")
-  | O_Size _ -> internal "Size? Here?"
-  | O_Dims _ -> internal "Dims? Dims here?"
+    | O_Int _ -> T_Int
+    | O_Float _ -> T_Float
+    | O_Char _ -> T_Char
+    | O_Bool _ -> T_Bool
+    | O_Str _ -> T_Array (T_Char, D_Int 1)
+    | O_Backpatch -> internal "Backpatch? Here?"
+    | O_Label _ -> internal "But a label? Here?"
+    | O_Res -> internal "Res? Here?" (* $$ *)
+    | O_Ret -> internal "Ret? Here?" (* RET *)
+    | O_ByVal -> internal "By Val? Here?"
+    | O_Entry e -> getType e
+    | O_Empty -> internal "Empty? Here"
+    | O_Ref op -> T_Ref (getQuadOpType op)
+    | O_Deref op -> 
+      (match getQuadOpType op with
+        | T_Ref typ -> typ 
+        | _ -> internal "Cannot dereference a no reference")
+    | O_Size _ -> internal "Size? Here?"
+    | O_Dims _ -> internal "Dims? Dims here?"
 
 let newQuadList () = []
 let isEmptyQuadList quads = quads = []
@@ -223,9 +222,9 @@ let setStmtInfo n = { next_stmt = n }
 let backpatch quads lst patch =
   if (not (isEmptyQuadList quads)) then addLabelTbl patch; 
   List.iter (fun quad_label -> 
-               match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
-                 | None -> internal "Quad label not found, can't backpatch\n"
-                 | Some quad -> quad.arg3 <- O_Label patch) lst;
+      match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
+        | None -> internal "Quad label not found, can't backpatch\n"
+        | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
 
 let string_of_operator = function 
@@ -260,14 +259,14 @@ let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 let print_entry chan entry =
   match entry.entry_info with
     | ENTRY_function f ->
-        let parent_id = match f.function_parent with
-          | Some e -> e.entry_id
-          | None -> id_make "None"
-        in
-          fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
-            f.function_index f.function_paramsize 
-            !(f.function_varsize) f.function_nesting
-            pretty_id parent_id
+      let parent_id = match f.function_parent with
+        | Some e -> e.entry_id
+        | None -> id_make "None"
+      in
+        fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
+          f.function_index f.function_paramsize 
+          !(f.function_varsize) f.function_nesting
+          pretty_id parent_id
     | ENTRY_variable v -> 
       fprintf chan "Var[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ v.variable_type 
         v.variable_offset v.variable_nesting
@@ -277,6 +276,7 @@ let print_entry chan entry =
     | ENTRY_temporary t ->
       fprintf chan "Temp[%a, type %a, offset %d]" pretty_id entry.entry_id pretty_typ t.temporary_type 
         t.temporary_offset
+
 
 let print_temp_head chan head = 
   fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
@@ -304,17 +304,20 @@ let rec print_operand chan op = match op with
 let normalizeQuads quads =
   let map = Array.make (nextLabel()) 0 in
   let quads1 = List.mapi (fun i q -> map.(q.label) <- (i+1);
-                                     { label = i+1;
-                                       operator = q.operator;
-                                       arg1 = q.arg1;
-                                       arg2 = q.arg2;
-                                       arg3 = q.arg3
-                                     }) quads
+                           { label = i+1;
+                             operator = q.operator;
+                             arg1 = q.arg1;
+                             arg2 = q.arg2;
+                             arg3 = q.arg3
+                           }) quads
   in
   let rec updateLabel quad = match quad.arg3 with
     | O_Label n -> quad.arg3 <- (O_Label map.(n))
     | _ -> ()
   in
+  let temptbl = Hashtbl.copy labelsTbl in
+  let _ = Hashtbl.clear labelsTbl in
+  let updateTbl = Hashtbl.iter (fun lbl _ -> Hashtbl.add labelsTbl map.(lbl) 0) temptbl in
     List.iter updateLabel quads1;
     quads1
 
