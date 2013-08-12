@@ -55,6 +55,8 @@ val setType : SymbTypes.entry -> Types.typ -> unit
 val getType : SymbTypes.entry -> Types.typ
 val getResType : SymbTypes.entry -> Types.typ
 val setOffset : SymbTypes.entry -> int -> unit
+val getOffset : SymbTypes.entry -> int
 val getParamList : SymbTypes.entry -> SymbTypes.entry list
 val getVarList : SymbTypes.entry -> SymbTypes.entry list
+val getVarSize : SymbTypes.entry -> int
 val fixOffsets : SymbTypes.entry -> unit

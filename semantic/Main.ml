@@ -6,7 +6,8 @@ let main =
   in
   let lexbuf = Lexing.from_channel cin in
   try
-    Parser.program Lexer.lexer lexbuf;
+    let intermediate = Parser.program Lexer.lexer lexbuf in
+    let final = CodeGen.codeGen intermediate in
     exit 0
   with Parsing.Parse_error ->
     Printf.eprintf "Line %d: syntax error\n"

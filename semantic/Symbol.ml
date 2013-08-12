@@ -387,6 +387,7 @@ let getOffset e =
   match e.entry_info with 
     | ENTRY_variable v -> v.variable_offset
     | ENTRY_parameter p -> p.parameter_offset
+    | ENTRY_temporary t -> t.temporary_offset
     | _ -> internal "cannot get offset in a non variable or parameter entry"
 
 

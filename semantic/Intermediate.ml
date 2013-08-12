@@ -49,7 +49,8 @@ let offset_stack = Stack.create ()
 let rec gen_program ast subst outer_entry =
   let quads = gen_decl_list ast outer_entry in
   let finalQuads = normalizeQuads (List.rev quads) in
-    printQuads finalQuads
+    printQuads finalQuads;
+    finalQuads
 
 and gen_decl_list ast outer_entry = 
   let delete_quads = ref (newQuadList ()) in
@@ -130,7 +131,7 @@ and gen_def quads def_node delete_quads =
         let quads1 = gen_array_dims lst quads in
         let ty = lookup_type def_node.def_entry in
         let size = sizeOfType ty in  (* Size of an array element *)
-        let quads2 = genQuad (Q_Par, O_Size size, O_ByVal, O_Empty) quads1 in
+        let quads2 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads1 in
         let makearr_entry = { (* XXX dummy values here *)
           entry_id = (id_make "_make_array");
           entry_scope = 
@@ -182,7 +183,7 @@ and gen_def quads def_node delete_quads =
             | D_Int d -> d
             | D_Alpha _ -> internal "Unknown array dimensions\n"
         in
-        let quads3 = genQuad (Q_Par, O_Dims dims, O_ByVal, O_Empty) quads2 in
+        let quads3 = genQuad (Q_Par, O_Int dims, O_ByVal, O_Empty) quads2 in
         let quads4 = genQuad (Q_Par, O_Entry entry , O_Ret, O_Empty) quads3 in (* --- changed Obj type --- *)
         let quads5 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry makearr_entry) quads4 in
           delete_quads := genQuad (Q_Par, O_Entry entry, O_ByVal, O_Empty) !delete_quads;

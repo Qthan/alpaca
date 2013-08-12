@@ -4,6 +4,7 @@ open AstTypes
 open Identifier
 open Error
 open SymbTypes
+open Symbol
 open Pretty_print
 
 (* Label lists interface *)

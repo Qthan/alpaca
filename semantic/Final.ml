@@ -1,4 +1,6 @@
-open Symbtypes
+open Identifier
+open Types
+open SymbTypes
 open Quads
 open Symbol
 open Error
@@ -14,7 +16,7 @@ type size = Byte | Word | TByte | DWord | Near
 (* instruction operands *)
 type operand =
   | Reg of register
-  | Pointer of (size * register * int)
+  | Pointer of (size * operand * int)
   | LabelPtr of (size * string)
   | Label of string
   | Immediate of string
@@ -47,19 +49,19 @@ type instruction =
   | Faddp of operand * operand
   | Fsubp of operand * operand
   | Fmulp of operand * operand
-  | Fdiv of operand * operand
+  | Fdivp of operand * operand
   | Fcompp
-  | Fstsw operand
-  | Fstp operand
+  | Fstsw of operand
+  | Fstp of operand
   | Fun of string
-  | Label of string
+  | EndFun of string 
+  | LabelDecl of string
 
 (* CPU word size*)
 let word_size = 2
 
 (* a dummy function entry *)
-let dummy = 
-  let makearr_entry = { (* XXX dummy values here *)
+let dummy = { (* dummy values here *)
     entry_id = (id_make "_dummy");
     entry_scope = 
       {
@@ -100,7 +102,7 @@ let saveString =
   let str_no = ref 0 in
     fun str -> incr str_no; 
       str_lst := (str, str_no) :: !str_lst;
-      Printf.sprintf "@str%d" str_no
+      Printf.sprintf "@str%d" !str_no
 
 (* A function returning the nesting level of an entry *)
 let rec getNesting entry =
@@ -110,6 +112,15 @@ let rec getNesting entry =
     | ENTRY_parameter p -> p.parameter_nesting
     | ENTRY_temporary _ -> getNesting !current_fun
     | _ -> internal "Nesting not applicable at not function/variable/parameter"
+
+(* A function returning the size of a type *)
+let getTypeSize typ =
+  match typ with
+    | T_Int | T_Ref _ | T_Array (_, _) -> Word
+    | T_Char | T_Bool -> Byte
+    | T_Arrow _ -> DWord
+    | T_Float -> TByte
+    | _ -> internal "Wrong type in getSize"
 
 (* A function returning the size of an entry's type *)
 let getSize e =
@@ -122,15 +133,6 @@ let getRefSize e =
     | T_Ref typ -> getTypeSize typ
     | _ -> internal "Deref on a non-ref type?"
 
-(* A function returning the size of a type *)
-let getTypeSize typ =
-  match typ with
-    | T_Int | T_Ref _ | T_Array (_, _) -> Word
-    | T_Char | T_Bool -> Byte
-    | T_Arrow _ -> DWord
-    | T_Float -> TByte
-    | _ -> internal "Wrong type in getSize"
-
 (* A function returning the size in bytes *)
 let sizeToBytes = function
   | Byte -> "1"
@@ -139,6 +141,36 @@ let sizeToBytes = function
   | DWord -> "4"
   | Near -> internal "not a size type"
 
+(* A function returning the label of a function*) 
+let makeFunctionLabel e = 
+  match e.entry_info with
+    | ENTRY_function f -> "_p_" ^ (id_name e.entry_id) ^ "_" ^ (string_of_int f.function_index)
+    | ENTRY_parameter _ | ENTRY_variable _ -> internal "Cannot call this like that"
+    | _ -> internal "cannot call non function"
+
+(* A function returning the label of a quad*)     
+let makeLabel n = 
+  match n with 
+    | O_Label n -> "@" ^ (string_of_int n) 
+    | _ -> internal "expecting label"
+
+(* A function returning the jump instruction *)
+let relOpJmp = function 
+  | Q_L -> "jl"
+  | Q_Le -> "jle" 
+  | Q_G -> "jg"
+  | Q_Ge -> "jge"
+  | Q_Seq -> "je"
+  | Q_Nseq -> "jne"
+  | _ -> internal "Not a relative operator"
+
+(* A function returning the result type of a function *)
+let functionResult e = 
+  let typ = getResType e in
+  let rec dearrow = function
+    | T_Arrow (_, t) -> dearrow t
+    | t -> t
+  in dearrow typ
 (* A function returning the activation record in which a lives *)
 let getAR a instr_lst =
   let a_nest = getNesting a in
@@ -183,7 +215,7 @@ let rec load r a instr_lst =
     | O_Int i -> genInstr (Mov (Reg r, Immediate (string_of_int i))) instr_lst
     | O_Bool b when b = true -> genInstr (Mov (Reg r, Immediate "1")) instr_lst
     | O_Bool b -> genInstr (Mov (Reg r, Immediate "0")) instr_lst
-    | O_Char c -> genInstr (Mov (Reg r, Immediate (Char.code c.[0]))) instr_lst
+    | O_Char c -> genInstr (Mov (Reg r, Immediate (string_of_int (Char.code c.[0])))) instr_lst
     | O_Entry e -> 
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
@@ -210,11 +242,11 @@ let rec load r a instr_lst =
     | _ -> internal "Cannot load: unmatched operand"
 
 (* A function for loading the address of a into register r*)
-let loadAddress r a instr_list =
+let loadAddress r a instr_lst =
   match a with 
     | O_Str str -> 
       let operand = saveString str in
-        genInstr (Lea (Reg r, LabelPtr (Byte, operand))) instr_list
+        genInstr (Lea (Reg r, LabelPtr (Byte, operand))) instr_lst
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
@@ -235,7 +267,7 @@ let loadAddress r a instr_list =
 let loadReal a instr_lst =
   match a with
     | O_Float f -> 
-      genInstr (Fld string_of_float f) instr_lst
+      genInstr (Fld (Immediate (string_of_float f))) instr_lst
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
@@ -265,10 +297,10 @@ let store r a instr_lst =
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
+      let size = getSize e in
+      let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-            let size = getSize e in
-            let offset = getOffset e in
               genInstr (Mov (Pointer (size, Reg Bp, offset), Reg r)) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
@@ -283,7 +315,7 @@ let store r a instr_lst =
       let instr_lst1 = load Di op instr_lst in
         genInstr (Mov (Pointer (size, Reg Di, 0), Reg r)) instr_lst1
     | O_Res ->
-      let size = getResType !current_fun in
+      let size = getTypeSize (getResType !current_fun) in
       let instr_lst1 = genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, 3*word_size))) instr_lst in
       let instr_lst2 = genInstr (Mov (Pointer (size, Reg Si, 0), Reg r)) instr_lst1 in
         instr_lst2
@@ -294,10 +326,10 @@ let storeReal a instr_lst =
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
+      let size = getSize e in
+      let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-            let size = getSize e in
-            let offset = getOffset e in
               genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
@@ -312,7 +344,7 @@ let storeReal a instr_lst =
       let instr_lst1 = load Di op instr_lst in
         genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
     | O_Res ->
-      let size = getResType !current_fun in
+      let size = getTypeSize (getResType !current_fun) in
       let instr_lst1 = genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, 3*word_size))) instr_lst in
       let instr_lst2 = genInstr (Fld (Pointer (size, Reg Si, 0))) instr_lst1 in
         instr_lst2
@@ -339,7 +371,7 @@ let loadFun r1 r2 e instr_lst =
                 aux (c_nest - f_nest - 1) (genInstr (Mov (Reg Si, Pointer (Word,Reg Bp, 2*word_size))) instr_lst1)
           in
             instr_lst2
-        | ENTRY_variable v | ENTRY_temporary v ->
+        | ENTRY_variable _ | ENTRY_temporary _ ->
           let offset = getOffset e in
           let instr_lst1 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
           let instr_lst2 = genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst1 in
@@ -362,9 +394,9 @@ let storeFun r1 r2 a instr_lst =
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
+      let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-            let offset = getOffset e in
             let instr_lst1 = genInstr (Mov (Pointer (Word, Reg Bp, offset+word_size), Reg r1)) instr_lst in
             let instr_lst2 = genInstr (Mov (Pointer (Word, Reg Bp, offset), Reg r2)) instr_lst1 in
               instr_lst2
@@ -376,40 +408,56 @@ let storeFun r1 r2 a instr_lst =
           | _ -> internal "Can't do that")
     | O_Deref op ->
       let instr_lst1 = load Di op instr_lst in
-      let instr_lst2 = genInstr (Move (Pointer (Word, Reg Di, 0), Reg r1)) instr_lst1 in
-      let instr_lst3 = genInstr (Move (Pointer (Word, Reg Di, word_size), Reg r2)) instr_lst2 in
+      let instr_lst2 = genInstr (Mov (Pointer (Word, Reg Di, 0), Reg r1)) instr_lst1 in
+      let instr_lst3 = genInstr (Mov (Pointer (Word, Reg Di, word_size), Reg r2)) instr_lst2 in
         instr_lst3
 
-(* A function returning the label of a function*) 
-let makeFunctionLabel e = 
-  match e.entry_info with
-    | ENTRY_function f -> "_p_" ^ (id_name e.id) ^ "_" ^ (int_of_string f.function_index)
-    | ENTRY_parameter _ | ENTRY_variable _ -> internal "Cannot call this like that"
-    | _ -> internal "cannot call non function"
-
-(* A function returning the label of a quad*)     
-let makeLabel n = 
-  match n with 
-    | O_Label n -> "@" ^ (string_of_int n) 
-    | _ -> internal "expecting label"
-
-(* A function returning the jump instruction *)
-let relOpJmp = function 
-  | Q_L -> "jl"
-  | Q_Le -> "jle" 
-  | Q_G -> "jg"
-  | Q_Ge -> "jge"
-  | Q_Seq -> "je"
-  | Q_Nseq -> "jne"
-  | _ -> internal "Not a relative operator"
-
-(* A function returning the result type of a function *)
-let functionResult e = 
-  let typ = getResType e in
-  let rec dearrow = function
-    | T_Arrow (_, t) -> dearrow t
-    | t -> t
-  in dearrow typ
+(*
+            (match quad.arg2 with
+              | O_Ret ->
+                let size = Word in
+                let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+                let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
+                let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
+                  instr_lst2  
+              | O_ByVal ->
+                let typ = getQuadOpType quad.arg1 in
+                let size = getTypeSize typ in
+                let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+                (match typ with
+                  | T_Int ->
+                    let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
+                    let instr_lst1 = load Ax (quad.arg1) instr_lst in
+                    let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                      instr_lst2                    
+                  | T_Float ->
+                    let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
+                    let instr_lst1 = loadReal quad.arg1 instr_lst in
+                    let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
+                    let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+                    let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
+                      instr_lst4                    
+                  | T_Char | T_Bool ->
+                    let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
+                    let instr_lst1 = load Al quad.arg1 instr_lst in
+                    let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
+                    let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+                    let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
+                      instr_lst4                    
+                  | T_Array _ | T_Ref _ ->
+                    let instr_lst1 = loadAddress Ax (quad.arg1) instr_lst in
+                    let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                      instr_lst2
+                  | T_Arrow (_, _) ->
+                    let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
+                    let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                    let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
+                      instr_lst3
+                  | T_Id -> internal "Not (YET) implemented"    
+                  | T_Alpha _  | T_Notype | T_Ord | T_Nofun-> internal "Type inference failed"
+                  | T_Unit -> internal "Intermediate failed"
+                  | T_Str -> internal "T_Str is redundant. GET OVER IT."))
+*)
 
 (* Notes
    f : 1

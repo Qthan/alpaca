@@ -4,6 +4,7 @@
     open Types
     open AstTypes
     open Ast
+    open Quads
     open Intermediate
 %}
 %token T_EOF
@@ -110,7 +111,7 @@
 
 
 %start program
-%type <unit> program
+%type <Quads.quad list> program
 %type <ast_stmt list> stmt_list
 %type <ast_stmt> letdef
 %type <ast_def_node list> anddef
@@ -140,7 +141,7 @@ program     : stmt_list T_EOF
         let (solved, outer_entry) = walk_program ast in
           match solved with 
             | Some subs -> gen_program ast subs outer_entry
-            | None -> error "Type inference failed."
+            | None -> internal "Type inference failed."
     }
         
             ;

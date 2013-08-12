@@ -9,7 +9,7 @@ endif
 
 EXEFILE=gracec$(EXE)
 MLFILES=Hashcons.ml Identifier.ml Error.ml Types.ml Pretty_print.ml Typeinf.ml Symbol.ml \
-   Lexer.ml Ast.ml Quads.ml Intermediate.ml Parser.ml Main.ml
+   Lexer.ml Ast.ml Quads.ml Intermediate.ml Final.ml CodeGen.ml Parser.ml Main.ml
 MLIFILES=Hashcons.mli Identifier.mli Error.mli Types.mli Pretty_print.mli Typeinf.mli Symbol.mli \
    Lexer.mli AstTypes.mli Ast.mli Parser.mli
 
