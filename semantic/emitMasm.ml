@@ -1,3 +1,7 @@
+open Final
+open Types
+
+let library_funs : (string * Types.typ * (string * Types.typ) list) list ref = ref []
 
 let regToString = function
   | Ax -> "ax"
@@ -17,137 +21,145 @@ let regToString = function
   | Dl -> "dl"
   | Dh -> "dh"
   | ST i -> Printf.sprintf "ST(%d)" i
-  
+
 let sizeToString = function
   | Byte -> "byte"
   | Word -> "word"
   | TByte -> "tbyte"
   | DWord -> "dword"
   | Near -> "near"
-    
-let operandToString = function 
+
+let rec operandToString = function 
   | Reg r -> regToString r
   | Pointer (size, operand, i) when i = 0 -> 
     Printf.sprintf "%s ptr [%s]" (sizeToString size) (operandToString operand)
-  | Pointer (size, operand, i) -> 
+  | Pointer (size, operand, i) when i > 0 -> 
     Printf.sprintf "%s ptr [%s+%d]" (sizeToString size) (operandToString operand) i
+  | Pointer (size, operand, i) when i < 0 -> 
+    Printf.sprintf "%s ptr [%s-%d]" (sizeToString size) (operandToString operand) (-i)
   | LabelPtr (size, label) ->
-    Printf.sprintf "%s ptr [%s]" (sizeToString size) label
+    Printf.sprintf "%s ptr %s" (sizeToString size) label
   | Label l -> l
   | Immediate i -> i
-  
-  let delims = Str.regexp "[\n|\t|\r|\0|\\|\'|\"|\\x([0-9|A-F|a-f][0-9|A-F|a-f])]"
 
-
-(*
- *  THIS IS WRONG !!!!
- *
-  let constStringToString (id, str) = 
+let constStringToString str id = 
   let size = String.length str in
-  let rec printString off s acc =
+  let rec fromText off s acc = 
+    if (off = size) then acc ^ "\'"
+    else
+      match s.[off] with
+        | '\x20' | '\x21' | '\x23' .. '\x26' | '\x28' .. '\x7E' ->
+          fromText (off+1) s (acc ^ (Printf.sprintf "%c" s.[off])) 
+        | _ ->
+          fromAscii (off+1) s (acc ^ (Printf.sprintf "\', %d" (Char.code s.[off]))) 
+  and fromAscii off s acc =
     if (off = size) then acc
-    else if (off = size -1)  (* if this is the last charachter *)
+    else
       match s.[off] with
-        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '.' | '!' | '?' | ' ' | ',' ->
-            printString (off+1) s (acc ^ (Printf.sprintf "%c\'" s.[off])) 
+        | '\x20' | '\x21' | '\x23' .. '\x26' | '\x28' .. '\x7E' ->
+          fromText (off+1) s (acc ^ (Printf.sprintf ", \'%c" s.[off])) 
         | _ ->
-            printString (off+1) s (acc ^ (Printf.sprintf "\', %d" (char_code s.[off])) 
-    else 
-      match s.[off] with
-        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '.' | '!' | '?' | ' ' | ',' ->
-            printString (off+1) s (acc ^ (Printf.sprintf "%c" s.[off])) 
-        | _ ->
-            printString (off+1) s (acc ^ (Printf.sprintf "\', %d, \'" (char_code s.[off])) 
+          fromAscii (off+1) s (acc ^ (Printf.sprintf ", %d" (Char.code s.[off])))
   in
-    Printf.sprintf "%s db %d, %s, 0\n" id size (printString 0 str "")
-  
+    Printf.sprintf "\t%s db %d%s, 0\n" (Final.strLabel id) size (fromAscii 0 str "")
 
-let libFunDecl lst = 
-  let aux lst acc = 
+
+let libFunDecl lst_lib lst_auxil = 
+  let rec aux lst acc = 
     match lst with
       | [] -> acc
-      | name :: tl ->
-          aux tl ((Printf.sprintf "\textern\t %s : proc\n" ("_" ^ name)) ^ acc)
+      | (name, _) :: tl ->
+        aux tl ((Printf.sprintf "\textrn\t %s : proc\n" ("_" ^ name)) ^ acc)
   in
-    aux lst ""
-    
-*)
+  let rec lib lst acc =
+    match lst with
+      | [] -> "\n\n" ^ acc
+      | (name, _, _) :: tl ->
+        lib tl ((Printf.sprintf "\textrn\t %s : proc\n" ("_" ^ name)) ^ acc)
+  in
+  let auxiliary = aux lst_auxil "" in
+    lib lst_lib auxiliary
 
 let instructionToString = function
   | Prelude outer -> 
-    "xseg segment public ′code′\n\
-    \tassume cs : xseg, ds : xseg, ss : xseg\n\
-    \torg\t100h\n\
-    main proc\tnear\n\
-    \tcall\tnear ptr " ^ (makeFunctionLabel outer) ^ "\n\
-    \tmov\tax, 4C00h\n\
-    \tint\t21h\n\
-    main endp\n"
+    "xseg\tsegment\tpublic ′code′\n\
+     \t\tassume\tcs : xseg, ds : xseg, ss : xseg\n\
+     \t\torg\t100h\n\
+     main\tproc\tnear\n\
+     \t\tcall\tnear ptr " ^ (makeFunctionLabel outer) ^ "\n\
+     \t\tmov\tax, 4C00h\n\
+     \t\tint\t21h\n\
+     main\tendp\n"
   | Epilogue ->
-    "xseg ends\n\
-    \tend\tmain\n"
+    let externs = libFunDecl !library_funs Quads.auxil_funs in
+      (List.fold_left (fun acc (s, id) -> 
+           (constStringToString s id) ^ acc) externs (!Final.str_lst)) ^ "\n\n" ^
+         "xseg\tends\n\
+          \t\tend\tmain\n"
   | Mov (op1, op2) ->
-    Printf.sprintf "\tmov %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tmov\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Lea (op1, op2) ->
-    Printf.sprintf "\tlea %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tlea\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Add (op1, op2) ->
-    Printf.sprintf "\tadd %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tadd\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Sub (op1, op2) ->
-    Printf.sprintf "\tsub %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tsub\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Neg op ->
-    Printf.sprintf "\tneg %s\n" (operandToString op)
+    Printf.sprintf "\t\tneg\t%s\n" (operandToString op)
   | Imul op ->
-    Printf.sprintf "\tneg %s\n" (operandToString op)  
+    Printf.sprintf "\t\timul\t%s\n" (operandToString op)  
   | Idiv op ->
-    Printf.sprintf "\tidiv %s\n" (operandToString op)
+    Printf.sprintf "\t\tidiv\t%s\n" (operandToString op)
   | Cmp (op1, op2) ->
-    Printf.sprintf "\tcmp %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tcmp\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Cwd ->
-    Printf.sprintf "\tcwd\n"
+    Printf.sprintf "\t\tcwd\n"
   | And (op1, op2) ->
-    Printf.sprintf "\tand %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tand\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Or (op1, op2) ->
-    Printf.sprintf "\tor %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tor\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Xor (op1, op2) ->
-    Printf.sprintf "\xor %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\txor\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Not op ->
-    Printf.sprintf "\tnot %s\n" (operandToString op)  
-  | Test op ->
-    Printf.sprintf "\ttest %s\n" (operandToString op)  
-  | Jmp (op1, op2) ->
-    Printf.sprintf "\tjmp %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tnot\t%s\n" (operandToString op)  
+  | Test (op1, op2) ->
+    Printf.sprintf "\t\ttest\t%s, %s\n" (operandToString op1) (operandToString op2) 
+  | Jmp op ->
+    Printf.sprintf "\t\tjmp\t%s\n" (operandToString op)
   | CondJmp (str, op) ->
-    Printf.sprintf "\t%s %s\n" s (operandToString op2)
+    Printf.sprintf "\t\t%s\t%s\n" str (operandToString op)
   | Push op ->
-    Printf.sprintf "\tneg %s\n" (operandToString op)  
+    Printf.sprintf "\t\tpush\t%s\n" (operandToString op)  
   | Pop op ->
-    Printf.sprintf "\tneg %s\n" (operandToString op)  
+    Printf.sprintf "\t\tpop\t%s\n" (operandToString op)  
   | Call op ->
-    Printf.sprintf "\tneg %s\n" (operandToString op)  
+    Printf.sprintf "\t\tcall\t%s\n" (operandToString op)  
   | Ret ->
-    Printf.sprintf "\tret\n"
+    Printf.sprintf "\t\tret\n"
   | Fld op ->
-    Printf.sprintf "\tneg %s\n" (operandToString op)  
+    Printf.sprintf "\t\tfld\t%s\n" (operandToString op)  
   | Faddp (op1, op2) ->
-    Printf.sprintf "\tsub %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tfaddp\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Fsubp (op1, op2) ->
-    Printf.sprintf "\tsub %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tfsubp\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Fmulp (op1, op2) ->
-    Printf.sprintf "\tsub %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tfmulp\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Fdivp (op1, op2) ->
-    Printf.sprintf "\tsub %s, %s\n" (operandToString op1) (operandToString op2)
+    Printf.sprintf "\t\tfdivp\t%s, %s\n" (operandToString op1) (operandToString op2)
   | Fcompp -> 
-    Printf.sprintf "\tfcompp\n"
+    Printf.sprintf "\t\tfcompp\n"
   | Fstsw op ->
-    Printf.sprintf "\tfstsw %s\n" (operandToString op)  
+    Printf.sprintf "\t\tfstsw\t%s\n" (operandToString op)  
   | Fstp op -> 
-    Printf.sprintf "\tfstp %s\n" (operandToString op)  
+    Printf.sprintf "\t\tfstp\t%s\n" (operandToString op)  
   | Fun str ->
-    Printf.sprintf "%s proc near\n" str  
+    Printf.sprintf "%s\tproc\tnear\n" str  
   | EndFun str ->
-    Printf.sprintf "%s endp\n" str  
+    Printf.sprintf "%s\tendp\n" str  
   | LabelDecl str ->
     Printf.sprintf "%s:\n" str
 
-
+let emit final lib_funs =
+  let _ = library_funs := lib_funs in
+    List.fold_left (fun asm instr -> asm ^ (instructionToString instr)) "" final
 

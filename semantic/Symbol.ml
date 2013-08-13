@@ -311,7 +311,8 @@ let newFunction id parent err =
       function_paramsize = 0;
       function_nesting = nesting;
       function_parent = parent;
-      function_index = (incr fun_index; !fun_index)
+      function_index = (incr fun_index; !fun_index);
+      function_library = false
     } in
       newEntry id (ENTRY_function inf) false
 
@@ -422,3 +423,13 @@ let fixOffsets entry =
           f.function_paramsize <- par_size;
           f.function_varsize <- ref var_size;
       | _ -> internal "cannot fix offsets in a non function"
+
+let setLibraryFunction e = 
+  match e.entry_info with
+    | ENTRY_function f -> f.function_library <- true
+    | _ -> internal "Entry not a function"
+    
+let isLibraryFunction e = 
+  match e.entry_info with
+    | ENTRY_function f -> f.function_library
+    | _ -> internal "Entry not a function"

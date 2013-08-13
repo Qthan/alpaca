@@ -132,52 +132,8 @@ and gen_def quads def_node delete_quads =
         let ty = lookup_type def_node.def_entry in
         let size = sizeOfType ty in  (* Size of an array element *)
         let quads2 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads1 in
-        let makearr_entry = { (* XXX dummy values here *)
-          entry_id = (id_make "_make_array");
-          entry_scope = 
-            {
-              sco_parent = None;
-              sco_nesting = 0;
-              sco_entries = [];
-              sco_negofs  = 0;
-              sco_hidden = false;
-            };
-          entry_info = 
-            ENTRY_function {
-              function_isForward = false;
-              function_paramlist = [];
-              function_varlist = [];
-              function_varsize = ref 0;
-              function_paramsize = 0;       
-              function_result = T_Unit;
-              function_pstatus = PARDEF_COMPLETE;
-              function_nesting = 0;
-              function_parent = None;
-              function_index = -1
-            } }in
-        let delete_entry = { (* XXX dummy values here *)
-          entry_id = (id_make "_delete_array");
-          entry_scope = 
-            {
-              sco_parent = None;
-              sco_nesting = 0;
-              sco_entries = [];
-              sco_negofs  = 0;
-              sco_hidden = false;
-            };
-          entry_info = 
-            ENTRY_function {
-              function_isForward = false;
-              function_paramlist = [];
-              function_varlist = [];
-              function_varsize = ref 0;
-              function_paramsize = 0;      
-              function_result = T_Unit;
-              function_pstatus = PARDEF_COMPLETE;
-              function_nesting = 0;
-              function_parent = None;
-              function_index = -1
-            } } in
+        let makearr_entry = findAuxilEntry "_make_array" in
+        let delete_entry =  findAuxilEntry "_delete_array" in
         let dims = (* --- Need to get an int out of Dim type --- *)
           match arrayDims ty with
             | D_Int d -> d
@@ -324,29 +280,7 @@ and gen_expr quads expr_node = match expr_node.expr with
       (quads1, setExprInfo temp (newLabelList ()))
   | E_New t -> 
     let size = sizeOfType t in
-    let new_entry = { (* XXX dummy values here *)
-      entry_id = (id_make "_new");
-      entry_scope = 
-        {
-          sco_parent = None;
-          sco_nesting = 0;
-          sco_entries = [];
-          sco_negofs  = 0;
-          sco_hidden = false;
-        };
-      entry_info = 
-        ENTRY_function {
-          function_isForward = false;
-          function_paramlist = [];
-          function_varlist = [];
-          function_varsize = ref 0;
-          function_paramsize = 0;      
-          function_result = T_Unit;
-          function_pstatus = PARDEF_COMPLETE;
-          function_nesting = 0;
-          function_parent = None;
-          function_index = -1
-        } } in
+    let new_entry = findAuxilEntry "_new" in
     let temp = newTemp (T_Ref t) (Stack.top offset_stack) in
     let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
     let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
@@ -521,30 +455,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
             (quads1, setStmtInfo e_info.next_expr)
         | U_Del -> 
           let (quads1, e1_info) = gen_expr quads expr1 in
-          let delete_entry = { (* XXX dummy values here *)
-            entry_id = (id_make "_delete");
-            entry_scope = 
-              {
-                sco_parent = None;
-                sco_nesting = 0;
-                sco_entries = [];
-                sco_negofs  = 0;
-                sco_hidden = false;
-              };
-            entry_info = 
-              ENTRY_function {
-                function_isForward = false;
-                function_paramlist = [];
-                function_varlist = [];
-                function_varsize = ref 0;
-                function_paramsize = 0;      
-                function_result = T_Unit;
-                function_pstatus = PARDEF_COMPLETE;
-                function_nesting = 0;
-                function_parent = None;
-                function_index = -1
-              } } in
-
+          let delete_entry = findAuxilEntry "_delete" in
           let quads2 = backpatch quads1 e1_info.next_expr (nextLabel ()) in
           let quads3 = genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads2 in
           let quads4 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry delete_entry) quads3 in

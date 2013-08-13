@@ -4,10 +4,10 @@ open Pretty_print
 
 let main =
   let (cin, cout) =
-    if Array.length Sys.argv >1
+    if Array.length Sys.argv > 1
     then 
       try
-        (open_in Sys.argv.(1), open_out ((Filename.chop_extension Sys.argv.(1))^ ".asm" ))
+        (open_in Sys.argv.(1), open_out ((Filename.chop_extension Sys.argv.(1)) ^ ".asm" ))
       with
         | Invalid_argument _ -> 
           error "Wrong file name. Extension must be .lla";
@@ -23,6 +23,8 @@ let main =
       let (solved, outer_entry, library_funs) = Ast.walk_program ast in
       let intermediate = Intermediate.gen_program ast solved outer_entry in
       let final = CodeGen.codeGen intermediate outer_entry in
+      let str = EmitMasm.emit final library_funs in
+        Printf.fprintf cout "%s" str;
         exit 0
     with 
       | Parsing.Parse_error ->
@@ -38,3 +40,4 @@ let main =
       | Typeinf.DimError (dim1, dim2) ->
         error "Array dimensions error. Cannot match dimension size %a with %a" pretty_dim dim1 pretty_dim dim2; 
         exit 2
+

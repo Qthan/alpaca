@@ -48,17 +48,18 @@ let function_stack = Stack.create ()
 let rec walk_program ls =
   initSymbolTable 10009;
   openScope();
-  List.iter insert_function library_funs;
   let f = newFunction (id_make "_outer") None true in 
   let () = endFunctionHeader f (T_Unit) in   (* XXX changes *)
   let () = Stack.push f function_stack in
+  let () = List.iter insert_function library_funs in
   let constraints = walk_stmt_list ls in
   let () = closeScope() in
   let solved = unify constraints in
     (solved, f, library_funs)
 
 and insert_function (id, result_ty, params) =
-  let p = newFunction (id_make id) None true in
+  let p = newFunction (id_make id) (Some (Stack.top function_stack)) true in
+    setLibraryFunction p;
     openScope ();
     walk_par_list params p;
     endFunctionHeader p result_ty;
@@ -541,3 +542,4 @@ and walk_pattom t = match t.pattom with
     let constraints = walk_pattern p in
       t.pattom_typ <- p.pattern_typ;
       constraints
+

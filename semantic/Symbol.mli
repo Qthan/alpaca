@@ -60,3 +60,5 @@ val getParamList : SymbTypes.entry -> SymbTypes.entry list
 val getVarList : SymbTypes.entry -> SymbTypes.entry list
 val getVarSize : SymbTypes.entry -> int
 val fixOffsets : SymbTypes.entry -> unit
+val setLibraryFunction : SymbTypes.entry -> unit
+val isLibraryFunction : SymbTypes.entry -> bool

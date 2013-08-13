@@ -60,33 +60,8 @@ type instruction =
 (* CPU word size*)
 let word_size = 2
 
-(* a dummy function entry *)
-let dummy = { (* dummy values here *)
-    entry_id = (id_make "_dummy");
-    entry_scope = 
-      {
-        sco_parent = None;
-        sco_nesting = 0;
-        sco_entries = [];
-        sco_negofs  = 0;
-        sco_hidden = false;
-      };
-    entry_info = 
-      ENTRY_function {
-        function_isForward = false;
-        function_paramlist = [];
-        function_varlist = [];
-        function_varsize = ref 0;
-        function_paramsize = 0;       
-        function_result = T_Unit;
-        function_pstatus = PARDEF_COMPLETE;
-        function_nesting = 0;
-        function_parent = None;
-        function_index = -1
-      } }
-
-(* A reference to the current function compiled *)
-let current_fun = ref dummy
+(* A reference to the current function compiled start with a dummy reference. *)
+let current_fun = ref (Quads.findAuxilEntry "_dummy")
 
 (* An empty instruction list *)
 let newInstrList () = []
@@ -103,7 +78,7 @@ let strLabel id = Printf.sprintf "@str%d" id
 let saveString =
   let str_no = ref 0 in
     fun str -> incr str_no; 
-      str_lst := (str, str_no) :: !str_lst;
+      str_lst := (str, !str_no) :: !str_lst;
       strLabel !str_no
 
 (* A function returning the nesting level of an entry *)
@@ -146,7 +121,9 @@ let sizeToBytes = function
 (* A function returning the label of a function*) 
 let makeFunctionLabel e = 
   match e.entry_info with
-    | ENTRY_function f -> "_p_" ^ (id_name e.entry_id) ^ "_" ^ (string_of_int f.function_index)
+    | ENTRY_function f  when f.function_library = false -> 
+      "_p_" ^ (id_name e.entry_id) ^ "_" ^ (string_of_int f.function_index)
+    | ENTRY_function f -> "_" ^ (id_name e.entry_id)
     | ENTRY_parameter _ | ENTRY_variable _ -> internal "Cannot call this like that"
     | _ -> internal "cannot call non function"
 
@@ -303,7 +280,7 @@ let store r a instr_lst =
       let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-              genInstr (Mov (Pointer (size, Reg Bp, offset), Reg r)) instr_lst
+            genInstr (Mov (Pointer (size, Reg Bp, offset), Reg r)) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
               genInstr (Mov (Pointer (size, Reg Si, offset), Reg r)) instr_lst1
@@ -332,7 +309,7 @@ let storeReal a instr_lst =
       let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-              genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
+            genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
               genInstr (Fld (Pointer (size, Reg Si, offset))) instr_lst1
@@ -447,6 +424,5 @@ let storeFun r1 r2 a instr_lst =
         let addz z = x+y+z in
         addz 5 in
     addY x*)
-
 
 

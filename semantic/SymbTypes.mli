@@ -33,7 +33,8 @@ and function_info = {
   mutable function_pstatus   : param_status;
   mutable function_nesting   : int;
   mutable function_parent    : entry option;
-  mutable function_index     : int
+  mutable function_index     : int;
+  mutable function_library   : bool
 }
 
 and parameter_info = {
@@ -68,3 +69,4 @@ and entry = {
 }
 
 type lookup_type = LOOKUP_CURRENT_SCOPE | LOOKUP_ALL_SCOPES
+
