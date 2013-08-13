@@ -4,6 +4,7 @@ open Lexing
 open Types
 
 exception EOF of string
+exception MutilineString of string 
 
 let incr_linenum lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -106,24 +107,50 @@ rule lexer = parse
   | ":"                 { T_COLON }
   | lowCase+id* as id   { T_ID { id_name = id; id_pos = get_pos lexbuf } }
   | upCase+id* as cid   { T_CID { cid_name = cid; cid_pos = get_pos lexbuf } }
-  | '\'' (constChar as c_char) '\''  
-                        { T_CONSTCHAR { cval = c_char; cpos = get_pos lexbuf } }
-  | '\"' (([^'\n' '\"'] | '\\' '\"')* as c_string) '\"'  
-                        { T_STRING { sval = c_string; spos = get_pos lexbuf } }
+  | '\''                { T_CONSTCHAR { cval = parse_char lexbuf; cpos = get_pos lexbuf } }
+  | '\"'                { T_STRING { sval = parse_string "" lexbuf; spos = get_pos lexbuf } }
   | "--"[^'\n']*        { lexer lexbuf } 
   | "(*"                { comments 0 lexbuf }
   | _ as chr            { print_error lexbuf chr ; lexer lexbuf }
   | eof                 { T_EOF }
-
+  
 and comments level = parse
-  | "*)"                { 
-                          if level = 0 
-                          then lexer lexbuf
-	                      else comments (level-1) lexbuf
-	                    }
-  | "(*"                { 
+  | "*)"              { 
+                        if level = 0 
+                        then lexer lexbuf
+                        else comments (level-1) lexbuf
+                      }
+  | "(*"              { 
                           comments (level+1) lexbuf
-	                    }
-  | '\n'                { incr_linenum lexbuf ; comments level lexbuf }
-  | _                   { comments level lexbuf  }
-  | eof                 { raise ( EOF "File ended before comments were closed") }
+	                  }
+  | '\n'              { incr_linenum lexbuf ; comments level lexbuf }
+  | _                 { comments level lexbuf  }
+  | eof               { raise ( EOF "File ended before comments were closed") }
+  
+
+and parse_char = parse
+  | '\\' 'n' '\''  { "\n" } 
+  | '\\' 't' '\''  { "\t" }
+  | '\\' 'r' '\''  { "\r" }
+  | '\\' '0' '\''  { "\000" }
+  | '\\' '\\' '\'' { "\\" }
+  | '\\' '\'' '\'' { "\'" }
+  | '\\' '\"' '\'' { "\"" }
+  | '\\' 'x' ((hexdig hexdig) as s) '\'' { Scanf.unescaped ("\x" ^ s) }
+  | eof { raise ( EOF "File ended before char was complete") }
+  | (_ as chr) '\'' { Printf.sprintf "%c" chr }
+
+and parse_string acc = parse
+  | '\"' { acc }
+  | '\\' 'n'  { parse_string (acc ^ "\n") lexbuf } 
+  | '\\' 't'  { parse_string (acc ^ "\t") lexbuf }
+  | '\\' 'r'  { parse_string (acc ^ "\r") lexbuf }
+  | '\\' '0'  { parse_string (acc ^ "\000") lexbuf }
+  | '\\' '\\' { parse_string (acc ^ "\\") lexbuf }
+  | '\\' '\'' { parse_string (acc ^ "\'") lexbuf }
+  | '\\' '\"' { parse_string (acc ^ "\"") lexbuf }
+  | '\\' 'x' (hexdig hexdig as s)  { parse_string (acc ^ (Scanf.unescaped ("\x" ^ s))) lexbuf }
+  | '\n' { raise (EOF "Multiline strings cannot be handled") }
+  | eof { raise ( EOF "File ended before string were comleted") }
+  | (_ as chr) { parse_string (acc ^ (Printf.sprintf "%c" chr)) lexbuf }
+  

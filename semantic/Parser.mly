@@ -4,9 +4,6 @@
     open Types
     open AstTypes
     open Ast
-    open Quads
-    open Intermediate
-    open SymbTypes
 %}
 %token T_EOF
 
@@ -112,7 +109,7 @@
 
 
 %start program
-%type <Quads.quad list * SymbTypes.entry> program
+%type <AstTypes.ast_stmt list> program
 %type <ast_stmt list> stmt_list
 %type <ast_stmt> letdef
 %type <ast_def_node list> anddef
@@ -136,15 +133,7 @@
 %type <ast_pattom_node> pattom 
 %%
 
-program     : stmt_list T_EOF                                           
-    {  
-        let ast = List.rev $1 in
-        let (solved, outer_entry) = walk_program ast in
-          match solved with 
-            | Some subs -> gen_program ast subs outer_entry
-            | None -> internal "Type inference failed."
-    }
-        
+program     : stmt_list T_EOF                                           { List.rev $1 }
             ;
 
 stmt_list: 
@@ -334,7 +323,3 @@ pattomstar:
             | pattomstar pattom                                         { $2::$1 }
             ;
 %%
-
-
-
-

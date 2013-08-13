@@ -17,14 +17,14 @@ let regToString = function
   | Dl -> "dl"
   | Dh -> "dh"
   | ST i -> Printf.sprintf "ST(%d)" i
-
+  
 let sizeToString = function
   | Byte -> "byte"
   | Word -> "word"
   | TByte -> "tbyte"
   | DWord -> "dword"
   | Near -> "near"
-
+    
 let operandToString = function 
   | Reg r -> regToString r
   | Pointer (size, operand, i) when i = 0 -> 
@@ -35,20 +35,57 @@ let operandToString = function
     Printf.sprintf "%s ptr [%s]" (sizeToString size) label
   | Label l -> l
   | Immediate i -> i
+  
+  let delims = Str.regexp "[\n|\t|\r|\0|\\|\'|\"|\\x([0-9|A-F|a-f][0-9|A-F|a-f])]"
+
+
+(*
+ *  THIS IS WRONG !!!!
+ *
+  let constStringToString (id, str) = 
+  let size = String.length str in
+  let rec printString off s acc =
+    if (off = size) then acc
+    else if (off = size -1)  (* if this is the last charachter *)
+      match s.[off] with
+        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '.' | '!' | '?' | ' ' | ',' ->
+            printString (off+1) s (acc ^ (Printf.sprintf "%c\'" s.[off])) 
+        | _ ->
+            printString (off+1) s (acc ^ (Printf.sprintf "\', %d" (char_code s.[off])) 
+    else 
+      match s.[off] with
+        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '.' | '!' | '?' | ' ' | ',' ->
+            printString (off+1) s (acc ^ (Printf.sprintf "%c" s.[off])) 
+        | _ ->
+            printString (off+1) s (acc ^ (Printf.sprintf "\', %d, \'" (char_code s.[off])) 
+  in
+    Printf.sprintf "%s db %d, %s, 0\n" id size (printString 0 str "")
+  
+
+let libFunDecl lst = 
+  let aux lst acc = 
+    match lst with
+      | [] -> acc
+      | name :: tl ->
+          aux tl ((Printf.sprintf "\textern\t %s : proc\n" ("_" ^ name)) ^ acc)
+  in
+    aux lst ""
+    
+*)
 
 let instructionToString = function
   | Prelude outer -> 
     "xseg segment public ′code′\n\
-     \tassume cs : xseg, ds : xseg, ss : xseg\n\
-     \torg\t100h\n\
-     main proc\tnear\n\
-     \tcall\tnear ptr " ^ (makeFunctionLabel outer) ^ "\n\
-                                                      \tmov\tax, 4C00h\n\
-                                                      \tint\t21h\n\
-                                                      main endp\n"
+    \tassume cs : xseg, ds : xseg, ss : xseg\n\
+    \torg\t100h\n\
+    main proc\tnear\n\
+    \tcall\tnear ptr " ^ (makeFunctionLabel outer) ^ "\n\
+    \tmov\tax, 4C00h\n\
+    \tint\t21h\n\
+    main endp\n"
   | Epilogue ->
     "xseg ends\n\
-     \tend\tmain\n"
+    \tend\tmain\n"
   | Mov (op1, op2) ->
     Printf.sprintf "\tmov %s, %s\n" (operandToString op1) (operandToString op2)
   | Lea (op1, op2) ->
@@ -111,4 +148,6 @@ let instructionToString = function
     Printf.sprintf "%s endp\n" str  
   | LabelDecl str ->
     Printf.sprintf "%s:\n" str
+
+
 

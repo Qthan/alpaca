@@ -54,19 +54,9 @@ let rec walk_program ls =
   let () = Stack.push f function_stack in
   let constraints = walk_stmt_list ls in
   let () = closeScope() in
-  let solved = 
-    try 
-      (Some unify constraints)
-    with 
-      | UnifyError (typ1, typ2) ->
-        error "Cannot match type %a with type %a" pretty_typ typ1 pretty_typ typ2; None
-      | TypeError (err, typ) ->
-        error "Type error on type %a:\n %s" pretty_typ typ err; None
-      | DimError (dim1, dim2) ->
-        error "Array dimentions error. Cannot match dimention size %a with %a" pretty_dim dim1 pretty_dim dim2; None
-  in
-    (solved, f)
-      
+  let solved = unify constraints in
+    (solved, f, library_funs)
+
 and insert_function (id, result_ty, params) =
   let p = newFunction (id_make id) None true in
     openScope ();
@@ -88,7 +78,7 @@ and walk_stmt_list ls =
     !constraints
 
 and walk_stmt t = match t with
-  | S_Let l -> walk_def_list l
+  | S_Let  l -> walk_def_list l
   | S_Rec l -> 
     List.iter walk_recdef_names l;      
     let constraints = walk_recdef_list l in
@@ -120,10 +110,10 @@ and walk_def t = match t.def with
           let p = newVariable (id_make id) new_ty current_fun true in (* XXX changes *)
           let () = hideScope !currentScope true in
           let constraints = walk_expr e in
-              ignore p;
-              hideScope !currentScope false;
-              t.def_entry <- Some p;
-              (new_ty, e.expr_typ) :: constraints
+            ignore p;
+            hideScope !currentScope false;
+            t.def_entry <- Some p;
+            (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl ->
           let p = newFunction (id_make id) (Some (Stack.top function_stack)) true in
           let () = Stack.push p function_stack in (* XXX changes *)
@@ -210,7 +200,7 @@ and walk_recdef t = match t.def with
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           let new_ty = getResType p in
             t.def_entry <- Some p;
-              (new_ty, e.expr_typ) :: constraints
+            (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl -> 
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
           let () = Stack.push p function_stack in  (*XXX changes *)

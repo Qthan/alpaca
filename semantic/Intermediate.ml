@@ -50,7 +50,7 @@ let rec gen_program ast subst outer_entry =
   let quads = gen_decl_list ast outer_entry in
   let finalQuads = normalizeQuads (List.rev quads) in
     printQuads finalQuads;
-    (finalQuads, outer_entry)
+    finalQuads
 
 and gen_decl_list ast outer_entry = 
   let delete_quads = ref (newQuadList ()) in
