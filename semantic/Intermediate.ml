@@ -50,7 +50,7 @@ let rec gen_program ast subst outer_entry =
   let quads = gen_decl_list ast outer_entry in
   let finalQuads = normalizeQuads (List.rev quads) in
     printQuads finalQuads;
-    finalQuads
+    (finalQuads, outer_entry)
 
 and gen_decl_list ast outer_entry = 
   let delete_quads = ref (newQuadList ()) in
@@ -703,3 +703,4 @@ and gen_atom_stmt quads atom_node = match atom_node.atom with
     let n = expr_info.next_expr in
       (quads1, setStmtInfo n)
   | A_Cid _ -> (quads, setStmtInfo (newLabelList ())) (* dummy return value *)
+

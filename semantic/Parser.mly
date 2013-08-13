@@ -6,6 +6,7 @@
     open Ast
     open Quads
     open Intermediate
+    open SymbTypes
 %}
 %token T_EOF
 
@@ -111,7 +112,7 @@
 
 
 %start program
-%type <Quads.quad list> program
+%type <Quads.quad list * SymbTypes.entry> program
 %type <ast_stmt list> stmt_list
 %type <ast_stmt> letdef
 %type <ast_def_node list> anddef

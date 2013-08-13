@@ -7,7 +7,9 @@ open Types
 
 let params_size = ref 0 
 
-let rec codeGen quads = List.rev (List.fold_left (fun lst q -> quadToFinal q lst) (newInstrList ()) quads)
+let rec codeGen quads outer = 
+  let prelude = genInstr (Prelude outer) (newInstrList ()) in
+    List.rev (genInstr Epilogue (List.fold_left (fun lst q -> quadToFinal q lst) prelude quads))
 
 and quadToFinal quad instr_lst = 
   let instr_lst = 
@@ -138,7 +140,7 @@ and quadToFinal quad instr_lst =
           | O_Int d -> d
           | _ -> internal "Dimensions must be integers"
         in
-        let instr_lst1 = loadAddress Ax quad.arg1 instr_lst in
+        let instr_lst1 = load Ax quad.arg1 instr_lst in
         let instr_lst2 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Ax, word_size*(dim - 1)))) instr_lst1 in
         let instr_lst3 = store Ax quad.arg3 instr_lst2 in
           instr_lst3
@@ -163,7 +165,7 @@ and quadToFinal quad instr_lst =
         let instr_lst2 = genInstr (Mov (Reg Cx, Immediate (sizeToBytes (getTypeSize typ)))) instr_lst1 in
         let instr_lst3 = genInstr (Imul (Reg Cx)) instr_lst2 in
         let instr_lst4 = genInstr (Add (Reg Ax, Immediate (string_of_int dims_offset))) instr_lst3 in
-        let instr_lst5 = loadAddress Cx quad.arg1 instr_lst4 in
+        let instr_lst5 = load Cx quad.arg1 instr_lst4 in
         let instr_lst6 = genInstr (Add (Reg Ax, Reg Cx)) instr_lst5 in
         let instr_lst7 = store Ax quad.arg3 instr_lst6 in
           instr_lst7
@@ -213,73 +215,121 @@ and quadToFinal quad instr_lst =
                   let instr_lst5 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst4 in
                     instr_lst5
                 | _ -> internal "Cannot call non function/parameter/variable"))
-          | Q_Par ->  
-            (match quad.arg1 with
-              | O_Entry e ->
-                let size = getSize e in
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
-                  (match quad.arg2 with
-                    | O_ByVal ->
-                      (match size with
-                        | Word -> 
-                          let instr_lst1 = load Ax quad.arg1 instr_lst in
-                          let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                            instr_lst2
-                        | Byte ->
-                          let instr_lst1 = load Al quad.arg1 instr_lst in
-                          let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
-                          let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                          let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
-                            instr_lst4
-                        | DWord ->
-                          let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
-                          let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                          let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
-                            instr_lst3
-                        | TByte -> 
-                          let instr_lst1 = loadReal quad.arg1 instr_lst in
-                          let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
-                          let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                          let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
-                            instr_lst4
-                      )
-                    | O_Ret ->
-                      let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
-                      let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
-                        instr_lst2)
-              | O_Int _  | O_Deref _ -> 
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
-                let instr_lst1 = load Ax (quad.arg1) instr_lst in
-                let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                  instr_lst2
-              | O_Bool _ | O_Char _ ->
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
-                let instr_lst1 = load Al quad.arg1 instr_lst in
-                let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
-                let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
-                  instr_lst4
-              | O_Float _ ->
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
-                let instr_lst1 = loadReal quad.arg1 instr_lst in
-                let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
-                let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
-                  instr_lst4
-              | O_Str _ ->
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
-                let instr_lst1 = loadAddress Ax (quad.arg1) instr_lst in
-                let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                  instr_lst2
-              | O_Backpatch -> internal "Cannot push backpatch"
-              | O_Label _ -> internal "Cannot push label"
-              | O_Res -> internal "Cannot push res"
-              | O_Ret -> internal "Cannot push ret"
-              | O_ByVal -> internal "Cannot push byval"
-              | O_Empty -> internal "Cannot push empty"
-              | O_Ref _ -> internal "Cannot push ref"
-              (*| O_Deref _ -> internal "Cannot push deref"*)
-              | O_Size _ -> internal "Cannot push size"
-              | O_Dims _ -> internal "Cannot push dims"
-            )
-          | Q_Ret ->  internal "Don't have"
+      | Q_Par ->  
+        (match quad.arg2 with
+          | O_Ret ->
+            let size = Word in
+            let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+            let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
+            let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
+              instr_lst2  
+          | O_ByVal ->
+            let typ = getQuadOpType quad.arg1 in
+            let size = getTypeSize typ in
+            let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+              (match typ with
+                | T_Int ->
+                  let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
+                  let instr_lst1 = load Ax (quad.arg1) instr_lst in
+                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                    instr_lst2                    
+                | T_Float ->
+                  let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
+                  let instr_lst1 = loadReal quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
+                  let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+                  let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
+                    instr_lst4                    
+                | T_Char | T_Bool ->
+                  let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
+                  let instr_lst1 = load Al quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
+                  let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+                  let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
+                    instr_lst4                    
+                | T_Array _ | T_Ref _ ->
+                  let instr_lst1 = load Ax (quad.arg1) instr_lst in
+                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                    instr_lst2
+                | T_Arrow (_, _) ->
+                  let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                  let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
+                    instr_lst3
+                | T_Id _ -> internal "Not (YET) implemented"    
+                | T_Alpha _  | T_Notype | T_Ord | T_Nofun-> internal "Type inference failed"
+                | T_Unit -> internal "Intermediate failed"
+                | T_Str -> internal "T_Str is redundant. GET OVER IT."))
+      | Q_Ret ->  internal "Don't have"
+
+
+
+(*(match quad.arg1 with
+      | O_Entry e ->
+        let size = getSize e in
+        let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+          (match quad.arg2 with
+            | O_ByVal ->
+              (match size with
+                | Word -> 
+                  let instr_lst1 = load Ax quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                    instr_lst2
+                | Byte ->
+                  let instr_lst1 = load Al quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
+                  let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+                  let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
+                    instr_lst4
+                | DWord ->
+                  let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+                  let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
+                    instr_lst3
+                | TByte -> 
+                  let instr_lst1 = loadReal quad.arg1 instr_lst in
+                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
+                  let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+                  let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
+                    instr_lst4
+              )
+            | O_Ret ->
+              let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
+              let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
+                instr_lst2)
+      | O_Int _  | O_Deref _ -> 
+        let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
+        let instr_lst1 = load Ax (quad.arg1) instr_lst in
+        let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+          instr_lst2
+      | O_Bool _ | O_Char _ ->
+        let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
+        let instr_lst1 = load Al quad.arg1 instr_lst in
+        let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
+        let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+        let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
+          instr_lst4
+      | O_Float _ ->
+        let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
+        let instr_lst1 = loadReal quad.arg1 instr_lst in
+        let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
+        let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
+        let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
+          instr_lst4
+      | O_Str _ ->
+        let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
+        let instr_lst1 = loadAddress Ax (quad.arg1) instr_lst in
+        let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
+          instr_lst2
+      | O_Backpatch -> internal "Cannot push backpatch"
+      | O_Label _ -> internal "Cannot push label"
+      | O_Res -> internal "Cannot push res"
+      | O_Ret -> internal "Cannot push ret"
+      | O_ByVal -> internal "Cannot push byval"
+      | O_Empty -> internal "Cannot push empty"
+      | O_Ref _ -> internal "Cannot push ref"
+      (*| O_Deref _ -> internal "Cannot push deref"*)
+      | O_Size _ -> internal "Cannot push size"
+      | O_Dims _ -> internal "Cannot push dims"
+    )*)
+

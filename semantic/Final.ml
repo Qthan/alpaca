@@ -23,7 +23,7 @@ type operand =
 
 (*  available instruction types *)  
 type instruction =
-  | Prelude
+  | Prelude of entry
   | Epilogue
   | Mov of operand * operand
   | Lea of operand * operand
@@ -62,28 +62,28 @@ let word_size = 2
 
 (* a dummy function entry *)
 let dummy = { (* dummy values here *)
-    entry_id = (id_make "_dummy");
-    entry_scope = 
-      {
-        sco_parent = None;
-        sco_nesting = 0;
-        sco_entries = [];
-        sco_negofs  = 0;
-        sco_hidden = false;
-      };
-    entry_info = 
-      ENTRY_function {
-        function_isForward = false;
-        function_paramlist = [];
-        function_varlist = [];
-        function_varsize = ref 0;
-        function_paramsize = 0;       
-        function_result = T_Unit;
-        function_pstatus = PARDEF_COMPLETE;
-        function_nesting = 0;
-        function_parent = None;
-        function_index = -1
-      } }
+  entry_id = (id_make "_dummy");
+  entry_scope = 
+    {
+      sco_parent = None;
+      sco_nesting = 0;
+      sco_entries = [];
+      sco_negofs  = 0;
+      sco_hidden = false;
+    };
+  entry_info = 
+    ENTRY_function {
+      function_isForward = false;
+      function_paramlist = [];
+      function_varlist = [];
+      function_varsize = ref 0;
+      function_paramsize = 0;       
+      function_result = T_Unit;
+      function_pstatus = PARDEF_COMPLETE;
+      function_nesting = 0;
+      function_parent = None;
+      function_index = -1
+    } }
 
 (* A reference to the current function compiled *)
 let current_fun = ref dummy
@@ -238,11 +238,11 @@ let rec load r a instr_lst =
       in
       let instr_lst1 = load Di op instr_lst in
         genInstr (Mov (Reg r, Pointer (size, Reg Di, 0))) instr_lst1
-    | O_Str _ -> internal "Cannot load string"
+    | O_Str _ -> loadAddress r a instr_lst
     | _ -> internal "Cannot load: unmatched operand"
 
 (* A function for loading the address of a into register r*)
-let loadAddress r a instr_lst =
+and loadAddress r a instr_lst =
   match a with 
     | O_Str str -> 
       let operand = saveString str in
@@ -301,7 +301,7 @@ let store r a instr_lst =
       let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-              genInstr (Mov (Pointer (size, Reg Bp, offset), Reg r)) instr_lst
+            genInstr (Mov (Pointer (size, Reg Bp, offset), Reg r)) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
               genInstr (Mov (Pointer (size, Reg Si, offset), Reg r)) instr_lst1
@@ -330,7 +330,7 @@ let storeReal a instr_lst =
       let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-              genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
+            genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
               genInstr (Fld (Pointer (size, Reg Si, offset))) instr_lst1
@@ -410,54 +410,7 @@ let storeFun r1 r2 a instr_lst =
       let instr_lst1 = load Di op instr_lst in
       let instr_lst2 = genInstr (Mov (Pointer (Word, Reg Di, 0), Reg r1)) instr_lst1 in
       let instr_lst3 = genInstr (Mov (Pointer (Word, Reg Di, word_size), Reg r2)) instr_lst2 in
-        instr_lst3
-
-(*
-            (match quad.arg2 with
-              | O_Ret ->
-                let size = Word in
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
-                let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
-                let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
-                  instr_lst2  
-              | O_ByVal ->
-                let typ = getQuadOpType quad.arg1 in
-                let size = getTypeSize typ in
-                let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
-                (match typ with
-                  | T_Int ->
-                    let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
-                    let instr_lst1 = load Ax (quad.arg1) instr_lst in
-                    let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                      instr_lst2                    
-                  | T_Float ->
-                    let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
-                    let instr_lst1 = loadReal quad.arg1 instr_lst in
-                    let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
-                    let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                    let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
-                      instr_lst4                    
-                  | T_Char | T_Bool ->
-                    let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
-                    let instr_lst1 = load Al quad.arg1 instr_lst in
-                    let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
-                    let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                    let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
-                      instr_lst4                    
-                  | T_Array _ | T_Ref _ ->
-                    let instr_lst1 = loadAddress Ax (quad.arg1) instr_lst in
-                    let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                      instr_lst2
-                  | T_Arrow (_, _) ->
-                    let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
-                    let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                    let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
-                      instr_lst3
-                  | T_Id -> internal "Not (YET) implemented"    
-                  | T_Alpha _  | T_Notype | T_Ord | T_Nofun-> internal "Type inference failed"
-                  | T_Unit -> internal "Intermediate failed"
-                  | T_Str -> internal "T_Str is redundant. GET OVER IT."))
-*)
+        instr_lst3 
 
 (* Notes
    f : 1
@@ -492,4 +445,6 @@ let storeFun r1 r2 a instr_lst =
         let addz z = x+y+z in
         addz 5 in
     addY x*)
+
+
 
