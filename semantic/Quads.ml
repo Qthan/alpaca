@@ -221,7 +221,7 @@ let setStmtInfo n = { next_stmt = n }
 (* XXX Backpatch, changes a mutable field so we can maybe avoid returning a new
  * quad list thus avoiding all the quads1,2,3... pollution. Moo XXX*)
 let backpatch quads lst patch =
-  if (not (isEmptyQuadList quads)) then addLabelTbl patch; 
+  if (not (isEmptyQuadList lst)) then addLabelTbl patch; 
   List.iter (fun quad_label -> 
       match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
         | None -> internal "Quad label not found, can't backpatch\n"
