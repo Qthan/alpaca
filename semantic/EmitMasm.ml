@@ -68,6 +68,7 @@ let libFunDecl lst_lib lst_auxil =
   let rec aux lst acc = 
     match lst with
       | [] -> acc
+      | ("_dummy", _) :: tl -> aux tl acc
       | (name, _) :: tl ->
         aux tl ((Printf.sprintf "\textrn\t %s : proc\n" ("_" ^ name)) ^ acc)
   in
@@ -82,7 +83,7 @@ let libFunDecl lst_lib lst_auxil =
 
 let instructionToString = function
   | Prelude outer -> 
-    "xseg\tsegment\tpublic ′code′\n\
+    "xseg\tsegment\tpublic \'code\'\n\
      \t\tassume\tcs : xseg, ds : xseg, ss : xseg\n\
      \t\torg\t100h\n\
      main\tproc\tnear\n\

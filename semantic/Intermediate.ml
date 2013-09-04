@@ -191,7 +191,10 @@ and gen_expr quads expr_node = match expr_node.expr with
           let quads2 = backpatch quads1 e1_info.next_expr (nextLabel ()) in
           let typ = expr_node.expr_typ in
           let temp = newTemp typ (Stack.top offset_stack) in
-          let quads3 = genQuad (getQuadUnop oper, e1_info.place, O_Empty, temp) quads2 in
+          let quads3 = match typ with
+            | T_Int -> genQuad (getQuadUnop oper, O_Int 0, e1_info.place, temp) quads2
+            | T_Float -> genQuad (getQuadUnop oper, O_Float 0., e1_info.place, temp) quads2
+          in
           let e_info = setExprInfo temp (newLabelList ()) in
             (quads3, e_info)
         | U_Del -> internal "Unreachable point: Delete is not an expression"

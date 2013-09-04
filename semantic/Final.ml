@@ -56,6 +56,7 @@ type instruction =
   | Fun of string
   | EndFun of string 
   | LabelDecl of string
+  | Comment of string
 
 (* CPU word size*)
 let word_size = 2

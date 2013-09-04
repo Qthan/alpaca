@@ -6,6 +6,7 @@ open Error
 open Types 
 
 let params_size = ref 0 
+let debug_codeGen = ref true
 
 let rec codeGen quads outer = 
   let prelude = genInstr (Prelude outer) (newInstrList ()) in
@@ -17,6 +18,7 @@ and quadToFinal quad instr_lst =
     then genInstr (LabelDecl (makeLabel (O_Label quad.label))) instr_lst 
     else instr_lst 
   in
+    if (!debug_codeGen) then Format.printf "%a" printQuad quad;
     match quad.operator with
       | Q_Unit -> 
         let e = match quad.arg1 with 

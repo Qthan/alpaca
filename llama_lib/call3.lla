@@ -1,0 +1,6 @@
+let const x y = x
+
+let main = print_int (const 4 8)
+
+
+(* prints 8...*)
