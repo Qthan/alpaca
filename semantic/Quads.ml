@@ -289,50 +289,50 @@ let string_of_operator = function
   | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 
 
 
-let print_operator chan op = fprintf chan "%s" (string_of_operator op)
+let print_operator op = sprintf "%s" (string_of_operator op)
 
-let print_entry chan entry =
+let print_entry entry =
   match entry.entry_info with
     | ENTRY_function f ->
       let parent_id = match f.function_parent with
         | Some e -> e.entry_id
         | None -> id_make "None"
       in
-        fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
+        sprintf "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
           f.function_index f.function_paramsize 
           !(f.function_varsize) f.function_nesting
           pretty_id parent_id
     | ENTRY_variable v -> 
-      fprintf chan "Var[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ v.variable_type 
+      sprintf "Var[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ v.variable_type 
         v.variable_offset v.variable_nesting
     | ENTRY_parameter p -> 
-      fprintf chan "Par[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ p.parameter_type 
+      sprintf "Par[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ p.parameter_type 
         p.parameter_offset p.parameter_nesting
     | ENTRY_temporary t ->
-      fprintf chan "Temp[%a, type %a, offset %d]" pretty_id entry.entry_id pretty_typ t.temporary_type 
+      sprintf "Temp[%a, type %a, offset %d]" pretty_id entry.entry_id pretty_typ t.temporary_type 
         t.temporary_offset
 
 
-let print_temp_head chan head = 
-  fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
+let print_temp_head head = 
+  sprintf "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
 
-let rec print_operand chan op = match op with
-  | O_Int i -> fprintf chan "%d" i 
-  | O_Float f -> fprintf chan "%f" f 
-  | O_Char str -> fprintf chan "\'%s\'" str 
-  | O_Bool b -> fprintf chan "%b" b 
-  | O_Str str -> fprintf chan "\"%s\"" str  
-  | O_Backpatch -> fprintf chan "*"  
-  | O_Label i -> fprintf chan "l: %d" i 
-  | O_Res -> fprintf chan "$$" 
-  | O_Ret -> fprintf chan "RET" 
-  | O_ByVal -> fprintf chan "V"
-  | O_Entry e -> fprintf chan "%a" print_entry e 
-  | O_Empty ->  fprintf chan "-"
-  | O_Ref op -> fprintf chan "{%a}" print_operand op
-  | O_Deref op -> fprintf chan "[%a]" print_operand op
-  | O_Size i -> fprintf chan "Size %d" i
-  | O_Dims i -> fprintf chan "Dims %d" i
+let rec print_operand op = match op with
+  | O_Int i -> sprintf "%d" i 
+  | O_Float f -> sprintf "%f" f 
+  | O_Char str -> sprintf "\'%s\'" str 
+  | O_Bool b -> sprintf "%b" b 
+  | O_Str str -> sprintf "\"%s\"" str  
+  | O_Backpatch -> sprintf "*"  
+  | O_Label i -> sprintf "l: %d" i 
+  | O_Res -> sprintf "$$" 
+  | O_Ret -> sprintf "RET" 
+  | O_ByVal -> sprintf "V"
+  | O_Entry e -> sprintf "%a" print_entry e 
+  | O_Empty ->  sprintf "-"
+  | O_Ref op -> sprintf "{%a}" print_operand op
+  | O_Deref op -> sprintf "[%a]" print_operand op
+  | O_Size i -> sprintf "Size %d" i
+  | O_Dims i -> sprintf "Dims %d" i
 
 (* Make quad labels consequent *)
 
@@ -357,12 +357,12 @@ let normalizeQuads quads =
     quads1
 
 
-let printQuad chan quad =
-  fprintf chan "%d:\t %a, %a, %a, %a\n" 
+let printQuad quad =
+  sprintf "%d:\t %a, %a, %a, %a\n" 
     quad.label print_operator quad.operator 
     print_operand quad.arg1 print_operand quad.arg2 print_operand quad.arg3;
   match quad.operator with
-    | Q_Endu -> fprintf chan "\n"
+    | Q_Endu -> sprintf "\n"
     | _ -> ()
 
 let printQuads quads = 

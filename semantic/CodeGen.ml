@@ -18,7 +18,11 @@ and quadToFinal quad instr_lst =
     then genInstr (LabelDecl (makeLabel (O_Label quad.label))) instr_lst 
     else instr_lst 
   in
-    if (!debug_codeGen) then Format.printf "%a" printQuad quad;
+  let instr_lst =
+    if (!debug_codeGen) then 
+      (Format.printf "%a" printQuad quad;
+       genInstr (Comment (Format.sprintf "%a" printQuad quad)))
+  in
     match quad.operator with
       | Q_Unit -> 
         let e = match quad.arg1 with 

@@ -190,8 +190,8 @@ _p_prime_32	proc	near
 		jl	@58
 		jmp	@64
 @58:
-		mov	ax, word ptr [bp+8]
-		mov	dx, 0
+		mov	ax, 0
+		mov	dx, word ptr [bp+8]
 		sub	ax, dx
 		mov	word ptr [bp-2], ax
 		mov	ax, word ptr [bp-2]
@@ -371,15 +371,24 @@ _p__outer_0	proc	near
 		pop	bp
 		ret
 _p__outer_0	endp
-	@str1 db 1, 10, 0
-	@str2 db 1, 10, 0
-	@str3 db 30, 'Please, give the upper limit: ', 0
-	@str4 db 28, 'Prime numbers between 0 and ', 0
-	@str5 db 2, 10, 10, 0
-	@str6 db 2, '2', 10, 0
-	@str7 db 2, '3', 10, 0
-	@str8 db 1, 10, 0
-	@str9 db 29, ' prime number(s) were found.', 10, 0
+	@str1	dw 1
+			db 10, 0
+	@str2	dw 1
+			db 10, 0
+	@str3	dw 30
+			db 'Please, give the upper limit: ', 0
+	@str4	dw 28
+			db 'Prime numbers between 0 and ', 0
+	@str5	dw 2
+			db 10, 10, 0
+	@str6	dw 2
+			db '2', 10, 0
+	@str7	dw 2
+			db '3', 10, 0
+	@str8	dw 1
+			db 10, 0
+	@str9	dw 29
+			db ' prime number(s) were found.', 10, 0
 
 
 	extrn	 _strcat : proc

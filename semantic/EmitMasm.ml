@@ -61,7 +61,16 @@ let constStringToString str id =
         | _ ->
           fromAscii (off+1) s (acc ^ (Printf.sprintf ", %d" (Char.code s.[off])))
   in
-    Printf.sprintf "\t%s db %d%s, 0\n" (Final.strLabel id) size (fromAscii 0 str "")
+  let first off s =
+    if (off = size) then "\'"
+    else
+      match s.[off] with
+        | '\x20' | '\x21' | '\x23' .. '\x26' | '\x28' .. '\x7E' ->
+          fromText (off+1) s (Printf.sprintf "\'%c" s.[off]) 
+        | _ ->
+          fromAscii (off+1) s (Printf.sprintf "%d" (Char.code s.[off]))
+  in
+    Printf.sprintf "\t%s\tdw %d\n\t\t\tdb %s, 0\n" (Final.strLabel id) size (first 0 str)
 
 
 let libFunDecl lst_lib lst_auxil = 

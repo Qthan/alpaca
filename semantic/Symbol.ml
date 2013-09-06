@@ -418,7 +418,7 @@ let fixOffsets entry =
   in
     match entry.entry_info with
       | ENTRY_function f ->
-        let par_size = (fixOffsetsAux f.function_paramlist 8) - 8 in
+        let par_size = (fixOffsetsAux (List.rev f.function_paramlist) 8) - 8 in
         let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
           f.function_paramsize <- par_size;
           f.function_varsize <- ref var_size;

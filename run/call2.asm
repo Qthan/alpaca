@@ -10,7 +10,7 @@ _p_const_32	proc	near
 		push	bp
 		mov	bp, sp
 		sub	sp, 0
-		mov	ax, word ptr [bp+8]
+		mov	ax, word ptr [bp+9]
 		mov	si, word ptr [bp+6]
 		mov	word ptr [si], ax
 		mov	sp, bp
@@ -23,13 +23,15 @@ _p__outer_0	proc	near
 		sub	sp, 2
 		mov	ax, 4
 		push	ax
-		mov	ax, 8
-		push	ax
+		mov	al, 0
+		sub	sp, 1
+		mov	si, sp
+		mov	byte ptr [si], al
 		lea	si, word ptr [bp-2]
 		push	si
 		push	bp
 		call	near ptr _p_const_32
-		add	sp, 8
+		add	sp, 7
 		mov	ax, word ptr [bp-2]
 		push	ax
 		sub	sp, 2

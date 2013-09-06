@@ -3,7 +3,7 @@
 masm /Mx /t %1.asm;
 if errorlevel 1 goto quit
 
-link /tiny /noignorecase /nologo %1.obj,%1.com,nul,tony.lib;
+link /tiny /noignorecase %1.obj,%1.com,nul,llama.lib;
 if errorlevel 1 goto quitwobj
 
 call %1.com
