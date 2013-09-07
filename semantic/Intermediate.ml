@@ -130,7 +130,7 @@ and gen_def quads def_node delete_quads =
         in
         let quads1 = gen_array_dims lst quads in
         let ty = lookup_type def_node.def_entry in
-        let size = sizeOfType ty in  (* Size of an array element *)
+        let size = sizeOfElement ty in  (* Size of an array element *)
         let quads2 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads1 in
         let makearr_entry = findAuxilEntry "_make_array" in
         let delete_entry =  findAuxilEntry "_delete_array" in
@@ -282,7 +282,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     let quads1 = genQuad (Q_Dim, obj, O_Int dim, temp) quads in
       (quads1, setExprInfo temp (newLabelList ()))
   | E_New t -> 
-    let size = sizeOfType t in
+    let size = sizeOfElement t in
     let new_entry = findAuxilEntry "_new" in
     let temp = newTemp (T_Ref t) (Stack.top offset_stack) in
     let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in

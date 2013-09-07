@@ -406,7 +406,22 @@ let storeFun r1 r2 a instr_lst =
       let instr_lst2 = genInstr (Mov (Pointer (Word, Reg Di, 0), Reg r1)) instr_lst1 in
       let instr_lst3 = genInstr (Mov (Pointer (Word, Reg Di, word_size), Reg r2)) instr_lst2 in
         instr_lst3 
-
+(*
+let printAR f =
+  let rec var_info lst = 
+    match lst with
+      | [] -> []
+      | x :: xs -> (x.entry_id, getOffset x, getType x) :: (var_info xs)
+  in
+  let print_list = List.iter (fun (id, offset, typ) -> Format.printf "%d: %a : %a\n" offset pretty_id id pretty_typ typ) in
+  match f.entry_info with 
+    | ENTRY_function f ->
+       
+       print_list (var_info f.function_paramlist);
+       Printf.printf "----------------\n";
+       print_list (var_info f.function_varlist);
+    | _ -> internal "i don't want to do that"  
+ *)
 (* Notes
    f : 1
    add : 2

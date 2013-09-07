@@ -37,6 +37,7 @@ and quadToFinal quad instr_lst =
         let instr_lst2 = genInstr (Push (Reg Bp)) instr_lst1 in
         let instr_lst3 = genInstr (Mov (Reg Bp, Reg Sp)) instr_lst2 in
         let instr_lst4 = genInstr (Sub (Reg Sp, Immediate (string_of_int (getVarSize e)))) instr_lst3 in
+          if (debug_codeGen) then (printAR e);
           current_fun := e;
           instr_lst4
       | Q_Endu -> 

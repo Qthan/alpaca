@@ -70,7 +70,7 @@ let rec sizeOfType t =
   match t with
     | T_Int            -> 2
     | T_Float          -> 10
-    | T_Array (et, sz) -> (sizeOfType et)
+    | T_Array (et, sz) -> 2
     | T_Char           -> 1
     | T_Bool           -> 1
     | T_Unit           -> 0
@@ -79,6 +79,12 @@ let rec sizeOfType t =
     | T_Id _           -> 0
     | T_Alpha _ | T_Notype 
     | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"
+
+let rec sizeOfElement t =
+  match t with
+    | T_Array (typ, sz) -> sizeOfElement typ
+    | T_Ref typ        -> sizeOfElement typ
+    | _ -> sizeOfType t                           
 
 let rec equalType t1 t2 =
   match t1, t2 with

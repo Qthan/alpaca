@@ -32,9 +32,9 @@ _p_loop_34	proc	near
 ;6:	 par, Temp[$17, type bool, offset -3], RET, -
 		lea	si, byte ptr [bp-3]
 		push	si
-;7:	 call, -, -, Fun[prime, index 32, params 2, vars 10, nest 0, parent _outer]
+;7:	 call, -, -, Fun[red, index 32, params 2, vars 10, nest 0, parent _outer]
 		push	word ptr [bp+4]
-		call	near ptr _p_prime_32
+		call	near ptr _p_red_32
 		add	sp, 6
 ;8:	 ifb, Temp[$17, type bool, offset -3], -, l: 10
 		mov	al, byte ptr [bp-3]
@@ -65,7 +65,7 @@ _p_loop_34	proc	near
 		push	word ptr [bp+4]
 		call	near ptr _print_int
 		add	sp, 4
-;15:	 par, "
+;15:	 par, "", V, -
 		lea	ax, byte ptr @str1
 		push	ax
 ;16:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
@@ -94,9 +94,9 @@ _p_loop_34	proc	near
 ;21:	 par, Temp[$20, type bool, offset -8], RET, -
 		lea	si, byte ptr [bp-8]
 		push	si
-;22:	 call, -, -, Fun[prime, index 32, params 2, vars 10, nest 0, parent _outer]
+;22:	 call, -, -, Fun[red, index 32, params 2, vars 10, nest 0, parent _outer]
 		push	word ptr [bp+4]
-		call	near ptr _p_prime_32
+		call	near ptr _p_red_32
 		add	sp, 6
 ;23:	 ifb, Temp[$20, type bool, offset -8], -, l: 25
 		mov	al, byte ptr [bp-8]
@@ -127,7 +127,7 @@ _p_loop_34	proc	near
 		push	word ptr [bp+4]
 		call	near ptr _print_int
 		add	sp, 4
-;30:	 par, "
+;30:	 par, "", V, -
 		lea	ax, byte ptr @str2
 		push	ax
 ;31:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
@@ -156,8 +156,8 @@ _p_loop_34	proc	near
 		ret
 _p_loop_34	endp
 @36:
-;36:	 Unit, Fun[loop, index 33, params 2, vars 9, nest 1, parent prime], -, -
-_p_loop_33	proc	near
+;36:	 Unit, Fun[loopother, index 33, params 2, vars 9, nest 1, parent red], -, -
+_p_loopother_33	proc	near
 		push	bp
 		mov	bp, sp
 		sub	sp, 9
@@ -208,9 +208,9 @@ _p_loop_33	proc	near
 ;47:	 par, Temp[$12, type bool, offset -8], RET, -
 		lea	si, byte ptr [bp-8]
 		push	si
-;48:	 call, -, -, Fun[loop, index 33, params 2, vars 9, nest 1, parent prime]
+;48:	 call, -, -, Fun[loopother, index 33, params 2, vars 9, nest 1, parent red]
 		push	word ptr [bp+4]
-		call	near ptr _p_loop_33
+		call	near ptr _p_loopother_33
 		add	sp, 6
 ;49:	 :=, Temp[$12, type bool, offset -8], -, Temp[$10, type bool, offset -5]
 		mov	al, byte ptr [bp-8]
@@ -229,13 +229,13 @@ _p_loop_33	proc	near
 		mov	al, byte ptr [bp-9]
 		mov	si, word ptr [bp+6]
 		mov	byte ptr [si], al
-;54:	 Endu, Fun[loop, index 33, params 2, vars 9, nest 1, parent prime], -, -
+;54:	 Endu, Fun[loopother, index 33, params 2, vars 9, nest 1, parent red], -, -
 		mov	sp, bp
 		pop	bp
 		ret
-_p_loop_33	endp
-;55:	 Unit, Fun[prime, index 32, params 2, vars 10, nest 0, parent _outer], -, -
-_p_prime_32	proc	near
+_p_loopother_33	endp
+;55:	 Unit, Fun[red, index 32, params 2, vars 10, nest 0, parent _outer], -, -
+_p_red_32	proc	near
 		push	bp
 		mov	bp, sp
 		sub	sp, 10
@@ -258,9 +258,9 @@ _p_prime_32	proc	near
 ;60:	 par, Temp[$2, type bool, offset -3], RET, -
 		lea	si, byte ptr [bp-3]
 		push	si
-;61:	 call, -, -, Fun[prime, index 32, params 2, vars 10, nest 0, parent _outer]
+;61:	 call, -, -, Fun[red, index 32, params 2, vars 10, nest 0, parent _outer]
 		push	word ptr [bp+4]
-		call	near ptr _p_prime_32
+		call	near ptr _p_red_32
 		add	sp, 6
 ;62:	 :=, Temp[$2, type bool, offset -3], -, Temp[$3, type bool, offset -4]
 		mov	al, byte ptr [bp-3]
@@ -321,9 +321,9 @@ _p_prime_32	proc	near
 ;78:	 par, Temp[$14, type bool, offset -10], RET, -
 		lea	si, byte ptr [bp-10]
 		push	si
-;79:	 call, -, -, Fun[loop, index 33, params 2, vars 9, nest 1, parent prime]
+;79:	 call, -, -, Fun[loopother, index 33, params 2, vars 9, nest 1, parent red]
 		push	bp
-		call	near ptr _p_loop_33
+		call	near ptr _p_loopother_33
 		add	sp, 6
 ;80:	 :=, Temp[$14, type bool, offset -10], -, Temp[$7, type bool, offset -9]
 		mov	al, byte ptr [bp-10]
@@ -345,11 +345,11 @@ _p_prime_32	proc	near
 		mov	al, byte ptr [bp-4]
 		mov	si, word ptr [bp+6]
 		mov	byte ptr [si], al
-;85:	 Endu, Fun[prime, index 32, params 2, vars 10, nest 0, parent _outer], -, -
+;85:	 Endu, Fun[red, index 32, params 2, vars 10, nest 0, parent _outer], -, -
 		mov	sp, bp
 		pop	bp
 		ret
-_p_prime_32	endp
+_p_red_32	endp
 ;86:	 Unit, Fun[_outer, index 0, params 0, vars 8, nest -1, parent None], -, -
 _p__outer_0	proc	near
 		push	bp
@@ -389,7 +389,7 @@ _p__outer_0	proc	near
 		push	bp
 		call	near ptr _print_int
 		add	sp, 4
-;96:	 par, "
+;96:	 par, "", V, -
 		lea	ax, byte ptr @str5
 		push	ax
 ;97:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
@@ -417,7 +417,7 @@ _p__outer_0	proc	near
 		push	bp
 		call	near ptr _incr
 		add	sp, 4
-;103:	 par, "2
+;103:	 par, "2", V, -
 		lea	ax, byte ptr @str6
 		push	ax
 ;104:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
@@ -442,7 +442,7 @@ _p__outer_0	proc	near
 		push	bp
 		call	near ptr _incr
 		add	sp, 4
-;109:	 par, "3
+;109:	 par, "3", V, -
 		lea	ax, byte ptr @str7
 		push	ax
 ;110:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
@@ -458,7 +458,7 @@ _p__outer_0	proc	near
 		push	bp
 		call	near ptr _p_loop_34
 		add	sp, 6
-;113:	 par, "
+;113:	 par, "", V, -
 		lea	ax, byte ptr @str8
 		push	ax
 ;114:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
@@ -478,7 +478,7 @@ _p__outer_0	proc	near
 		push	bp
 		call	near ptr _print_int
 		add	sp, 4
-;118:	 par, " prime number(s) were found.
+;118:	 par, " prime number(s) were found.", V, -
 		lea	ax, byte ptr @str9
 		push	ax
 ;119:	 call, -, -, Fun[print_string, index 5, params 0, vars 0, nest 0, parent _outer]
