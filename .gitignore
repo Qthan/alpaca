@@ -18,3 +18,7 @@ Parser.output
 .depend
 Parser.ml
 Lexer.ml
+dosbox.conf
+*.com
+*.dll
+*.exe

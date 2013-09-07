@@ -19,9 +19,13 @@ and quadToFinal quad instr_lst =
     else instr_lst 
   in
   let instr_lst =
-    if (!debug_codeGen) then 
-      (Format.printf "%a" printQuad quad;
-       genInstr (Comment (Format.sprintf "%a" printQuad quad)))
+    if (!debug_codeGen) then
+      (
+        Format.printf "%a" printQuad quad;
+        let _ = Format.fprintf Format.str_formatter "%a" printQuad quad in
+        let q = Format.flush_str_formatter () in
+          genInstr (Comment q) instr_lst)
+    else instr_lst
   in
     match quad.operator with
       | Q_Unit -> 
@@ -100,10 +104,16 @@ and quadToFinal quad instr_lst =
       | Q_Pow -> instr_lst (* Dummy value *)
       | Q_L | Q_Le | Q_G | Q_Ge as relop ->
         (match (getQuadOpType quad.arg1) with
-          | T_Int | T_Char -> 
+          | T_Int -> 
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
+            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+              instr_lst4
+          | T_Char -> 
+            let instr_lst1 = load Al (quad.arg1) instr_lst in
+            let instr_lst2 = load Dl (quad.arg2) instr_lst1 in
+            let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
             let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
               instr_lst4
           | T_Float ->
@@ -118,10 +128,16 @@ and quadToFinal quad instr_lst =
         )
       | Q_Seq | Q_Nseq as relop ->
         (match (getQuadOpType quad.arg1) with
-          | T_Int | T_Char | T_Bool | T_Ref _ ->
+          | T_Int | T_Ref _ ->
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
+            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+              instr_lst4
+          | T_Char | T_Bool -> 
+            let instr_lst1 = load Al (quad.arg1) instr_lst in
+            let instr_lst2 = load Dl (quad.arg2) instr_lst1 in
+            let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
             let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
               instr_lst4
           | T_Float -> internal "not yet implemented"
@@ -130,10 +146,16 @@ and quadToFinal quad instr_lst =
           | T_Id _ -> internal "fuck :)")
       | Q_Eq | Q_Neq as relop ->
         (match (getQuadOpType quad.arg1) with
-          | T_Int | T_Char | T_Bool | T_Ref _ ->
+          | T_Int | T_Ref _ ->
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
+            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+              instr_lst4
+          | T_Char | T_Bool -> 
+            let instr_lst1 = load Al (quad.arg1) instr_lst in
+            let instr_lst2 = load Dl (quad.arg2) instr_lst1 in
+            let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
             let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
               instr_lst4
           | T_Float -> internal "not yet implemented"
@@ -185,9 +207,10 @@ and quadToFinal quad instr_lst =
             let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
             let instr_lst2 = storeFun Ax Bx quad.arg3 instr_lst1 in
               instr_lst2
-          | _ ->
-            let instr_lst1 = load Ax quad.arg1 instr_lst in
-            let instr_lst2 = store Ax quad.arg3 instr_lst1 in
+          | ty ->
+            let r1 = getRegister Ax ty in 
+            let instr_lst1 = load r1 quad.arg1 instr_lst in
+            let instr_lst2 = store r1 quad.arg3 instr_lst1 in
               instr_lst2)
       | Q_Ifb ->
         let instr_lst1 = load Al quad.arg1 instr_lst in

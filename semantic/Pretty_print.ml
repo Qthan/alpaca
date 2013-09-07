@@ -5,37 +5,37 @@ let rec pretty_dim ppf dim1 =
   match dim1 with 
     | D_Int n -> fprintf ppf "%d" n
     | D_Alpha n -> fprintf ppf "d@@%d" n
-    
+
 let rec pretty_typ ppf typ =
   match typ with
     | T_Unit -> 
-        fprintf ppf "unit"
+      fprintf ppf "unit"
     | T_Int ->
-        fprintf ppf "int"
+      fprintf ppf "int"
     | T_Char ->
-        fprintf ppf "char"
+      fprintf ppf "char"
     | T_Bool ->
-        fprintf ppf "bool"
+      fprintf ppf "bool"
     | T_Str ->
-        fprintf ppf "string"
+      fprintf ppf "string"
     | T_Float ->
-        fprintf ppf "float"
+      fprintf ppf "float"
     | T_Notype ->
-        fprintf ppf "undefined"
+      fprintf ppf "undefined"
     | T_Ord -> 
-        fprintf ppf "ord"
+      fprintf ppf "ord"
     | T_Nofun ->
-        fprintf ppf "nofun"
+      fprintf ppf "nofun"
     | T_Arrow (a,b) ->
-        fprintf ppf "(%a -> %a)" pretty_typ a pretty_typ b
+      fprintf ppf "(%a -> %a)" pretty_typ a pretty_typ b
     | T_Ref a -> 
-        fprintf ppf "%a ref" pretty_typ  a
+      fprintf ppf "%a ref" pretty_typ  a
     | T_Array (a,n) -> 
-        fprintf ppf "array (%a, %a)" pretty_typ a pretty_dim n
+      fprintf ppf "array (%a, %a)" pretty_typ a pretty_dim n
     | T_Id str ->
-        fprintf ppf "Udt %s" (str)
+      fprintf ppf "Udt %s" (str)
     | T_Alpha a ->
-        fprintf ppf "@@%d" a
+      fprintf ppf "@@%d" a
 
 
 

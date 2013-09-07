@@ -6,7 +6,7 @@ module Hid = Hashcons.Make (
     let equal = (=)
     let hash = Hashtbl.hash
   end
-)
+  )
 
 let id_make = Hashcons.register_hcons Hid.f ()
 let id_name = Hashcons.hash_value

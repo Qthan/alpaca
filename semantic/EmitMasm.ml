@@ -78,6 +78,8 @@ let libFunDecl lst_lib lst_auxil =
     match lst with
       | [] -> acc
       | ("_dummy", _) :: tl -> aux tl acc
+      | ("_delete", _) :: tl -> aux tl acc   (*until someone implements them*)
+      | ("_delete_array", _) :: tl -> aux tl acc
       | (name, _) :: tl ->
         aux tl ((Printf.sprintf "\textrn\t %s : proc\n" ("_" ^ name)) ^ acc)
   in
@@ -168,6 +170,8 @@ let instructionToString = function
     Printf.sprintf "%s\tendp\n" str  
   | LabelDecl str ->
     Printf.sprintf "%s:\n" str
+  | Comment str ->
+    Printf.sprintf ";%s" str
 
 let emit final lib_funs =
   let _ = library_funs := lib_funs in

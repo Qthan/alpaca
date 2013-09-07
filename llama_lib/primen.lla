@@ -17,7 +17,7 @@ let main =
    print_string "Prime numbers between 0 and ";
    print_int limit;
    print_string "\n\n";
-   let mutable counter in
+   let counter = new int in
    counter := 0;
    if limit >= 2 then (incr counter; print_string "2\n");
    if limit >= 3 then (incr counter; print_string "3\n");

@@ -428,7 +428,7 @@ let setLibraryFunction e =
   match e.entry_info with
     | ENTRY_function f -> f.function_library <- true
     | _ -> internal "Entry not a function"
-    
+
 let isLibraryFunction e = 
   match e.entry_info with
     | ENTRY_function f -> f.function_library

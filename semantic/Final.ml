@@ -119,6 +119,17 @@ let sizeToBytes = function
   | DWord -> "4"
   | Near -> internal "not a size type"
 
+(* A function returning a suitable register according to the type size *)
+let getRegister r ty =
+  match getTypeSize ty with
+    | Word -> r
+    | Byte -> 
+      ( match r with
+        | Ax -> Al
+        | Bx -> Bl
+        | Cx -> Cl
+        | Dx -> Dl)
+
 (* A function returning the label of a function*) 
 let makeFunctionLabel e = 
   match e.entry_info with
@@ -160,7 +171,11 @@ let getAR a instr_lst =
       | 0 -> acc
       | i -> aux (i-1) (genInstr (Mov (Reg Si, Pointer (Word, Reg Si, 2*word_size))) acc)
   in
-    aux (f_nest - a_nest -1) (genInstr (Mov (Reg Bp, Pointer (Word, Reg Bp, 2*word_size))) instr_lst)
+    aux (f_nest - a_nest -1) (genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, 2*word_size))) instr_lst)
+(*this was
+ * aux (f_nest - a_nest -1) (genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, 2*word_size))) instr_lst)
+ * but seems wrong and fucks up our already fucked up mutables.*)
+
 
 (* A function for updating the active link of the callee *)    
 let updateAL callee_entry instr_lst =
