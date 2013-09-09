@@ -82,6 +82,17 @@ let saveString =
       str_lst := (str, !str_no) :: !str_lst;
       strLabel !str_no
 
+(*A list holding float constants and their unique id*)
+let flt_lst = ref []
+
+let fltLabel id = Printf.sprintf "@flt%d" id
+(* A closure for saving new floats *)
+let saveFloat =
+  let flt_no = ref 0 in
+    fun flt -> incr flt_no;
+      flt_lst := (flt, !flt_no) :: !flt_lst;
+      fltLabel !flt_no
+
 (* A function returning the nesting level of an entry *)
 let rec getNesting entry =
   match entry.entry_info with
@@ -262,7 +273,8 @@ and loadAddress r a instr_lst =
 let loadReal a instr_lst =
   match a with
     | O_Float f -> 
-      genInstr (Fld (Immediate (string_of_float f))) instr_lst
+      let operand = saveFloat f in
+      genInstr (Fld (Label operand)) instr_lst
     | O_Entry e ->
       let c_nest = getNesting (!current_fun) in
       let e_nest = getNesting e in
@@ -325,10 +337,10 @@ let storeReal a instr_lst =
       let offset = getOffset e in
         (match c_nest - e_nest with
           | 0 ->
-            genInstr (Fld (Pointer (size, Reg Bp, offset))) instr_lst
+            genInstr (Fstp (Pointer (size, Reg Bp, offset))) instr_lst
           | n when n > 0 ->
             let instr_lst1 = getAR e instr_lst in
-              genInstr (Fld (Pointer (size, Reg Si, offset))) instr_lst1
+              genInstr (Fstp (Pointer (size, Reg Si, offset))) instr_lst1
           | _ -> internal "Can't do that")
     | O_Deref op ->
       let size =
@@ -337,11 +349,11 @@ let storeReal a instr_lst =
           | _ -> internal "Must be entry"
       in
       let instr_lst1 = load Di op instr_lst in
-        genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
+        genInstr (Fstp (Pointer (size, Reg Di, 0))) instr_lst1
     | O_Res ->
       let size = getTypeSize (getResType !current_fun) in
       let instr_lst1 = genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, 3*word_size))) instr_lst in
-      let instr_lst2 = genInstr (Fld (Pointer (size, Reg Si, 0))) instr_lst1 in
+      let instr_lst2 = genInstr (Fstp (Pointer (size, Reg Si, 0))) instr_lst1 in
         instr_lst2
 
 (* A function for loading a function's code into register r1 and enviroment into register r2 *)
@@ -455,5 +467,3 @@ let printAR f =
         let addz z = x+y+z in
         addz 5 in
     addY x*)
-
-

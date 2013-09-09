@@ -42,6 +42,11 @@ let rec operandToString = function
   | Label l -> l
   | Immediate i -> i
 
+
+let constFloatToString flt id =
+  let name = Final.fltLabel id in
+    Printf.sprintf "\t%s\t dt %f\n" name flt
+
 let constStringToString str id = 
   let size = String.length str in
   let rec fromText off s acc = 
@@ -104,8 +109,11 @@ let instructionToString = function
                                                          main\tendp\n"
   | Epilogue ->
     let externs = libFunDecl !library_funs Quads.auxil_funs in
+    let floats = List.fold_left (fun acc (f, id) ->
+           (constFloatToString f id) ^ acc) externs (!Final.flt_lst) 
+    in
       (List.fold_left (fun acc (s, id) -> 
-           (constStringToString s id) ^ acc) externs (!Final.str_lst)) ^ "\n\n" ^
+           (constStringToString s id) ^ acc) floats (!Final.str_lst)) ^ "\n\n" ^
         "xseg\tends\n\
          \t\tend\tmain\n"
   | Mov (op1, op2) ->

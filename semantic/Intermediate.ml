@@ -523,8 +523,8 @@ and gen_stmt quads expr_node = match expr_node.expr with
       (quads5, next)
   | E_For (id, expr1, cnt, expr2, expr3) ->
     let (relop, op) = match cnt with 
-      | To -> (Q_G, Q_Plus)
-      | Downto -> (Q_L, Q_Minus) 
+      | To -> (Q_L, Q_Plus)
+      | Downto -> (Q_G, Q_Minus) 
     in
     let (quads1, expr1_info) = gen_expr quads expr1 in
     let quads2 = backpatch quads1 expr1_info.next_expr (nextLabel ()) in
@@ -537,14 +537,17 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let (quads4, expr2_info) = gen_expr quads3 expr2 in
     let quads5 = backpatch quads4 expr2_info.next_expr (nextLabel ()) in
     let condLabel = nextLabel () in
-    let next = makeLabelList condLabel in
+    let l1 = makeLabelList condLabel in
     let quads6 = genQuad (relop, obj, expr2_info.place, O_Backpatch) quads5 in
-    let (quads7, stmt_info) = gen_stmt quads6 expr3 in
-    let quads8 = backpatch quads7 stmt_info.next_stmt (nextLabel ()) in
-    let quads9 = genQuad (op, obj, O_Int 1, obj) quads8 in
-    let quads10 = genQuad (Q_Jump, O_Empty, O_Empty, O_Label condLabel) quads9 in
+    let next = makeLabelList (nextLabel ()) in 
+    let quads7 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads6 in
+    let quads8 = backpatch quads7 l1 (nextLabel ()) in
+    let (quads9, stmt_info) = gen_stmt quads8 expr3 in
+    let quads10 = backpatch quads9 stmt_info.next_stmt (nextLabel ()) in
+    let quads11 = genQuad (op, obj, O_Int 1, obj) quads10 in
+    let quads12 = genQuad (Q_Jump, O_Empty, O_Empty, O_Label condLabel) quads11 in
       addLabelTbl condLabel;
-      (quads10, setStmtInfo next)
+      (quads12, setStmtInfo next)
   | E_Id (id, l) -> 
     let quads1 =
       List.fold_left 

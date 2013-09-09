@@ -380,7 +380,7 @@ let getResType e =
 
 let setOffset e offset = 
   match e.entry_info with
-    | ENTRY_variable v -> v.variable_offset <-  - offset
+    | ENTRY_variable v -> v.variable_offset <-  offset
     | ENTRY_parameter p -> p.parameter_offset <- offset
     | _ -> internal "cannot fix offset in a non variable or parameter entry"
 
@@ -408,18 +408,26 @@ let getVarSize e =
     | _ -> internal "Not a function"
 
 let fixOffsets entry =
-  let rec fixOffsetsAux varlist acc =
-    match varlist with 
+  let rec fixParamOffsets parlist acc =
+    match parlist with 
       | [] -> acc
+      | p :: ps ->
+        let s = sizeOfType (lookup_solved (getType p)) in
+          setOffset p acc;
+          fixParamOffsets ps (acc+s)
+  in
+  let rec fixVarOffsets varlist acc =
+    match varlist with 
+      | [] -> -acc
       | v :: vs ->
         let s = sizeOfType (lookup_solved (getType v)) in
-          setOffset v acc;
-          fixOffsetsAux vs (acc+s)
+          setOffset v (acc-s);
+          fixVarOffsets vs (acc-s)
   in
     match entry.entry_info with
       | ENTRY_function f ->
-        let par_size = (fixOffsetsAux (List.rev f.function_paramlist) 8) - 8 in
-        let var_size = (fixOffsetsAux f.function_varlist 2) - 2 in
+        let par_size = (fixParamOffsets (List.rev f.function_paramlist) 8) - 8 in
+        let var_size = fixVarOffsets f.function_varlist 0 in
           f.function_paramsize <- par_size;
           f.function_varsize <- ref var_size;
       | _ -> internal "cannot fix offsets in a non function"
