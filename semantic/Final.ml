@@ -416,7 +416,7 @@ let printAR f =
   let print_list = List.iter (fun (id, offset, typ) -> Format.printf "%d: %a : %a\n" offset pretty_id id pretty_typ typ) in
   match f.entry_info with 
     | ENTRY_function f ->
-       
+
        print_list (var_info f.function_paramlist);
        Printf.printf "----------------\n";
        print_list (var_info f.function_varlist);

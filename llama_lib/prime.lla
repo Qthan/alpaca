@@ -4,9 +4,9 @@ let rec prime n =
    else if n = 2 then true
    else if n mod 2 = 0 then false
    else let rec loop i = 
-	   if i <= n / 2 then
-	      if n mod i = 0 then false
-	                     else loop (i+2)
+       if i <= n / 2 then
+          if n mod i = 0 then false
+                         else loop (i+2)
            else
               true in
         loop 3
@@ -42,3 +42,4 @@ let main =
    print_string "\n";
    print_int !counter;
    print_string " prime number(s) were found.\n"
+
