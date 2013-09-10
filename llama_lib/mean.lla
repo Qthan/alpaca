@@ -18,6 +18,6 @@ let main =
    if k > 0 then
    begin
       print_string "Mean: ";
-      print_float (!sum /. float_of_int k);
+	  print_float (!sum /. float_of_int k);
       print_string "\n"
    end

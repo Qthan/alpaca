@@ -321,7 +321,7 @@ let rec print_operand chan op = match op with
   | O_Float f -> fprintf chan "%f" f 
   | O_Char str -> fprintf chan "\'%s\'" str 
   | O_Bool b -> fprintf chan "%b" b 
-  | O_Str str -> fprintf chan "\"%s\"" str  
+  | O_Str str -> fprintf chan "\"%s\"" (String.escaped str)  
   | O_Backpatch -> fprintf chan "*"  
   | O_Label i -> fprintf chan "l: %d" i 
   | O_Res -> fprintf chan "$$" 

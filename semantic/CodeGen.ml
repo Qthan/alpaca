@@ -37,7 +37,7 @@ and quadToFinal quad instr_lst =
         let instr_lst2 = genInstr (Push (Reg Bp)) instr_lst1 in
         let instr_lst3 = genInstr (Mov (Reg Bp, Reg Sp)) instr_lst2 in
         let instr_lst4 = genInstr (Sub (Reg Sp, Immediate (string_of_int (getVarSize e)))) instr_lst3 in
-          if (debug_codeGen) then (printAR e);
+          (*if (!debug_codeGen) then (printAR e);*)
           current_fun := e;
           instr_lst4
       | Q_Endu -> 
@@ -202,7 +202,7 @@ and quadToFinal quad instr_lst =
         (match getQuadOpType quad.arg1 with
           | T_Float ->
             let instr_lst1 = loadReal quad.arg1 instr_lst in
-            let instr_lst2 = storeReal quad.arg2 instr_lst1 in
+            let instr_lst2 = storeReal quad.arg3 instr_lst1 in
               instr_lst2
           | T_Arrow _ ->
             let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
