@@ -523,8 +523,8 @@ and gen_stmt quads expr_node = match expr_node.expr with
       (quads5, next)
   | E_For (id, expr1, cnt, expr2, expr3) ->
     let (relop, op) = match cnt with 
-      | To -> (Q_L, Q_Plus)
-      | Downto -> (Q_G, Q_Minus) 
+      | To -> (Q_Le, Q_Plus)
+      | Downto -> (Q_Ge, Q_Minus) 
     in
     let (quads1, expr1_info) = gen_expr quads expr1 in
     let quads2 = backpatch quads1 expr1_info.next_expr (nextLabel ()) in

@@ -198,7 +198,7 @@ and quadToFinal quad instr_lst =
         let instr_lst6 = genInstr (Add (Reg Ax, Reg Cx)) instr_lst5 in
         let instr_lst7 = store Ax quad.arg3 instr_lst6 in
           instr_lst7
-      | Q_Assign ->  
+      | Q_Assign ->
         (match getQuadOpType quad.arg1 with
           | T_Float ->
             let instr_lst1 = loadReal quad.arg1 instr_lst in
@@ -233,14 +233,15 @@ and quadToFinal quad instr_lst =
               (match e.entry_info with
                 | ENTRY_function f ->
                   let par_size = f.function_paramsize in
+                  let _  = params_size := 0 in (* was not present before, hope for the best *)
                   let instr_lst3 = genInstr (Call (LabelPtr (Near, makeFunctionLabel e))) instr_lst2 in
                   let instr_lst4 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst3 in
                     instr_lst4
                 | ENTRY_parameter _ | ENTRY_variable _ | ENTRY_temporary _ -> (* temporary is REDUNDANT *)
+                  let instr_lst3 = loadFun Ax Bx quad.arg3 instr_lst2 in
                   let par_size = !params_size in
                   let _  = params_size := 0 in
                   let offset = getOffset e in
-                  let instr_lst3 = genInstr (Mov (Reg Bx, Pointer(Word, Reg Bp, offset))) instr_lst2 in
                   let instr_lst4 = genInstr (Call (Reg Bx)) instr_lst3 in
                   let instr_lst5 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst4 in
                     instr_lst5
@@ -249,7 +250,7 @@ and quadToFinal quad instr_lst =
         (match quad.arg2 with
           | O_Ret ->
             let size = Word in
-            let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+            (*let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in*) (* already included in nickies 4*)
             let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
             let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
               instr_lst2  
@@ -259,19 +260,16 @@ and quadToFinal quad instr_lst =
             let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
               (match typ with
                 | T_Int ->
-                  let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
                   let instr_lst1 = load Ax (quad.arg1) instr_lst in
                   let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
                     instr_lst2                    
                 | T_Float ->
-                  let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
                   let instr_lst1 = loadReal quad.arg1 instr_lst in
                   let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
                   let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
                   let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
                     instr_lst4                    
                 | T_Char | T_Bool ->
-                  let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
                   let instr_lst1 = load Al quad.arg1 instr_lst in
                   let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
                   let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
@@ -291,75 +289,3 @@ and quadToFinal quad instr_lst =
                 | T_Unit -> internal "Intermediate failed"
                 | T_Str -> internal "T_Str is redundant. GET OVER IT."))
       | Q_Ret ->  internal "Don't have"
-
-
-
-(*(match quad.arg1 with
-      | O_Entry e ->
-        let size = getSize e in
-        let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
-          (match quad.arg2 with
-            | O_ByVal ->
-              (match size with
-                | Word -> 
-                  let instr_lst1 = load Ax quad.arg1 instr_lst in
-                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                    instr_lst2
-                | Byte ->
-                  let instr_lst1 = load Al quad.arg1 instr_lst in
-                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
-                  let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                  let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
-                    instr_lst4
-                | DWord ->
-                  let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
-                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                  let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
-                    instr_lst3
-                | TByte -> 
-                  let instr_lst1 = loadReal quad.arg1 instr_lst in
-                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
-                  let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                  let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
-                    instr_lst4
-              )
-            | O_Ret ->
-              let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
-              let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
-                instr_lst2)
-      | O_Int _  | O_Deref _ -> 
-        let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
-        let instr_lst1 = load Ax (quad.arg1) instr_lst in
-        let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-          instr_lst2
-      | O_Bool _ | O_Char _ ->
-        let _ = params_size := !params_size + (int_of_string (sizeToBytes Byte)) in
-        let instr_lst1 = load Al quad.arg1 instr_lst in
-        let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
-        let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-        let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
-          instr_lst4
-      | O_Float _ ->
-        let _ = params_size := !params_size + (int_of_string (sizeToBytes TByte)) in
-        let instr_lst1 = loadReal quad.arg1 instr_lst in
-        let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
-        let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-        let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
-          instr_lst4
-      | O_Str _ ->
-        let _ = params_size := !params_size + (int_of_string (sizeToBytes Word)) in
-        let instr_lst1 = loadAddress Ax (quad.arg1) instr_lst in
-        let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-          instr_lst2
-      | O_Backpatch -> internal "Cannot push backpatch"
-      | O_Label _ -> internal "Cannot push label"
-      | O_Res -> internal "Cannot push res"
-      | O_Ret -> internal "Cannot push ret"
-      | O_ByVal -> internal "Cannot push byval"
-      | O_Empty -> internal "Cannot push empty"
-      | O_Ref _ -> internal "Cannot push ref"
-      (*| O_Deref _ -> internal "Cannot push deref"*)
-      | O_Size _ -> internal "Cannot push size"
-      | O_Dims _ -> internal "Cannot push dims"
-    )*)
-

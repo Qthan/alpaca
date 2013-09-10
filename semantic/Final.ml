@@ -193,6 +193,7 @@ let updateAL callee_entry instr_lst =
   match callee_entry.entry_info with
     | ENTRY_function f ->
       let p_nest = getNesting (!current_fun) in
+
       let x_nest = f.function_nesting in
         (match p_nest = x_nest with
           | true -> genInstr (Push (Pointer (Word, Reg Bp, 2*word_size))) instr_lst
@@ -378,16 +379,37 @@ let loadFun r1 r2 e instr_lst =
                 aux (c_nest - f_nest - 1) (genInstr (Mov (Reg Si, Pointer (Word,Reg Bp, 2*word_size))) instr_lst1)
           in
             instr_lst2
-        | ENTRY_variable _ | ENTRY_temporary _ ->
+        | ENTRY_variable v ->
           let offset = getOffset e in
-          let instr_lst1 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
-          let instr_lst2 = genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst1 in
-            instr_lst2
+          let c_nest = getNesting (!current_fun) in
+          let f_nest = v.variable_nesting in
+          let instr_lst1 = match c_nest = f_nest with
+              | true ->
+                let instr_lst2 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
+                  genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst2
+              | false when c_nest < f_nest -> internal "trying to call unreachable variable"
+              | false ->
+                let instr_lst2 = getAR e instr_lst in
+                let instr_lst3 = genInstr (Mov (Reg r1, Pointer (Word, Reg Si, offset + word_size))) instr_lst2 in
+                  genInstr (Mov (Reg r2, Pointer (Word, Reg Si, offset))) instr_lst3
+          in      
+            instr_lst1
         | ENTRY_parameter p ->
           let offset = getOffset e in
-          let instr_lst1 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
-          let instr_lst2 = genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst1 in
-            instr_lst2)
+          let c_nest = getNesting (!current_fun) in
+          let f_nest = p.parameter_nesting in
+          let instr_lst1 = match c_nest = f_nest with
+              | true ->
+                let instr_lst2 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
+                  genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst2 
+              | false when c_nest < f_nest -> internal "trying to call unreachable variable"
+              | false ->
+                let instr_lst2 = getAR e instr_lst in
+                let instr_lst3 = genInstr (Mov (Reg r1, Pointer (Word, Reg Si, offset + word_size))) instr_lst2 in
+                  genInstr (Mov (Reg r2, Pointer (Word, Reg Si, offset))) instr_lst3 
+          in      
+            instr_lst1
+        | ENTRY_temporary _ -> internal "Cannot have temporary here")
     | O_Deref op ->
       let instr_lst1 = load Di op instr_lst in
       let instr_lst2 = genInstr (Mov (Reg r1, Pointer (Word, Reg Di, 0))) instr_lst1 in
@@ -434,36 +456,3 @@ let printAR f =
        print_list (var_info f.function_varlist);
     | _ -> internal "i don't want to do that"  
  *)
-(* Notes
-   f : 1
-   add : 2
-   app : 2
-   y : 2
-   f : 2
-
-   let f x = 
-   let add y = x + y in
-   let app f = f 3 in
-    app add
-
-   a : 1
-   f : 1
-   add : 1
-   x : 1
-   app : 2
-   g : 2
-
-   let a = 3
-
-   let add y = a + y
-
-   let f a = 
-   let app g = g a in
-   app add
-
-
-   let addXY x =
-    let addY y = 
-        let addz z = x+y+z in
-        addz 5 in
-    addY x*)
