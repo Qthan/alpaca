@@ -638,12 +638,8 @@ and gen_atom quads atom_node = match atom_node.atom with
            let (quads1, e_info1) = gen_expr quads e in
            let quads2 = backpatch quads1 e_info1.next_expr (nextLabel ()) in
            let temp = newTemp T_Int (Stack.top offset_stack) in
-           let temp_entry = match temp with
-             | O_Entry e -> e
-             | _ -> internal "must be an entry"
-             in
            let quads3 = genQuad (Q_Assign, e_info1.place, O_Empty, temp) quads2 in
-             (quads3, temp_entry :: acc)
+             (quads3, temp :: acc)
         )
         (quads, []) expr_list
     in

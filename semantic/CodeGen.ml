@@ -207,7 +207,7 @@ and quadToFinal quad instr_lst =
               let instr_lst1 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Di, (i-1)*word_size))) instr_lst in
               let instr_lst2 = genInstr (Imul (Reg Dx)) instr_lst1 in
               let instr_lst3 = genInstr (Mov (Reg Dx, Reg Ax)) instr_lst2 in
-              let instr_lst4 = load Ax (O_Entry e) instr_lst3 in
+              let instr_lst4 = load Ax e instr_lst3 in
               let instr_lst5 = genInstr (Imul (Reg Dx)) instr_lst4 in
               let instr_lst6 = genInstr (Add (Reg Bx, Reg Ax)) instr_lst5 in
                 loop es (i-1) instr_lst6
@@ -222,7 +222,7 @@ and quadToFinal quad instr_lst =
           | _ -> internal "expecting list of indices"
         in
         let instr_lst1 = load Di quad.arg1 instr_lst in
-        let instr_lst2 = load Bx (O_Entry (List.hd entry_lst)) instr_lst1 in
+        let instr_lst2 = load Bx (List.hd entry_lst) instr_lst1 in
         let instr_lst3 = genInstr (Mov (Reg Dx, Immediate "1")) instr_lst2 in
         let instr_lst4 = loop (List.tl entry_lst) dims instr_lst3 in
         let instr_lst5 = genInstr (Mov (Reg Ax, Immediate type_size)) instr_lst4 in
