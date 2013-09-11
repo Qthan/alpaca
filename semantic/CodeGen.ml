@@ -229,7 +229,7 @@ and quadToFinal quad instr_lst =
               | T_Unit -> genInstr (Sub (Reg Sp, Immediate (string_of_int word_size))) instr_lst
               | _ -> instr_lst
             in  
-            let instr_lst2 = updateAL e instr_lst1 in
+            let instr_lst2 = updateAL quad.arg3 instr_lst1 in
               (match e.entry_info with
                 | ENTRY_function f ->
                   let par_size = f.function_paramsize in
@@ -238,11 +238,10 @@ and quadToFinal quad instr_lst =
                   let instr_lst4 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst3 in
                     instr_lst4
                 | ENTRY_parameter _ | ENTRY_variable _ | ENTRY_temporary _ -> (* temporary is REDUNDANT *)
-                  let instr_lst3 = loadFun Ax Bx quad.arg3 instr_lst2 in
+                  let instr_lst3 = loadFunCode Ax quad.arg3 instr_lst2 in
                   let par_size = !params_size in
                   let _  = params_size := 0 in
-                  let offset = getOffset e in
-                  let instr_lst4 = genInstr (Call (Reg Bx)) instr_lst3 in
+                  let instr_lst4 = genInstr (Call (Reg Ax)) instr_lst3 in
                   let instr_lst5 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst4 in
                     instr_lst5
                 | _ -> internal "Cannot call non function/parameter/variable"))
