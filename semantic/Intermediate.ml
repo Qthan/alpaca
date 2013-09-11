@@ -139,7 +139,16 @@ and gen_def quads def_node delete_quads =
                   let _ = Stack.pop offset_stack in
                     mergeQuads quads fQuads5 
         end
-      | D_Mut (_, _)    -> quads
+      | D_Mut (id, _) -> 
+        let typ = lookup_res_type (Some entry) in
+        let size = sizeOfElement typ in
+        let new_entry = findAuxilEntry "_new" in
+        let temp = newTemp (T_Ref typ) (Stack.top offset_stack) in
+        let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
+        let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
+        let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry new_entry) quads2 in
+        let quads4 = genQuad (Q_Assign, temp, O_Empty , O_Entry entry) quads3 in
+          quads4
       | D_Array (id, _, lst)  -> 
         let rec gen_array_dims lst quads =
           match lst with
@@ -165,6 +174,7 @@ and gen_def quads def_node delete_quads =
         let quads5 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry makearr_entry) quads4 in
           delete_quads := genQuad (Q_Par, O_Entry entry, O_ByVal, O_Empty) !delete_quads;
           delete_quads := genQuad (Q_Call, O_Empty, O_Empty, O_Entry delete_entry) !delete_quads;
+	  delete_quads := [];
           quads5
 
 and gen_expr quads expr_node = match expr_node.expr with 

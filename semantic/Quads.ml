@@ -229,7 +229,7 @@ let backpatch quads lst patch =
   quads
 
 let auxil_funs =
-  let makeEntry id = { 
+  let makeEntry id size typ = { 
     entry_id = (id_make id);
     entry_scope = 
       {
@@ -245,8 +245,8 @@ let auxil_funs =
         function_paramlist = [];
         function_varlist = [];
         function_varsize = ref 0;
-        function_paramsize = 0;       
-        function_result = T_Unit;
+        function_paramsize = size;       
+        function_result = typ;
         function_pstatus = PARDEF_COMPLETE;
         function_nesting = 0;
         function_parent = None;
@@ -254,11 +254,11 @@ let auxil_funs =
         function_library = true
       } } 
   in
-    [ ("_make_array", makeEntry "_make_array");
-      ("_delete_array", makeEntry "_delete_array");
-      ("_new", makeEntry "_new");
-      ("_delete", makeEntry "_delete");
-      ("_dummy", makeEntry "_dummy")]
+    [ ("_make_array", makeEntry "_make_array" 4 (T_Array (T_Unit, D_Int 1)));
+      ("_delete_array", makeEntry "_delete_array" 2 T_Unit);
+      ("_new", makeEntry "_new" 2 (T_Ref T_Int));
+      ("_delete", makeEntry "_delete" 2 T_Unit);
+      ("_dummy", makeEntry "_dummy" 0 T_Unit)]
 
 let findAuxilEntry id = List.assoc id auxil_funs
 

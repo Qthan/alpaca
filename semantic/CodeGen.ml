@@ -169,8 +169,8 @@ and quadToFinal quad instr_lst =
           | O_Int d -> d
           | _ -> internal "Dimensions must be integers"
         in
-        let instr_lst1 = load Ax quad.arg1 instr_lst in
-        let instr_lst2 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Ax, word_size*(dim - 1)))) instr_lst1 in
+        let instr_lst1 = load Si quad.arg1 instr_lst in
+        let instr_lst2 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Si, word_size*(dim - 1)))) instr_lst1 in
         let instr_lst3 = store Ax quad.arg3 instr_lst2 in
           instr_lst3
       (* old version
@@ -188,7 +188,7 @@ and quadToFinal quad instr_lst =
         let (dims_offset, typ) = match getQuadOpType quad.arg1 with
           | T_Array (typ, D_Int d) -> (d*word_size, typ)
           | T_Array (_, D_Alpha _) -> internal "Not solved dimention type"
-          | T_Ref typ -> (0, typ)
+          | T_Ref typ -> (0, typ)  
         in
         let instr_lst1 = load Ax quad.arg2 instr_lst in
         let instr_lst2 = genInstr (Mov (Reg Cx, Immediate (sizeToBytes (getTypeSize typ)))) instr_lst1 in
