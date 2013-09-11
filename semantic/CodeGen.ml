@@ -185,19 +185,52 @@ and quadToFinal quad instr_lst =
       | Q_Array -> 
         (* pairneis ton arithmo twn diastasew n tou pinaka, kai gia na vreis to i-osto stoixeio
          * pas addr+ int_size + i*size *)
-        let (dims_offset, typ) = match getQuadOpType quad.arg1 with
-          | T_Array (typ, D_Int d) -> (d*word_size, typ)
-          | T_Array (_, D_Alpha _) -> internal "Not solved dimention type"
-          | T_Ref typ -> (0, typ)  
+         (* (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size + int_size*dims
+          mov di, addr
+         load bx, en
+         mov dx, 1  ; dx holds Πdi
+         i : 
+            mov ax, word ptr [di + (i-1)*int_size]
+            mul dx
+            mov dx, ax
+            load ax, e(i-1)
+            imul dx
+            add bx, ax
+        mov ax, type_size
+        mul bx     ; ax = (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size 
+        add ax,2*dims  ; done
+         *)
+        let rec loop exprs i instr_lst = 
+          match i, exprs with
+            | 1, [] -> instr_lst 
+            | i, e :: es ->
+              let instr_lst1 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Di, (i-1)*word_size))) instr_lst in
+              let instr_lst2 = genInstr (Imul (Reg Dx)) instr_lst1 in
+              let instr_lst3 = genInstr (Mov (Reg Dx, Reg Ax)) instr_lst2 in
+              let instr_lst4 = load Ax (O_Entry e) instr_lst3 in
+              let instr_lst5 = genInstr (Imul (Reg Dx)) instr_lst4 in
+              let instr_lst6 = genInstr (Add (Reg Bx, Reg Ax)) instr_lst5 in
+                loop es (i-1) instr_lst6
+            | _ -> internal "wrong arithmetic"
         in
-        let instr_lst1 = load Ax quad.arg2 instr_lst in
-        let instr_lst2 = genInstr (Mov (Reg Cx, Immediate (sizeToBytes (getTypeSize typ)))) instr_lst1 in
-        let instr_lst3 = genInstr (Imul (Reg Cx)) instr_lst2 in
-        let instr_lst4 = genInstr (Add (Reg Ax, Immediate (string_of_int dims_offset))) instr_lst3 in
-        let instr_lst5 = load Cx quad.arg1 instr_lst4 in
-        let instr_lst6 = genInstr (Add (Reg Ax, Reg Cx)) instr_lst5 in
-        let instr_lst7 = store Ax quad.arg3 instr_lst6 in
-          instr_lst7
+        let (dims, type_size) = match getQuadOpType quad.arg1 with
+          | T_Array (typ, D_Int d) -> (d, sizeToBytes (getTypeSize typ))
+          | T_Array (_, D_Alpha _) -> internal "Not solved dimention type"
+        in
+        let entry_lst = match quad.arg2 with 
+          | O_Index lst -> lst
+          | _ -> internal "expecting list of indices"
+        in
+        let instr_lst1 = load Di quad.arg1 instr_lst in
+        let instr_lst2 = load Bx (O_Entry (List.hd entry_lst)) instr_lst1 in
+        let instr_lst3 = genInstr (Mov (Reg Dx, Immediate "1")) instr_lst2 in
+        let instr_lst4 = loop (List.tl entry_lst) dims instr_lst3 in
+        let instr_lst5 = genInstr (Mov (Reg Ax, Immediate type_size)) instr_lst4 in
+        let instr_lst6 = genInstr (Imul (Reg Bx)) instr_lst5 in
+        let instr_lst7 = genInstr (Add (Reg Ax, Immediate (string_of_int (word_size*dims)))) instr_lst6 in
+        let instr_lst8 = genInstr (Add (Reg Ax, Reg Di)) instr_lst7 in
+        let instr_lst9 = store Ax quad.arg3 instr_lst8 in
+          instr_lst9
       | Q_Assign ->
         (match getQuadOpType quad.arg1 with
           | T_Float ->
@@ -288,3 +321,4 @@ and quadToFinal quad instr_lst =
                 | T_Unit -> internal "Intermediate failed"
                 | T_Str -> internal "T_Str is redundant. GET OVER IT."))
       | Q_Ret ->  internal "Don't have"
+

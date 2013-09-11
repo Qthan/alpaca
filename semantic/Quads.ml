@@ -82,6 +82,7 @@ type quad_operands =
   | O_Deref of quad_operands
   | O_Size of int
   | O_Dims of int
+  | O_Index of entry list
 
 type quad = {
   label : int;
@@ -316,6 +317,27 @@ let print_entry chan entry =
 let print_temp_head chan head = 
   fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
 
+let print_indexes chan lst =
+  let rec pp_indexes ppf lst =
+    match lst with
+      | [] -> ()
+      | x :: [] -> fprintf ppf "%a" print_entry x
+      | x :: xs -> fprintf ppf "%a, %a" print_entry x pp_indexes xs
+  in
+    fprintf chan "%a" pp_indexes lst
+(*    
+let print_solved lst = 
+  let rec pp_solved ppf solved = 
+    let pp_tuple ppf (t1, t2) =
+      fprintf ppf "(%a, %a)" pretty_typ t1 pretty_typ t2 
+    in
+      match solved with 
+        | [] -> ()
+        | x::[] -> fprintf ppf "%a" pp_tuple x
+        | x::xs -> fprintf ppf "%a, %a" pp_tuple x pp_solved xs
+  in
+    printf "%a" pp_solved lst
+*)
 let rec print_operand chan op = match op with
   | O_Int i -> fprintf chan "%d" i 
   | O_Float f -> fprintf chan "%f" f 
@@ -333,7 +355,8 @@ let rec print_operand chan op = match op with
   | O_Deref op -> fprintf chan "[%a]" print_operand op
   | O_Size i -> fprintf chan "Size %d" i
   | O_Dims i -> fprintf chan "Dims %d" i
-
+  | O_Index lst -> fprintf chan "Indexes [%a]" print_indexes lst
+  
 (* Make quad labels consequent *)
 
 let normalizeQuads quads =
@@ -369,3 +392,4 @@ let printQuad chan quad =
 
 let printQuads quads = 
   List.iter (fun q -> printf "%a" printQuad q) quads
+

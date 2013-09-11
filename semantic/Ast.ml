@@ -64,6 +64,7 @@ and insert_function (id, result_ty, params) =
     walk_par_list params p;
     endFunctionHeader p result_ty;
     closeScope ();
+    fixOffsets p
 
 and walk_stmt_list ls = 
   let constraints = ref [] in 

@@ -174,7 +174,7 @@ and gen_def quads def_node delete_quads =
         let quads5 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry makearr_entry) quads4 in
           delete_quads := genQuad (Q_Par, O_Entry entry, O_ByVal, O_Empty) !delete_quads;
           delete_quads := genQuad (Q_Call, O_Empty, O_Empty, O_Entry delete_entry) !delete_quads;
-	  delete_quads := [];
+    delete_quads := [];
           quads5
 
 and gen_expr quads expr_node = match expr_node.expr with 
@@ -632,18 +632,25 @@ and gen_atom quads atom_node = match atom_node.atom with
       | Some e -> e
       | None -> internal "Expected entry"  
     in
-    let (quads1, e_info) = 
+    let (quads1, temps) = 
       List.fold_left 
-        (fun (quads, e_info) e ->
+        (fun (quads, acc) e ->
            let (quads1, e_info1) = gen_expr quads e in
            let quads2 = backpatch quads1 e_info1.next_expr (nextLabel ()) in
-           let temp = newTemp typ (Stack.top offset_stack) in
-           let quads3 = genQuad (Q_Array, e_info.place, e_info1.place, temp) quads2 in
-             (quads3, setExprInfo temp (newLabelList ()))
+           let temp = newTemp T_Int (Stack.top offset_stack) in
+           let temp_entry = match temp with
+             | O_Entry e -> e
+             | _ -> internal "must be an entry"
+             in
+           let quads3 = genQuad (Q_Assign, e_info1.place, O_Empty, temp) quads2 in
+             (quads3, temp_entry :: acc)
         )
-        (quads, setExprInfo (O_Entry array_entry) (newLabelList ())) expr_list
+        (quads, []) expr_list
     in
-      (quads1, e_info)
+    let temp = newTemp typ (Stack.top offset_stack) in
+    let e_info = setExprInfo temp (newLabelList ()) in
+    let quads2 = genQuad (Q_Array, O_Entry array_entry, O_Index temps, temp) quads1 in 
+      (quads2, e_info)
   | A_Expr e -> 
     gen_expr quads e
 
@@ -657,6 +664,7 @@ and gen_atom_stmt quads atom_node = match atom_node.atom with
     let n = expr_info.next_expr in
       (quads1, setStmtInfo n)
   | A_Cid _ -> (quads, setStmtInfo (newLabelList ())) (* dummy return value *)
+
 
 
 
