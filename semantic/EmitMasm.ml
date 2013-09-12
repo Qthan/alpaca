@@ -106,7 +106,8 @@ let instructionToString = function
      \t\tcall\tnear ptr " ^ (makeFunctionLabel outer) ^ "\n\
                                                          \t\tmov\tax, 4C00h\n\
                                                          \t\tint\t21h\n\
-                                                         main\tendp\n"
+                                                         main\tendp\n\
+                                                         .286\n"
   | Epilogue ->
     let externs = libFunDecl !library_funs Quads.auxil_funs in
     let floats = List.fold_left (fun acc (f, id) ->
@@ -171,7 +172,9 @@ let instructionToString = function
   | Fstsw op ->
     Printf.sprintf "\t\tfstsw\t%s\n" (operandToString op)  
   | Fstp op -> 
-    Printf.sprintf "\t\tfstp\t%s\n" (operandToString op)  
+    Printf.sprintf "\t\tfstp\t%s\n" (operandToString op)
+  | Sahf ->
+    Printf.sprintf "\t\tsahf\n"
   | Fun str ->
     Printf.sprintf "%s\tproc\tnear\n" str  
   | EndFun str ->

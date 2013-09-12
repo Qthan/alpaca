@@ -182,7 +182,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     begin 
       match op with 
         | Plus | Minus | Times | Div | Mod
-        | Fplus | Fminus | Ftimes | Fdiv | Power as oper -> 
+        | Fplus | Fminus | Ftimes | Fdiv as oper -> 
           let (quads1, e1_info) = gen_expr quads expr1 in
           let quads2 = backpatch quads1 (e1_info.next_expr) (nextLabel ()) in
           let (quads3, e2_info) = gen_expr quads2 expr2 in
@@ -195,6 +195,19 @@ and gen_expr quads expr_node = match expr_node.expr with
           in
           let e_info = setExprInfo temp (newLabelList ()) in
             (quads5, e_info)
+        | Power ->
+          let (quads1, e1_info) = gen_expr quads expr1 in
+          let quads2 = backpatch quads1 (e1_info.next_expr) (nextLabel ()) in
+          let (quads3, e2_info) = gen_expr quads2 expr2 in
+          let quads4 = backpatch quads3 (e2_info.next_expr) (nextLabel ()) in
+          let quads5 = genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads4 in
+          let quads6 = genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads5 in
+          let temp = newTemp T_Float (Stack.top offset_stack) in
+          let quads7 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads6 in
+          let pow_entry = findAuxilEntry "_pow" in
+          let quads8 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry pow_entry) quads7 in
+          let e_info = setExprInfo temp (newLabelList ()) in
+            (quads8, e_info)
         | Seq | Nseq | Eq | Neq
         | L | Le | G | Ge 
         | And | Or ->
@@ -660,7 +673,3 @@ and gen_atom_stmt quads atom_node = match atom_node.atom with
     let n = expr_info.next_expr in
       (quads1, setStmtInfo n)
   | A_Cid _ -> (quads, setStmtInfo (newLabelList ())) (* dummy return value *)
-
-
-
-

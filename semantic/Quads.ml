@@ -58,7 +58,7 @@ type temp_header = {
 type quad_operators =
   | Q_Unit | Q_Endu
   | Q_Plus | Q_Minus | Q_Mult | Q_Div | Q_Mod
-  | Q_Fplus | Q_Fminus | Q_Fmult | Q_Fdiv | Q_Pow
+  | Q_Fplus | Q_Fminus | Q_Fmult | Q_Fdiv 
   | Q_L | Q_Le | Q_G | Q_Ge | Q_Seq | Q_Nseq
   | Q_Eq | Q_Neq (* Physical equality *)
   | Q_Assign | Q_Ifb | Q_Array
@@ -156,7 +156,6 @@ let getQuadBop bop = match bop with
   | Div  -> Q_Div
   | Fdiv -> Q_Fdiv
   | Mod  -> Q_Mod
-  | Power -> Q_Pow
   | Seq -> Q_Seq 
   | Nseq -> Q_Nseq
   | L -> Q_L
@@ -259,7 +258,8 @@ let auxil_funs =
       ("_delete_array", makeEntry "_delete_array" 2 T_Unit);
       ("_new", makeEntry "_new" 2 (T_Ref T_Int));
       ("_delete", makeEntry "_delete" 2 T_Unit);
-      ("_dummy", makeEntry "_dummy" 0 T_Unit)]
+      ("_dummy", makeEntry "_dummy" 0 T_Unit);
+      ("_pow", makeEntry "_pow" 20 T_Float)]
 
 let findAuxilEntry id = List.assoc id auxil_funs
 
@@ -275,7 +275,6 @@ let string_of_operator = function
   | Q_Fminus -> "-." 
   | Q_Fmult -> "*."
   | Q_Fdiv -> "/." 
-  | Q_Pow -> "**"
   | Q_L -> "<"
   | Q_Le -> "<=" 
   | Q_G -> ">" 
@@ -380,4 +379,3 @@ let printQuad chan quad =
 
 let printQuads quads = 
   List.iter (fun q -> printf "%a" printQuad q) quads
-

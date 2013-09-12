@@ -51,6 +51,7 @@ type instruction =
   | Fmulp of operand * operand
   | Fdivp of operand * operand
   | Fcompp
+  | Sahf
   | Fstsw of operand
   | Fstp of operand
   | Fun of string
@@ -165,6 +166,16 @@ let relOpJmp = function
   | Q_Seq -> "je"
   | Q_Nseq -> "jne"
   | _ -> internal "Not a relative operator"
+  
+  
+(* http://stackoverflow.com/questions/7057501/x86-assembler-floating-point-compare *)
+let relOpJmpF = function
+  | Q_G -> "jb"
+  | Q_Ge -> "jbe"
+  | Q_L -> "ja"
+  | Q_Le -> "jae"
+  | Q_Seq -> "je"
+  | Q_Nseq -> "jne"
 
 (* A function returning the result type of a function *)
 let functionResult e = 

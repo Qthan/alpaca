@@ -83,8 +83,8 @@ and quadToFinal quad instr_lst =
         let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
         let instr_lst3 = genInstr (Faddp (Reg (ST 1), Reg (ST 0))) instr_lst2 in
         let instr_lst4 = storeReal (quad.arg3) instr_lst3 in
-          instr_lst4    
-      | Q_Fminus ->  
+          instr_lst4
+      | Q_Fminus ->
         let instr_lst1 = loadReal (quad.arg1) instr_lst in
         let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
         let instr_lst3 = genInstr (Fsubp (Reg (ST 1), Reg (ST 0))) instr_lst2 in
@@ -102,34 +102,9 @@ and quadToFinal quad instr_lst =
         let instr_lst3 = genInstr (Fdivp (Reg (ST 1), Reg (ST 0))) instr_lst2 in
         let instr_lst4 = storeReal (quad.arg3) instr_lst3 in
           instr_lst4  
-      | Q_Pow -> instr_lst (* Dummy value *)
-      | Q_L | Q_Le | Q_G | Q_Ge as relop ->
+      | Q_L | Q_Le | Q_G | Q_Ge | Q_Seq | Q_Nseq as relop ->
         (match (getQuadOpType quad.arg1) with
-          | T_Int -> 
-            let instr_lst1 = load Ax (quad.arg1) instr_lst in
-            let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
-            let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
-            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
-              instr_lst4
-          | T_Char -> 
-            let instr_lst1 = load Al (quad.arg1) instr_lst in
-            let instr_lst2 = load Dl (quad.arg2) instr_lst1 in
-            let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
-            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
-              instr_lst4
-          | T_Float ->
-            (*let instr_lst1 = loadReal (quad.arg1) instr_lst in
-              let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
-              let instr_lst3 = genInstr Fcompp instr_lst2 in
-              let instr_lst4 = genInstr (Fstsw (Reg Ax)) instr_lst3 in
-              let instr_lst5 = genInstr
-              let instr_lst4 = storeReal (quad.arg3) instr_lst3 in*)
-            (*value kai instr apo pinaka 9.1...*)
-            instr_lst (* XXX DUMMY! *)
-        )
-      | Q_Seq | Q_Nseq as relop ->
-        (match (getQuadOpType quad.arg1) with
-          | T_Int | T_Ref _ ->
+          | T_Int | T_Ref _ -> 
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
@@ -141,10 +116,18 @@ and quadToFinal quad instr_lst =
             let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
             let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
               instr_lst4
-          | T_Float -> internal "not yet implemented"
+          | T_Float ->
+              let instr_lst1 = loadReal (quad.arg1) instr_lst in
+              let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
+              let instr_lst3 = genInstr Fcompp instr_lst2 in
+              let instr_lst4 = genInstr (Fstsw (Reg Ax)) instr_lst3 in
+              let instr_lst5 = genInstr Sahf instr_lst4 in
+              let instr_lst6 = genInstr (CondJmp (relOpJmpF relop, Label (makeLabel quad.arg3))) instr_lst5 in
+                instr_lst6
           | T_Array _ -> internal "Operator = does not support type array"
           | T_Arrow _ -> internal "Operator = does not support functions"
-          | T_Id _ -> internal "fuck :)")
+          | T_Id _ -> internal "fuck :)"
+        )
       | Q_Eq | Q_Neq as relop ->
         (match (getQuadOpType quad.arg1) with
           | T_Int | T_Ref _ ->
@@ -321,4 +304,3 @@ and quadToFinal quad instr_lst =
                 | T_Unit -> internal "Intermediate failed"
                 | T_Str -> internal "T_Str is redundant. GET OVER IT."))
       | Q_Ret ->  internal "Don't have"
-
