@@ -46,7 +46,7 @@ val newVariable :
   H.key -> Types.typ -> SymbTypes.entry -> bool -> SymbTypes.entry
 val newUdt : H.key -> bool -> SymbTypes.entry
 val newConstructor :
-  H.key -> Types.typ -> Types.typ list -> bool -> SymbTypes.entry
+  H.key -> Types.typ -> Types.typ list -> int -> bool -> SymbTypes.entry
 val newFunction : H.key -> SymbTypes.entry option -> bool -> SymbTypes.entry
 val newTemporary : Types.typ -> SymbTypes.entry
 val forwardFunction : SymbTypes.entry -> unit
@@ -62,3 +62,4 @@ val getVarSize : SymbTypes.entry -> int
 val fixOffsets : SymbTypes.entry -> unit
 val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
+val getTag : SymbTypes.entry -> int

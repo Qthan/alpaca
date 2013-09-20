@@ -13,8 +13,8 @@ type scope = {
   sco_parent : scope option;
   sco_nesting : int;
   mutable sco_entries : entry list;
-  mutable sco_negofs : int;
-  mutable sco_hidden : bool
+  mutable sco_negofs  : int;
+  mutable sco_hidden  : bool
 }
 
 and variable_info = {
@@ -50,8 +50,10 @@ and temporary_info = {
 }
 
 and constructor_info = {
-  constructor_type    : typ;
-  constructor_paramlist : typ list
+  constructor_type      : typ;
+  constructor_paramlist : typ list;
+  constructor_tag       : int;
+  constructor_arity     : int
 }
 
 and entry_info = ENTRY_none
@@ -69,4 +71,3 @@ and entry = {
 }
 
 type lookup_type = LOOKUP_CURRENT_SCOPE | LOOKUP_ALL_SCOPES
-

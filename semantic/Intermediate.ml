@@ -51,7 +51,6 @@ let split_decls decl =
         (S_Rec funs, S_Rec vars)
     | S_Type _ -> internal "Cannot have type defs in such position"
 
-                    List.partition (is_fun) decl
 
 (* Function's local variables size*)
 let get_var_size entry =
@@ -278,7 +277,7 @@ and gen_expr quads expr_node = match expr_node.expr with
         quads l
     in
     let fresh_typ = expr_node.expr_typ in
-    let typ = lookup_solved fresh_typ  in
+    let typ = lookup_solved fresh_typ in
     let temp = newTemp typ (Stack.top offset_stack) in
     let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
     let callee_entry = match expr_node.expr_entry with
@@ -295,7 +294,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
     let (quads3, expr2_info) = gen_expr quads2 expr2 in
     let fresh_typ = expr_node.expr_typ in 
-    let typ = lookup_solved fresh_typ  in
+    let typ = lookup_solved fresh_typ in
     let temp = newTemp typ (Stack.top offset_stack) in
     let quads4 = backpatch quads3 (expr2_info.next_expr) (nextLabel ()) in
     let quads5 = genQuad (Q_Assign, expr2_info.place, O_Empty, temp) quads4 in
@@ -337,7 +336,45 @@ and gen_expr quads expr_node = match expr_node.expr with
       (quads3, setExprInfo temp (newLabelList ()))
   | E_Atom a -> gen_atom quads a
   | E_While _ | E_For _ -> internal "While/For not expressions"
-  | E_Match _ | E_Cid _ -> (quads, setExprInfo (O_Empty) (newLabelList ()))   (* dummy return value TODO *)
+  | E_Match _ -> (quads, setExprInfo (O_Empty) (newLabelList ()))   (* dummy return value TODO *)
+  | E_Cid (id, l) -> 
+      let constructor_size e = match e.entry_info with 
+        | ENTRY_constructor c ->
+           List.fold_left (fun acc typ -> (sizeOfType typ) + acc) 
+                          (Types.tag_size) c.constructor_paramlist 
+        | _ -> internal "Cannot find constructor size of non constructor entry"
+      in
+      let c_entry = match expr_node.expr_entry with 
+        | Some e -> e
+        | None -> internal "Expected entry"
+      in
+      (* allocate space for the constructor representation*)
+      let ty = getType c_entry in
+      let size = constructor_size c_entry in
+      let new_entry = findAuxilEntry "_new" in
+      let temp = newTemp (T_Ref ty) (Stack.top offset_stack) in
+      let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
+      let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
+      let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry new_entry) quads2 in
+      (* store constructor tag and arguments *)
+      let temp2 = newTemp (T_Ref T_Int) (Stack.top offset_stack) in
+      let quads4 = genQuad (Q_Constr, temp, O_Int 0, temp2) quads3 in
+      let quads5 = genQuad (Q_Assign, O_Int (getTag c_entry), O_Empty, O_Deref temp2) quads4 in
+      let (quads6, temps) = 
+      List.fold_left 
+        (fun (quads, offset) a ->
+           let (quads1, a_info) = gen_atom quads a in
+           let quads2 = backpatch quads1 a_info.next_expr (nextLabel ()) in
+           let fresh_ty = a.atom_typ in
+           let atom_ty = lookup_solved fresh_ty in
+           let atom_temp = newTemp (T_Ref atom_ty) (Stack.top offset_stack) in
+           let quads3 = genQuad (Q_Constr, temp, O_Int offset, atom_temp) quads2 in
+           let quads4 = genQuad (Q_Assign, a_info.place, O_Empty, O_Deref atom_temp) quads3 in
+             (quads4, offset + (sizeOfType atom_ty))
+        )
+        (quads5, Types.tag_size) l
+      in
+        (quads6, setExprInfo temp (newLabelList ())) 
 
 and gen_cond quads expr_node = match expr_node.expr with
   | E_Binop (expr1, op, expr2) ->
@@ -620,7 +657,22 @@ and gen_atom quads atom_node = match atom_node.atom with
   | A_Chr c -> (quads, setExprInfo (O_Char c) (newLabelList ()))
   | A_Str str -> (quads, setExprInfo (O_Str str) (newLabelList ()))
   | A_Bool b -> (quads, setExprInfo (O_Bool b) (newLabelList ()))
-  | A_Cid cid -> (quads, setExprInfo O_Empty  (newLabelList ()))  (*Dummy return value*)
+  | A_Cid cid -> 
+    let c_entry = match atom_node.atom_entry with
+      | Some e -> e
+      | None -> internal "Expected entry"
+    in
+    let ty = getType c_entry in
+    let size = sizeOfType ty in
+    let new_entry = findAuxilEntry "_new" in
+    let temp = newTemp (T_Ref ty) (Stack.top offset_stack) in
+    let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
+    let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
+    let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry new_entry) quads2 in
+    let temp2 = newTemp (T_Ref T_Int) (Stack.top offset_stack) in
+    let quads4 = genQuad (Q_Constr, temp, O_Int 0, temp2) quads3 in
+    let quads5 = genQuad (Q_Assign, O_Int (getTag c_entry), O_Empty, O_Deref temp2) quads4 in
+      (quads5, setExprInfo temp (newLabelList ()))
   | A_Var v -> 
     let var_entry = match atom_node.atom_entry with 
       | Some e -> e
@@ -673,3 +725,4 @@ and gen_atom_stmt quads atom_node = match atom_node.atom with
     let n = expr_info.next_expr in
       (quads1, setStmtInfo n)
   | A_Cid _ -> (quads, setStmtInfo (newLabelList ())) (* dummy return value *)
+

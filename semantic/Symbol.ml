@@ -273,10 +273,12 @@ let newVariable id typ f err =
 let newUdt id err =
   newEntry id ENTRY_udt err
 
-let newConstructor id typ typ_list err =
+let newConstructor id typ typ_list tag err =
   let inf = {
     constructor_type = typ;
-    constructor_paramlist = typ_list
+    constructor_paramlist = typ_list;
+    constructor_tag = tag;
+    constructor_arity = List.length typ_list
   } in
     newEntry id (ENTRY_constructor inf) err  
 
@@ -441,3 +443,8 @@ let isLibraryFunction e =
   match e.entry_info with
     | ENTRY_function f -> f.function_library
     | _ -> internal "Entry not a function"
+
+let getTag e = 
+  match e.entry_info with
+    | ENTRY_constructor c -> c.constructor_tag
+    | _ -> internal "Tag's are only supported by UDT"

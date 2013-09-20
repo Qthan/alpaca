@@ -236,7 +236,7 @@ and walk_typedef_list l = match l with
   | [] -> internal "Type definition cannot be empty"
   | l -> 
     List.iter (fun (id, _) -> ignore (newUdt (id_make id) true)) l; (* Adds user defined types names to symbol table *)
-    let walk_constructor tid cid types_list = 
+    let walk_constructor tid cid types_list tag = 
       List.iter (function 
           | T_Id id -> let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               begin
@@ -245,11 +245,11 @@ and walk_typedef_list l = match l with
                   | _ -> error "Constructor %s parameters must be of a valid type\n" cid; raise Exit;
               end
           | _ -> ()) types_list;
-      let c = newConstructor (id_make cid) (T_Id tid) types_list true in
+      let c = newConstructor (id_make cid) (T_Id tid) types_list tag true in
         ignore c;
     in
       List.iter (fun (id, constructors_list) -> 
-          List.iter (fun (cid, types_list) -> walk_constructor id cid types_list) constructors_list) l;
+          List.iteri (fun i (cid, types_list) -> walk_constructor id cid types_list i) constructors_list) l;
       [] (* Check return *)
 
 and walk_expr expr_node = match expr_node.expr with 
@@ -418,10 +418,12 @@ and walk_atom t = match t.atom with
     let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
       begin
         match cid_entry.entry_info with
-          | ENTRY_constructor constructor_info -> 
-            t.atom_typ <- constructor_info.constructor_type; 
+          | ENTRY_constructor c_info when c_info.constructor_paramlist = [] -> 
+            t.atom_typ <- c_info.constructor_type; 
             t.atom_entry <- Some cid_entry;
             []
+          | ENTRY_constructor _ ->
+            error "Constructor expecting arguments"; raise Exit
           | _ -> internal "internal error"
       end
   | A_Var v -> 
@@ -533,14 +535,15 @@ and walk_pattom t = match t.pattom with
     let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
       begin
         match cid_entry.entry_info with
-          | ENTRY_constructor constructor_info -> 
-            t.pattom_typ <- constructor_info.constructor_type;
+          | ENTRY_constructor c_info when c_info.constructor_paramlist = [] -> 
+            t.pattom_typ <- c_info.constructor_type;
             t.pattom_entry <- Some cid_entry;
             []
+          | ENTRY_constructor _ ->
+            error "Constructor expecting arguments"; raise Exit
           | _ -> internal "we failed you again"
       end
   | P_Pattern p -> 
     let constraints = walk_pattern p in
       t.pattom_typ <- p.pattern_typ;
       constraints
-
