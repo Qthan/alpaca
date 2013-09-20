@@ -336,7 +336,29 @@ and gen_expr quads expr_node = match expr_node.expr with
       (quads3, setExprInfo temp (newLabelList ()))
   | E_Atom a -> gen_atom quads a
   | E_While _ | E_For _ -> internal "While/For not expressions"
-  | E_Match _ -> (quads, setExprInfo (O_Empty) (newLabelList ()))   (* dummy return value TODO *)
+  | E_Match (expr, l) ->
+    let (quads1, expr_info) = gen_expr quads expr in
+    let quads2 = backpatch quads1 expr_info.next_expr (nextLabel ()) in
+    let fresh_res_typ = expr_node.expr_typ in
+    let res_typ = lookup_solved fresh_res_typ in
+    let temp = newTemp res_typ (Stack.top offset_stack) in
+    let (quads3, last) =
+      List.fold_left (fun (quads, last) (Clause (patt, expr1)) ->
+        let (quads1, cond_info) = gen_pattern patt expr_info.place quads in
+        let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
+        let (quads3, expr_info1) = gen_expr quads2 expr1 in
+        let quads4 = backpatch quads3 expr_info1.next_expr (nextLabel ()) in
+        let quads5 = genQuad (Q_Assign, expr_info1.place, O_Empty, temp) quads4 in
+        let last = mergeLabels last (makeLabelList (nextLabel ())) in
+        let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in
+        let quads7 = backpatch quads6 cond_info.false_lst (nextLabel ()) in
+          (quads7, last)
+        ) (quads2, newLabelList ()) l
+    in
+    let quads4 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads3 in
+    let quads5 = backpatch quads4 last (nextLabel ()) in
+    let expr_info = setExprInfo temp (newLabelList ()) in
+      (quads5, expr_info)
   | E_Cid (id, l) -> 
       let constructor_size e = match e.entry_info with 
         | ENTRY_constructor c ->
@@ -712,17 +734,99 @@ and gen_atom quads atom_node = match atom_node.atom with
     let e_info = setExprInfo temp (newLabelList ()) in
     let quads2 = genQuad (Q_Array, O_Entry array_entry, O_Index temps, temp) quads1 in 
       (quads2, e_info)
-  | A_Expr e -> 
+  | A_Expr e ->
     gen_expr quads e
 
 and gen_atom_stmt quads atom_node = match atom_node.atom with
-  | A_Num _ | A_Dec _ | A_Str _ 
+  | A_Num _ | A_Dec _ | A_Str _
   | A_Chr _ | A_Bool _ | A_Array _ -> internal "non unit expressions called from atom_stmt"
   | A_Par | A_Var _ -> (quads, setStmtInfo (newLabelList ()))
-  | A_Expr e -> gen_stmt quads e 
+  | A_Expr e -> gen_stmt quads e
   | A_Bang a -> 
     let (quads1, expr_info) = gen_atom quads a in   
     let n = expr_info.next_expr in
       (quads1, setStmtInfo n)
   | A_Cid _ -> (quads, setStmtInfo (newLabelList ())) (* dummy return value *)
+
+and gen_pattern pat scrut quads =
+  match pat.pattern with
+    | Pa_Atom a -> gen_pattom a scrut quads
+    | Pa_Cid (cid, l) ->
+      let c_entry = match pat.pattern_entry with
+        | Some e -> e
+        | None -> internal "yet another match............"
+      in
+      let t = makeLabelList (nextLabel ()) in
+      let quads1 = genQuad (Q_Match, scrut, O_Entry c_entry, O_Backpatch) quads in
+      let f = makeLabelList (nextLabel ()) in
+      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let (quads3, _, t, f) =
+        List.fold_left (fun (quads, offset, t, f) patt ->
+          let fresh_ty = patt.pattom_typ in
+          let ty = lookup_solved fresh_ty in
+          let reftemp = newTemp (T_Ref ty) (Stack.top offset_stack) in
+          let temp = newTemp ty (Stack.top offset_stack) in
+          let quads1 = backpatch quads t (nextLabel ()) in
+          let quads2 = genQuad (Q_Constr, scrut, O_Int offset, reftemp) quads1 in
+          let quads3 = genQuad (Q_Assign, O_Deref reftemp, O_Empty, temp) quads2 in
+          let (quads4, cond_info) = gen_pattom patt temp quads3 in
+          let f = mergeLabels f cond_info.false_lst in
+            (quads4, offset + (sizeOfType ty), cond_info.true_lst, f) 
+          ) (quads2, tag_size, t, f) l
+      in
+      let cond_info = setCondInfo t f in
+      (quads3, cond_info)
+      
+and gen_pattom pat scrut quads =
+  match pat.pattom with
+    | P_Sign _ | P_Fsign _ as op ->
+      let op = match op with
+        | P_Sign (P_Plus, num) -> O_Int num
+        | P_Sign (P_Minus, num) -> O_Int (-num)
+        | P_Fsign (P_Fplus, num) -> O_Float num
+        | P_Fsign (P_Fminus, num) -> O_Float (-. num)
+      in
+      let t = makeLabelList (nextLabel ()) in
+      let quads1 = genQuad (Q_Seq, scrut, op, O_Backpatch) quads in
+      let f = makeLabelList (nextLabel ()) in
+      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let cond_info = setCondInfo t f in
+        (quads2, cond_info)
+    | P_Num _ | P_Float _ | P_Chr _ | P_Bool _ as op ->
+      let operand = match op with
+        | P_Num n -> O_Int n
+        | P_Float f -> O_Float f
+        | P_Chr c -> O_Char c
+        | P_Bool b -> O_Bool b
+      in
+      let t = makeLabelList (nextLabel ()) in
+      let quads1 = genQuad (Q_Seq, scrut, operand, O_Backpatch) quads in
+      let f = makeLabelList (nextLabel ()) in
+      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let cond_info = setCondInfo t f in
+        (quads2, cond_info)
+    | P_Id id ->
+      let c_entry = match pat.pattom_entry with
+        | Some e -> e
+        | None -> internal "yet another match............"
+      in
+      let quads1 = genQuad (Q_Assign, scrut, O_Empty, O_Entry c_entry) quads in
+      let t = makeLabelList (nextLabel ()) in
+      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let f = newLabelList () in
+      let cond_info = setCondInfo t f in
+        (quads2, cond_info)
+    | P_Cid cid -> 
+      let c_entry = match pat.pattom_entry with
+        | Some e -> e
+        | None -> internal "yet another match............"
+      in
+      let t = makeLabelList (nextLabel ()) in
+      let quads1 = genQuad (Q_Match, scrut, O_Entry c_entry, O_Backpatch) quads in
+      let f = makeLabelList (nextLabel ()) in
+      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let cond_info = setCondInfo t f in
+        (quads2, cond_info)
+    | P_Pattern p -> gen_pattern p scrut quads
+
 

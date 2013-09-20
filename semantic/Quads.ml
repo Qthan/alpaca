@@ -64,7 +64,7 @@ type quad_operators =
   | Q_Assign | Q_Ifb | Q_Array
   | Q_Jump | Q_Jumpl | Q_Label
   | Q_Call | Q_Par | Q_Ret | Q_Dim
-  | Q_Match | Q_Constr
+  | Q_Match | Q_Constr | Q_Fail
 
 type quad_operands = 
   | O_Int of int
@@ -225,7 +225,7 @@ let backpatch quads lst patch =
   if (not (isEmptyQuadList lst)) then addLabelTbl patch; 
   List.iter (fun quad_label -> 
       match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
-        | None -> internal "Quad label not found, can't backpatch\n"
+        | None -> internal "Quad label not found, can't backpatch %d \n" quad_label
         | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
 
@@ -288,8 +288,8 @@ let string_of_operator = function
   | Q_Assign -> ":=" | Q_Ifb -> "ifb" | Q_Array -> "Array"
   | Q_Jump -> "Jump" | Q_Jumpl -> "Jumpl" | Q_Label -> "Label??"
   | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 
-  | Q_Match -> "match" | Q_Constr -> "constr"
-
+  | Q_Match -> "match" | Q_Constr -> "constr" | Q_Fail -> "fail"
+  
 let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 
 let print_entry chan entry =
@@ -299,19 +299,27 @@ let print_entry chan entry =
         | Some e -> e.entry_id
         | None -> id_make "None"
       in
-        fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" pretty_id entry.entry_id
-          f.function_index f.function_paramsize 
-          !(f.function_varsize) f.function_nesting
-          pretty_id parent_id
+        fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" 
+                pretty_id entry.entry_id
+                f.function_index f.function_paramsize 
+                !(f.function_varsize) f.function_nesting
+                pretty_id parent_id
     | ENTRY_variable v -> 
-      fprintf chan "Var[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ v.variable_type 
-        v.variable_offset v.variable_nesting
+      fprintf chan "Var[%a, type %a, offset %d, nest %d]" 
+              pretty_id entry.entry_id pretty_typ v.variable_type 
+              v.variable_offset v.variable_nesting
     | ENTRY_parameter p -> 
-      fprintf chan "Par[%a, type %a, offset %d, nest %d]" pretty_id entry.entry_id pretty_typ p.parameter_type 
-        p.parameter_offset p.parameter_nesting
+      fprintf chan "Par[%a, type %a, offset %d, nest %d]" 
+              pretty_id entry.entry_id pretty_typ p.parameter_type 
+              p.parameter_offset p.parameter_nesting
     | ENTRY_temporary t ->
-      fprintf chan "Temp[%a, type %a, offset %d]" pretty_id entry.entry_id pretty_typ t.temporary_type 
-        t.temporary_offset
+      fprintf chan "Temp[%a, type %a, offset %d]" 
+              pretty_id entry.entry_id pretty_typ t.temporary_type 
+              t.temporary_offset
+    | ENTRY_constructor c ->
+      fprintf chan "Constr[%a, type %a, arity %d, tag %d]" 
+              pretty_id entry.entry_id pretty_typ c.constructor_type
+              c.constructor_arity c.constructor_tag
 
 
 let print_temp_head chan head = 
@@ -344,7 +352,7 @@ and print_operand chan op = match op with
   | O_Size i -> fprintf chan "Size %d" i
   | O_Dims i -> fprintf chan "Dims %d" i
   | O_Index lst -> fprintf chan "Indexes [%a]" print_indexes lst
-  
+
 (* Make quad labels consequent *)
 
 let normalizeQuads quads =
@@ -380,3 +388,4 @@ let printQuad chan quad =
 
 let printQuads quads = 
   List.iter (fun q -> printf "%a" printQuad q) quads
+
