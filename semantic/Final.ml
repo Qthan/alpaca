@@ -58,6 +58,7 @@ type instruction =
   | EndFun of string 
   | LabelDecl of string
   | Comment of string
+  | Interrupt of operand
 
 (* CPU word size*)
 let word_size = 2
@@ -526,3 +527,4 @@ let printAR f =
        print_list (var_info f.function_varlist);
     | _ -> internal "i don't want to do that"  
  *)
+

@@ -356,9 +356,8 @@ and gen_expr quads expr_node = match expr_node.expr with
         ) (quads2, newLabelList ()) l
     in
     let quads4 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads3 in
-    let quads5 = backpatch quads4 last (nextLabel ()) in
-    let expr_info = setExprInfo temp (newLabelList ()) in
-      (quads5, expr_info)
+    let expr_info = setExprInfo temp last in
+      (quads4, expr_info)
   | E_Cid (id, l) -> 
       let constructor_size e = match e.entry_info with 
         | ENTRY_constructor c ->
@@ -476,7 +475,23 @@ and gen_cond quads expr_node = match expr_node.expr with
       (quads4, cond_info)
   | E_While _ | E_For _ | E_Dim _ | E_New _ | E_Cid _ ->
     internal "These expressions cannot have type bool"
-  | E_Match _ -> (quads, setCondInfo (newLabelList ()) (newLabelList ()))  (* TODO dummy return value XXX *)
+  | E_Match (expr, l) -> 
+    let (quads1, expr_info) = gen_expr quads expr in
+    let quads2 = backpatch quads1 expr_info.next_expr (nextLabel ()) in
+    let (quads3, t, f) =
+      List.fold_left (fun (quads, t, f) (Clause (patt, expr1)) ->
+        let (quads1, cond_info) = gen_pattern patt expr_info.place quads in
+        let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
+        let (quads3, cond_info1) = gen_cond quads2 expr1 in
+        let t = mergeLabels t cond_info1.true_lst in
+        let f = mergeLabels f cond_info1.false_lst in
+        let quads4 = backpatch quads3 cond_info.false_lst (nextLabel ()) in
+          (quads4, t, f)
+        ) (quads2, newLabelList (), newLabelList ()) l
+    in
+    let quads4 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads3 in
+    let cond_info = setCondInfo t f in
+      (quads4, cond_info)
   | E_Letin (def, expr) ->
     let delete_quads = ref (newQuadList ()) in
     let (funs, vars) = split_decls def in
@@ -668,7 +683,25 @@ and gen_stmt quads expr_node = match expr_node.expr with
   | E_New t ->
     let (quads1, expr_info) = gen_expr quads expr_node in
       (quads1, setStmtInfo expr_info.next_expr)
-  | E_Match _ | E_Cid _ -> (quads, setStmtInfo (newLabelList ()))  (* TODO dummy return value XXX *)
+  | E_Match (expr, l) -> 
+    let (quads1, expr_info) = gen_expr quads expr in
+    let quads2 = backpatch quads1 expr_info.next_expr (nextLabel ()) in
+    let (quads3, last) =
+      List.fold_left (fun (quads, last) (Clause (patt, expr1)) ->
+        let (quads1, cond_info) = gen_pattern patt expr_info.place quads in
+        let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
+        let (quads3, stmt_info1) = gen_stmt quads2 expr1 in
+        let quads4 = backpatch quads3 stmt_info1.next_stmt (nextLabel ()) in
+        let last = mergeLabels last (makeLabelList (nextLabel ())) in
+        let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 in
+        let quads6 = backpatch quads5 cond_info.false_lst (nextLabel ()) in
+          (quads6, last)
+        ) (quads2, newLabelList ()) l
+    in
+    let quads4 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads3 in
+    let stmt_info = setStmtInfo last in
+      (quads4, stmt_info)
+  | E_Cid _ ->  internal "Constructors cannot be a statement"
   | E_Block e -> gen_stmt quads e
   | E_Atom a -> gen_atom_stmt quads a
 
@@ -746,7 +779,7 @@ and gen_atom_stmt quads atom_node = match atom_node.atom with
     let (quads1, expr_info) = gen_atom quads a in   
     let n = expr_info.next_expr in
       (quads1, setStmtInfo n)
-  | A_Cid _ -> (quads, setStmtInfo (newLabelList ())) (* dummy return value *)
+  | A_Cid _ -> internal "Constructors cannot be a statement"
 
 and gen_pattern pat scrut quads =
   match pat.pattern with
@@ -810,12 +843,13 @@ and gen_pattom pat scrut quads =
         | Some e -> e
         | None -> internal "yet another match............"
       in
+      let () = update_entry_typ c_entry in
       let quads1 = genQuad (Q_Assign, scrut, O_Empty, O_Entry c_entry) quads in
-      let t = makeLabelList (nextLabel ()) in
-      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let t = newLabelList () in
+     (* let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in*)
       let f = newLabelList () in
       let cond_info = setCondInfo t f in
-        (quads2, cond_info)
+        (quads1, cond_info)
     | P_Cid cid -> 
       let c_entry = match pat.pattom_entry with
         | Some e -> e
@@ -828,5 +862,4 @@ and gen_pattom pat scrut quads =
       let cond_info = setCondInfo t f in
         (quads2, cond_info)
     | P_Pattern p -> gen_pattern p scrut quads
-
 

@@ -183,7 +183,10 @@ let instructionToString = function
     Printf.sprintf "%s:\n" str
   | Comment str ->
     Printf.sprintf ";%s" str
+  | Interrupt op ->
+    Printf.sprintf "\t\tint\t%s\n" (operandToString op) 
 
 let emit final lib_funs =
   let _ = library_funs := lib_funs in
     List.fold_left (fun asm instr -> asm ^ (instructionToString instr)) "" final
+

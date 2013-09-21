@@ -300,7 +300,29 @@ and quadToFinal quad instr_lst =
                   let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
                     instr_lst3
                 | T_Id _ -> internal "Not (YET) implemented"    
-                | T_Alpha _  | T_Notype | T_Ord | T_Nofun-> internal "Type inference failed"
+                | T_Alpha _ | T_Notype | T_Ord | T_Nofun -> internal "Type inference failed"
                 | T_Unit -> internal "Intermediate failed"
                 | T_Str -> internal "T_Str is redundant. GET OVER IT."))
       | Q_Ret ->  internal "Don't have"
+      | Q_Constr -> 
+        let instr_lst1 = load Ax quad.arg1 instr_lst in
+        let instr_lst2 = load Bx quad.arg2 instr_lst1 in
+        let instr_lst3 = genInstr (Add (Reg Ax, Reg Bx)) instr_lst2 in
+        let instr_lst4 = store Ax quad.arg3 instr_lst3 in
+          instr_lst4
+      | Q_Match ->
+        let tag = getTag (entry_of_quadop quad.arg2) in
+        let instr_lst1 = load Si quad.arg1 instr_lst in
+        let instr_lst2 = 
+          genInstr (Mov (Reg Ax, Pointer (Word, Reg Si, 0))) instr_lst1 in
+        let instr_lst3 = 
+          genInstr (Cmp (Reg Ax, Immediate (string_of_int tag))) instr_lst2 in
+        let instr_lst4 = 
+          genInstr (CondJmp ("je", Label (makeLabel quad.arg3))) instr_lst3 
+        in
+          instr_lst4 
+      | Q_Fail ->
+         let instr_lst1 = 
+           genInstr (Mov (Reg Ax, Immediate "4C01h")) instr_lst in
+         let instr_lst2 = genInstr (Interrupt (Immediate "21h")) instr_lst1 in
+           instr_lst2

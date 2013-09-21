@@ -225,9 +225,13 @@ let backpatch quads lst patch =
   if (not (isEmptyQuadList lst)) then addLabelTbl patch; 
   List.iter (fun quad_label -> 
       match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
-        | None -> internal "Quad label not found, can't backpatch %d \n" quad_label
+        | None -> internal "Quad label not found, can't backpatch\n"
         | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
+
+let entry_of_quadop op = match op with 
+  | O_Entry e -> e
+  | _ -> internal "expecting entry"
 
 let auxil_funs =
   let makeEntry id size typ = { 
