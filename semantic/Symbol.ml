@@ -468,6 +468,11 @@ let getParamList e =
     | ENTRY_function f -> f.function_paramlist
     | _ -> internal "cannot find parameters in a non function"
 
+let getConstructorParamList e =
+  match e.entry_info with
+    | ENTRY_constructor c -> c.constructor_paramlist
+    | _ -> internal "cannot find parameters in a non constructor"
+    
 let getVarList e =
   match e.entry_info with
     | ENTRY_function f -> f.function_varlist
@@ -513,9 +518,13 @@ let isLibraryFunction e =
     | ENTRY_function f -> f.function_library
     | _ -> internal "Entry not a function"
 
+(* Getters for UDT entries *)
 let getTag e = 
   match e.entry_info with
     | ENTRY_constructor c -> c.constructor_tag
     | _ -> internal "Tag's are only supported by UDT"
-
-
+    
+let getEqFun u_entry = match u_entry.entry_info with
+  | ENTRY_udt u -> u.eq_function
+  | _ -> internal "Not a UDT"
+  

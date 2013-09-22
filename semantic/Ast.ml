@@ -406,6 +406,7 @@ and walk_expr expr_node = match expr_node.expr with
   | E_Atom a -> 
     let constraints = walk_atom a in
       expr_node.expr_typ <- a.atom_typ;
+      expr_node.expr_entry <- a.atom_entry;
       constraints
 
 and walk_atom t = match t.atom with 
@@ -547,5 +548,4 @@ and walk_pattom t = match t.pattom with
     let constraints = walk_pattern p in
       t.pattom_typ <- p.pattern_typ;
       constraints
-
 

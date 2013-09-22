@@ -87,9 +87,121 @@ and gen_decl outer stmt delete_quads = match stmt with
   | S_Let l | S_Rec l -> 
     List.iter update_def_typ l;
     gen_def_list outer l delete_quads
-  | S_Type l -> outer (* dummy value, kouo-kouo-kouo dld kotopouleiro*)
+  | S_Type l -> 
+    let fquads = List.fold_left (fun quads (ty_name, _) -> 
+      gen_type_eq ty_name quads) (newQuadList ()) l in
+    mergeQuads outer fquads 
 
-and gen_def_list outer lst delete_quads = List.fold_left (fun o l -> gen_def o l delete_quads ) outer lst
+(* Generates equality function for a UDT *)
+and gen_type_eq ty_name quads =
+  let u_entry = Symbol.lookupUdt (id_make ty_name) in
+  let constructors = Symbol.getConstructors u_entry in
+  let eqfun_entry = Symbol.getEqFun u_entry in
+  let eqfun_inf = match eqfun_entry.entry_info with
+    | ENTRY_function f -> f
+    | _ -> internal "Not a function"
+  in
+  let var_size = get_var_size eqfun_entry in
+  let () = Stack.push var_size offset_stack in
+  let (a, b) = match eqfun_inf.function_paramlist with
+    | [a; b] -> (a, b)
+    | _ -> internal "wrong number of arguments - our fault"
+  in
+  let temp_a = newTemp (T_Ref T_Int) (Stack.top offset_stack) in
+  let temp_b = newTemp (T_Ref T_Int) (Stack.top offset_stack) in
+  (* Comparing left-most constructor *)
+  let quads1 = genQuad (Q_Unit, O_Entry eqfun_entry, O_Empty, O_Empty) quads in
+  let quads2 = genQuad (Q_Constr, O_Entry a, O_Int 0, temp_a) quads1 in
+  let quads3 = genQuad (Q_Constr, O_Entry b, O_Int 0, temp_b) quads2 in
+  let tag_t = makeLabelList (nextLabel ()) in
+  let quads4 = 
+    genQuad (Q_Seq, O_Deref temp_a, O_Deref temp_b, O_Backpatch) quads3 in
+  let tag_f = makeLabelList (nextLabel ()) in
+  let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 in
+  let quads6 = backpatch quads5 tag_t (nextLabel ()) in
+  (* If left-most constructors match then depending on the constructor compare
+   * the constructor's arguments *)
+  let (quads7, cond_info) =
+    (* Constructor iteration *)
+    List.fold_left (fun (quads, cond_info) c_entry ->
+      let c_tag = Symbol.getTag c_entry in
+      let c_args = Symbol.getConstructorParamList c_entry in
+      let isCnstr_t = makeLabelList (nextLabel ()) in
+      let quads1 =
+        genQuad (Q_Seq, O_Deref temp_a, O_Int c_tag, O_Backpatch) quads in
+      let isCnstr_f = makeLabelList (nextLabel ()) in
+      let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
+      let quads3 = backpatch quads2 isCnstr_t (nextLabel ()) in
+      let (quads4, _, res_f) =
+        (* Argument iteration *)
+        List.fold_left (fun (quads, offset, false_lst) arg_typ ->
+          let arg_a = newTemp (T_Ref arg_typ) (Stack.top offset_stack) in
+          let arg_b = newTemp (T_Ref arg_typ) (Stack.top offset_stack) in
+          let quads1 =
+            genQuad (Q_Constr, O_Entry a, O_Int offset, arg_a) quads in
+          let quads2 =
+            genQuad (Q_Constr, O_Entry b, O_Int offset, arg_b) quads1 in
+          match arg_typ with
+            | T_Id id ->
+              let result = newTemp (T_Bool) (Stack.top offset_stack) in
+              let argtyp_entry = Symbol.lookupUdt (id_make id) in
+              let eqfun_entry = Symbol.getEqFun argtyp_entry in
+              (* Recursive equality check for arguments *)
+              let quads3 = 
+                genQuad (Q_Par, O_Deref arg_a, O_ByVal, O_Empty) quads2 in
+              let quads4 = 
+                genQuad (Q_Par, O_Deref arg_b, O_ByVal, O_Empty) quads3 in
+              let quads5 =
+                genQuad (Q_Par, result, O_Ret, O_Empty) quads4 in
+              let quads6 =
+                genQuad (Q_Call, O_Empty, O_Empty, O_Entry eqfun_entry)
+                        quads5 in
+              let argeq_t = makeLabelList (nextLabel ()) in
+              let quads7 =
+                genQuad (Q_Ifb, result, O_Empty, O_Backpatch) quads6 in
+              let argeq_f = makeLabelList (nextLabel ()) in
+              let quads8 =
+                genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads7 in
+              let quads9 = backpatch quads8 argeq_t (nextLabel ()) in
+              let false_lst = mergeLabels false_lst argeq_f in
+                (quads9, offset + (Types.sizeOfType arg_typ), false_lst)
+            | typ ->
+              let argeq_t = makeLabelList (nextLabel ()) in
+              let quads3 =
+                genQuad (Q_Seq, O_Deref arg_a, O_Deref arg_b, O_Backpatch)
+                        quads2 in
+              let argeq_f = makeLabelList (nextLabel ()) in
+              let quads4 =
+                genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads3 in
+              let quads5 = backpatch quads4 argeq_t (nextLabel ()) in
+              let false_lst = mergeLabels false_lst argeq_f in
+                (quads5, offset + (Types.sizeOfType arg_typ), false_lst)
+            ) (quads3, Types.tag_size, newLabelList ()) c_args
+      in
+      let res_t = makeLabelList (nextLabel ()) in
+      (* Jump to successful equality check *)
+      let quads5 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 in
+      let quads6 = backpatch quads5 isCnstr_f (nextLabel ()) in
+      let new_t = mergeLabels res_t (cond_info.true_lst) in
+      let false_t = mergeLabels res_f (cond_info.false_lst) in
+        (quads6, setCondInfo new_t false_t)
+     ) (quads6, setCondInfo (newLabelList ()) tag_f) constructors
+   in
+   let quads8 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads7 in
+   let quads9 = backpatch quads8  (cond_info.true_lst) (nextLabel ()) in
+   let quads10 = genQuad (Q_Assign, O_Bool true, O_Empty, O_Res) quads9 in
+   let the_end = makeLabelList (nextLabel ()) in
+   let quads11 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads10 in
+   let quads12 = backpatch quads11 cond_info.false_lst (nextLabel ()) in
+   let quads13 = genQuad (Q_Assign, O_Bool false, O_Empty, O_Res) quads12 in
+   let quads14 = backpatch quads13 the_end (nextLabel ()) in
+   let quads15 =
+     genQuad (Q_Endu, O_Entry eqfun_entry, O_Empty, O_Empty) quads14 in
+   let _ = Stack.pop offset_stack in
+     quads15
+
+and gen_def_list outer lst delete_quads =
+  List.fold_left (fun o l -> gen_def o l delete_quads ) outer lst
 
 and gen_def quads def_node delete_quads =  
   let entry = match def_node.def_entry with 
@@ -404,8 +516,50 @@ and gen_cond quads expr_node = match expr_node.expr with
         | Plus | Minus | Times | Div | Mod
         | Fplus | Fminus | Ftimes | Fdiv | Power ->
           internal "Arithmetic operators cannot be conditions"
-        | Seq | Nseq | Eq | Neq
-        | L | Le | G | Ge as oper ->
+        | Seq | Nseq as oper ->
+          let fresh_typ = expr1.expr_typ in
+          let typ = lookup_solved fresh_typ in
+          let (quads1, e1_info) = gen_expr quads expr1 in
+          let quads2 = 
+            backpatch quads1 e1_info.next_expr (nextLabel ()) in
+          let (quads3, e2_info) = gen_expr quads2 expr2 in
+          let quads4 = 
+            backpatch quads3 e2_info.next_expr (nextLabel ()) in
+          (match typ with 
+            | T_Id id ->
+              let u_entry = Symbol.lookupUdt (id_make id) in
+              let eq_fun = Symbol.getEqFun u_entry in
+              let res = newTemp T_Bool (Stack.top offset_stack) in
+              let quads5 =
+                genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads4 in
+              let quads6 =
+                genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads5 in
+              let quads7 =
+                genQuad (Q_Par, res, O_Ret, O_Empty) quads6 in
+              let quads8 =
+                genQuad (Q_Call, O_Empty, O_Empty, O_Entry eq_fun) quads7 in
+              let t = makeLabelList (nextLabel ()) in
+              let quads9 =
+                genQuad (Q_Ifb, res, O_Empty, O_Backpatch) quads8 in
+              let f = makeLabelList (nextLabel ()) in
+              let quads10 =
+                genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads9 in
+              let cond_info = match oper with
+                | Seq -> setCondInfo t f
+                | Nseq -> setCondInfo f t
+              in
+                (quads10, cond_info)
+            | typ ->
+              let t = makeLabelList (nextLabel ()) in
+              let quads5 =
+                genQuad (getQuadBop oper, e1_info.place, e2_info.place, O_Backpatch) quads4
+              in
+              let f = makeLabelList (nextLabel ()) in
+              let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in
+              let cond_info = setCondInfo t f in
+                (quads6, cond_info) )
+        | Eq | Neq | L 
+        | Le | G | Ge as oper ->
           let (quads1, e1_info) = gen_expr quads expr1 in
           let quads2 = backpatch quads1 e1_info.next_expr (nextLabel ()) in
           let (quads3, e2_info) = gen_expr quads2 expr2 in
@@ -862,4 +1016,6 @@ and gen_pattom pat scrut quads =
       let cond_info = setCondInfo t f in
         (quads2, cond_info)
     | P_Pattern p -> gen_pattern p scrut quads
+
+
 

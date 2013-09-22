@@ -28,6 +28,9 @@ val tempNumber : int ref
 val fun_index : int ref
 val tab : SymbTypes.entry H.t ref
 val initSymbolTable : int -> unit
+val udt_table : SymbTypes.entry H.t
+val addUdt : H.key -> SymbTypes.entry -> unit
+val lookupUdt : H.key -> SymbTypes.entry
 val show_offsets : bool
 val pretty_mode : Format.formatter -> SymbTypes.pass_mode -> unit
 val printSymbolTable : unit -> unit
@@ -45,6 +48,8 @@ val newParameter :
 val newVariable :
   H.key -> Types.typ -> SymbTypes.entry -> bool -> SymbTypes.entry
 val newUdt : H.key -> bool -> SymbTypes.entry
+val addConstructor : SymbTypes.entry -> SymbTypes.entry -> unit
+val getConstructors : SymbTypes.entry -> SymbTypes.entry list
 val newConstructor :
   H.key -> Types.typ -> Types.typ list -> int -> bool -> SymbTypes.entry
 val newFunction : H.key -> SymbTypes.entry option -> bool -> SymbTypes.entry
@@ -57,9 +62,11 @@ val getResType : SymbTypes.entry -> Types.typ
 val setOffset : SymbTypes.entry -> int -> unit
 val getOffset : SymbTypes.entry -> int
 val getParamList : SymbTypes.entry -> SymbTypes.entry list
+val getConstructorParamList : SymbTypes.entry -> Types.typ list
 val getVarList : SymbTypes.entry -> SymbTypes.entry list
 val getVarSize : SymbTypes.entry -> int
 val fixOffsets : SymbTypes.entry -> unit
 val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
+val getEqFun : SymbTypes.entry -> SymbTypes.entry
