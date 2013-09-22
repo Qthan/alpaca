@@ -140,7 +140,8 @@ let unify c =
      in *)
   let rec unifyOrd ord = match ord with
     | [] -> ()
-    | T_Int :: c | T_Float :: c | T_Bool :: c | (T_Alpha _) :: c ->
+    | T_Int :: c | T_Float :: c | T_Char :: c 
+    | T_Bool :: c | (T_Alpha _) :: c ->
       unifyOrd c
     | typ :: _ -> 
       raise (TypeError ("Type does not support ordering", typ))

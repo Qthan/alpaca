@@ -45,7 +45,7 @@ let rec treeCount t =
 let main = 
    let mutable seed in
    let next u = 
-      seed := (!seed * 4241 + 22) mod 9949;
+      seed := (!seed * 4 + 22) mod 949;
       !seed in
    seed := 65;
 

@@ -274,7 +274,8 @@ and quadToFinal quad instr_lst =
             let size = getTypeSize typ in
             let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
               (match typ with
-                | T_Int ->
+                | T_Int | T_Array _ 
+                | T_Ref _ | T_Id _ ->
                   let instr_lst1 = load Ax (quad.arg1) instr_lst in
                   let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
                     instr_lst2                    
@@ -289,17 +290,12 @@ and quadToFinal quad instr_lst =
                   let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
                   let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
                   let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
-                    instr_lst4                    
-                | T_Array _ | T_Ref _ ->
-                  let instr_lst1 = load Ax (quad.arg1) instr_lst in
-                  let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
-                    instr_lst2
+                    instr_lst4                  
                 | T_Arrow (_, _) ->
                   let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
                   let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
                   let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
                     instr_lst3
-                | T_Id _ -> internal "Not (YET) implemented"    
                 | T_Alpha _ | T_Notype | T_Ord | T_Nofun -> internal "Type inference failed"
                 | T_Unit -> internal "Intermediate failed"
                 | T_Str -> internal "T_Str is redundant. GET OVER IT."))
@@ -326,3 +322,4 @@ and quadToFinal quad instr_lst =
            genInstr (Mov (Reg Ax, Immediate "4C01h")) instr_lst in
          let instr_lst2 = genInstr (Interrupt (Immediate "21h")) instr_lst1 in
            instr_lst2
+

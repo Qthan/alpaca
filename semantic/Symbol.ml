@@ -38,13 +38,18 @@ let no_entry id = {
 let currentScope = ref the_outer_scope
 let quadNext = ref 1
 let tempNumber = ref 1
-let fun_index = ref (-1) 
+let fun_index = ref (-1)
 
 let tab = ref (H.create 0)
 
 let initSymbolTable size =
   tab := H.create size;
   currentScope := the_outer_scope
+
+let udt_table = H.create 11
+
+let addUdt id entry = H.add udt_table id entry 
+let lookupUdt id = H.find udt_table id
 
 (* Functions for debugging symbol table *)
 
@@ -116,7 +121,7 @@ let printSymbolTable () =
               | ENTRY_temporary inf ->
                 if show_offsets then
                   fprintf ppf "[%d]" inf.temporary_offset
-              | ENTRY_udt -> ()
+              | ENTRY_udt _ -> ()
               | ENTRY_constructor inf ->
                 let pp_list ppf l = List.iter (fprintf ppf "%a " pretty_typ) l in
                   fprintf ppf " Type: %a Parameters: %a" pretty_typ inf.constructor_type pp_list inf.constructor_paramlist
@@ -270,8 +275,65 @@ let newVariable id typ f err =
         e
     | _ -> internal "Cannot add a variable to a non-function"
 
+
+
 let newUdt id err =
-  newEntry id ENTRY_udt err
+  let typ = T_Id (id_name id) in 
+  let outer_entry = lookupEntry (id_make "_outer") LOOKUP_ALL_SCOPES true in
+  let param_info1 = {
+      parameter_type = typ;
+      parameter_offset = 8 + (sizeOfType typ);
+      parameter_mode = PASS_BY_VALUE;
+      parameter_nesting = 0
+  } in
+  let param_info2 = {
+    param_info1 with parameter_offset = 8;
+  } in
+  let param_entry1 = {
+      entry_id = id_make "a";
+      entry_scope = !currentScope;
+      entry_info = ENTRY_parameter param_info1
+  } in
+    let param_entry2 = {
+      entry_id = id_make "b";
+      entry_scope = !currentScope;
+      entry_info = ENTRY_parameter param_info2
+  } in
+  let fun_inf = {
+      function_isForward = false;
+      function_paramlist = [param_entry1; param_entry2];
+      function_varlist = [];
+      function_result = T_Bool;
+      function_pstatus = PARDEF_DEFINE;
+      function_varsize = ref 0; 
+      function_paramsize = 2*(sizeOfType typ);
+      function_nesting = 0;
+      function_parent = Some outer_entry;
+      function_index = (incr fun_index; !fun_index);
+      function_library = false 
+  } in
+  let fun_entry = {
+    entry_id = id_make ("_eq" ^ (id_name id));
+    entry_scope = !currentScope;
+    entry_info = ENTRY_function fun_inf
+  } in
+  let inf = {
+    udt_constructors = [];
+    eq_function = fun_entry 
+  } in
+  let p = newEntry id (ENTRY_udt inf) err in
+  let () = addUdt id p in
+    p
+
+let addConstructor entry c_entry =
+  match entry.entry_info with
+    | ENTRY_udt u -> u.udt_constructors <- c_entry :: u.udt_constructors
+    | _ -> internal "Constructors can only be added to udts"
+
+let getConstructors entry =
+  match entry.entry_info with
+    | ENTRY_udt u -> u.udt_constructors
+    | _ -> internal "Constructors are only available to udts"
 
 let newConstructor id typ typ_list tag err =
   let inf = {
@@ -280,7 +342,14 @@ let newConstructor id typ typ_list tag err =
     constructor_tag = tag;
     constructor_arity = List.length typ_list
   } in
-    newEntry id (ENTRY_constructor inf) err  
+    let c = newEntry id (ENTRY_constructor inf) err in
+    let tid = match typ with
+      | T_Id tid -> tid
+      | _ -> internal "not a udt"
+    in
+    let u_entry = lookupEntry (id_make tid) LOOKUP_CURRENT_SCOPE true in
+    let () = addConstructor u_entry c in
+      c
 
 let newFunction id parent err =
   try
@@ -371,7 +440,7 @@ let getType e =
         t
     | ENTRY_parameter p -> p.parameter_type
     | ENTRY_temporary t -> t.temporary_type
-    | ENTRY_udt -> T_Id (id_name e.entry_id)
+    | ENTRY_udt _ -> T_Id (id_name e.entry_id)
     | ENTRY_constructor c -> c.constructor_type
     | ENTRY_none -> internal "Invalid entry %s\n" (id_name e.entry_id)
 
@@ -448,3 +517,5 @@ let getTag e =
   match e.entry_info with
     | ENTRY_constructor c -> c.constructor_tag
     | _ -> internal "Tag's are only supported by UDT"
+
+

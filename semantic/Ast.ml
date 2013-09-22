@@ -241,7 +241,7 @@ and walk_typedef_list l = match l with
           | T_Id id -> let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               begin
                 match entry.entry_info with
-                  | ENTRY_udt -> ()
+                  | ENTRY_udt _ -> ()
                   | _ -> error "Constructor %s parameters must be of a valid type\n" cid; raise Exit;
               end
           | _ -> ()) types_list;
@@ -547,3 +547,5 @@ and walk_pattom t = match t.pattom with
     let constraints = walk_pattern p in
       t.pattom_typ <- p.pattern_typ;
       constraints
+
+

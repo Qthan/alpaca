@@ -107,7 +107,8 @@ let rec getNesting entry =
 (* A function returning the size of a type *)
 let getTypeSize typ =
   match typ with
-    | T_Int | T_Ref _ | T_Array (_, _) -> Word
+    | T_Int | T_Ref _ 
+    | T_Array (_, _) | T_Id _ -> Word
     | T_Char | T_Bool -> Byte
     | T_Arrow _ -> DWord
     | T_Float -> TByte

@@ -56,12 +56,17 @@ and constructor_info = {
   constructor_arity     : int
 }
 
+and udt_info = {
+  mutable udt_constructors : entry list;
+  eq_function              : entry 
+}
+
 and entry_info = ENTRY_none
                | ENTRY_variable of variable_info
                | ENTRY_function of function_info
                | ENTRY_parameter of parameter_info
                | ENTRY_temporary of temporary_info
-               | ENTRY_udt 
+               | ENTRY_udt of udt_info
                | ENTRY_constructor of constructor_info
 
 and entry = {
@@ -71,3 +76,5 @@ and entry = {
 }
 
 type lookup_type = LOOKUP_CURRENT_SCOPE | LOOKUP_ALL_SCOPES
+
+
