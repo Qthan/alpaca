@@ -224,7 +224,8 @@ let setStmtInfo n = { next_stmt = n }
 let backpatch quads lst patch =
   if (not (isEmptyQuadList lst)) then addLabelTbl patch; 
   List.iter (fun quad_label -> 
-      match (try Some (List.find (fun q -> q.label = quad_label) quads) with Not_found -> None) with
+      match (try Some (List.find (fun q -> q.label = quad_label) quads) 
+             with Not_found -> None) with
         | None -> internal "Quad label not found, can't backpatch\n"
         | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
@@ -327,7 +328,8 @@ let print_entry chan entry =
 
 
 let print_temp_head chan head = 
-  fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ head.temp_type head.temp_offset 
+  fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ 
+    head.temp_type head.temp_offset 
 
 let rec print_indexes chan lst =
   let rec pp_indexes ppf lst =
@@ -375,7 +377,8 @@ let normalizeQuads quads =
   in
   let temptbl = Hashtbl.copy labelsTbl in
   let _ = Hashtbl.clear labelsTbl in
-  let updateTbl = Hashtbl.iter (fun lbl _ -> Hashtbl.add labelsTbl map.(lbl) 0) temptbl in
+  let updateTbl = Hashtbl.iter (fun lbl _ -> 
+                                  Hashtbl.add labelsTbl map.(lbl) 0) temptbl in
     List.iter updateLabel quads1;
     quads1
 

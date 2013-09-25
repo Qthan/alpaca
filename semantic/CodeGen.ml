@@ -10,7 +10,8 @@ let debug_codeGen = ref true
 
 let rec codeGen quads outer = 
   let prelude = genInstr (Prelude outer) (newInstrList ()) in
-    List.rev (genInstr Epilogue (List.fold_left (fun lst q -> quadToFinal q lst) prelude quads))
+    List.rev (genInstr Epilogue 
+                (List.fold_left (fun lst q -> quadToFinal q lst) prelude quads))
 
 and quadToFinal quad instr_lst = 
   let instr_lst = 

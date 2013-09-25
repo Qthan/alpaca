@@ -38,9 +38,12 @@ let library_funs =
    ("int_of_char", T_Int, [("a", T_Char)]);
    ("char_of_int", T_Char, [("a", T_Int)]);
    ("strlen", T_Int, [("a", T_Array (T_Char, D_Int 1))]);
-   ("strcmp", T_Int, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
-   ("strcpy", T_Unit, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
-   ("strcat", T_Unit, [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
+   ("strcmp", T_Int, 
+    [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
+   ("strcpy", T_Unit,
+    [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
+   ("strcat", T_Unit, 
+    [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
   ]
 
 let function_stack = Stack.create ()
@@ -49,7 +52,7 @@ let rec walk_program ls =
   initSymbolTable 10009;
   openScope();
   let f = newFunction (id_make "_outer") None true in 
-  let () = endFunctionHeader f (T_Unit) in   (* XXX changes *)
+  let () = endFunctionHeader f (T_Unit) in
   let () = Stack.push f function_stack in
   let () = List.iter insert_function library_funs in
   let constraints = walk_stmt_list ls in
@@ -109,7 +112,7 @@ and walk_def t = match t.def with
         | (id, ty) :: [] ->
           let new_ty = refresh ty in
           let current_fun = Stack.top function_stack in
-          let p = newVariable (id_make id) new_ty current_fun true in (* XXX changes *)
+          let p = newVariable (id_make id) new_ty current_fun true in
           let () = hideScope !currentScope true in
           let constraints = walk_expr e in
             ignore p;
@@ -117,15 +120,17 @@ and walk_def t = match t.def with
             t.def_entry <- Some p;
             (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl ->
-          let p = newFunction (id_make id) (Some (Stack.top function_stack)) true in
-          let () = Stack.push p function_stack in (* XXX changes *)
+          let p = 
+            newFunction (id_make id) (Some (Stack.top function_stack)) true 
+          in
+          let () = Stack.push p function_stack in
           let () = hideScope !currentScope true in
           let () =  openScope () in
           let () = walk_par_list tl p in
           let new_ty = refresh ty in
           let () = endFunctionHeader p new_ty in
           let constraints = walk_expr e in
-          let _ = Stack.pop function_stack in  (* will explode here, empty not catched *)
+          let _ = Stack.pop function_stack in
             closeScope ();
             hideScope !currentScope false;
             t.def_entry <- Some p;
@@ -134,7 +139,7 @@ and walk_def t = match t.def with
   | D_Mut (id, ty) ->     
     let new_ty = refresh ty in
     let current_fun = Stack.top function_stack in
-    let p = newVariable (id_make id) (T_Ref new_ty) current_fun true in (* ignore where are you *)
+    let p = newVariable (id_make id) (T_Ref new_ty) current_fun true in
       t.def_entry <- Some p;
       []
   | D_Array (id, ty, l) ->
@@ -145,7 +150,7 @@ and walk_def t = match t.def with
           walk_expr_list t (((e.expr_typ, T_Int) :: constraints) @ acc)
     in
     let new_ty = refresh ty in
-    let current_fun = Stack.top function_stack in (* XXX change *)
+    let current_fun = Stack.top function_stack in
     let array_typ = T_Array (new_ty, D_Int (List.length l)) in
     let p = newVariable (id_make id) array_typ current_fun true in
     let () = hideScope !currentScope true in
@@ -161,12 +166,14 @@ and walk_recdef_names t = match t.def with
         | [] -> internal "Definition cannot be empty";
         | (id, ty) :: []  ->
           let new_ty = refresh ty in
-          let current_fun = Stack.top function_stack in (*XXX changes *)
+          let current_fun = Stack.top function_stack in
           let p = newVariable (id_make id) new_ty current_fun true in
             ignore p;
         | (id, ty) :: tl  -> 
           let new_ty = refresh ty in
-          let p = newFunction (id_make id) (Some (Stack.top function_stack)) true in
+          let p = 
+            newFunction (id_make id) (Some (Stack.top function_stack)) true 
+          in
             setType p new_ty;
             forwardFunction p
     end
@@ -205,7 +212,7 @@ and walk_recdef t = match t.def with
             (new_ty, e.expr_typ) :: constraints
         | (id, ty) :: tl -> 
           let p = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
-          let () = Stack.push p function_stack in  (*XXX changes *)
+          let () = Stack.push p function_stack in
           let new_ty = getResType p in
           let () = hideScope !currentScope false in
           let constraints = walk_expr e in
@@ -235,21 +242,28 @@ and walk_par_list l p = match l with
 and walk_typedef_list l = match l with
   | [] -> internal "Type definition cannot be empty"
   | l -> 
-    List.iter (fun (id, _) -> ignore (newUdt (id_make id) true)) l; (* Adds user defined types names to symbol table *)
+    (* Adds user defined types names to symbol table *)
+    List.iter (fun (id, _) -> ignore (newUdt (id_make id) true)) l; 
     let walk_constructor tid cid types_list tag = 
       List.iter (function 
-          | T_Id id -> let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
+          | T_Id id -> 
+              let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               begin
                 match entry.entry_info with
                   | ENTRY_udt _ -> ()
-                  | _ -> error "Constructor %s parameters must be of a valid type\n" cid; raise Exit;
+                  | _ -> 
+                      error "Constructor %s parameters must \
+                        be of a valid type\n" cid; 
+                      raise Exit;
               end
           | _ -> ()) types_list;
       let c = newConstructor (id_make cid) (T_Id tid) types_list tag true in
         ignore c;
     in
       List.iter (fun (id, constructors_list) -> 
-          List.iteri (fun i (cid, types_list) -> walk_constructor id cid types_list i) constructors_list) l;
+                   List.iteri (fun i (cid, types_list) -> 
+                                 walk_constructor id cid types_list i) 
+                     constructors_list) l;
       [] (* Check return *)
 
 and walk_expr expr_node = match expr_node.expr with 
@@ -260,27 +274,32 @@ and walk_expr expr_node = match expr_node.expr with
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- T_Int;
-            (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) :: constraints1 @ constraints2
+            (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) 
+            :: constraints1 @ constraints2
         | Fplus | Fminus | Ftimes | Fdiv | Power -> 
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- T_Float; 
-            (expr1.expr_typ, T_Float) :: (expr2.expr_typ, T_Float) :: constraints1 @ constraints2
+            (expr1.expr_typ, T_Float) :: (expr2.expr_typ, T_Float) 
+            :: constraints1 @ constraints2
         | Seq | Nseq | Eq | Neq -> 
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- T_Bool; 
-            (expr1.expr_typ, expr2.expr_typ ) :: (expr1.expr_typ, T_Nofun) :: constraints1 @ constraints2 (* TODO Must not be array *)
+            (expr1.expr_typ, expr2.expr_typ ) :: (expr1.expr_typ, T_Nofun) 
+            :: constraints1 @ constraints2 (* TODO Must not be array *)
         | L | Le | G  | Ge -> 
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- T_Bool; 
-            (expr1.expr_typ, T_Ord) :: (expr1.expr_typ, expr2.expr_typ) :: constraints1 @ constraints2 
+            (expr1.expr_typ, T_Ord) :: (expr1.expr_typ, expr2.expr_typ) 
+            :: constraints1 @ constraints2 
         | And | Or -> 
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- T_Bool; 
-            (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Bool) :: constraints1 @ constraints2
+            (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Bool) 
+            :: constraints1 @ constraints2
         | Semicolon -> 
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
@@ -290,7 +309,8 @@ and walk_expr expr_node = match expr_node.expr with
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in     
             expr_node.expr_typ <- T_Unit;   
-            (T_Ref expr2.expr_typ, expr1.expr_typ) :: constraints1 @ constraints2
+            (T_Ref expr2.expr_typ, expr1.expr_typ) 
+            :: constraints1 @ constraints2
     end
   | E_Unop (op, expr1) ->
     begin
@@ -320,7 +340,8 @@ and walk_expr expr_node = match expr_node.expr with
     let constraints1 = walk_expr expr1 in
     let constraints2 = walk_expr expr2 in  
       expr_node.expr_typ <- T_Unit;
-      (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Unit) :: constraints1 @ constraints2
+      (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Unit) 
+      :: constraints1 @ constraints2
   | E_For (id, expr1, cnt, expr2, expr3) ->
     openScope();
     let current_fun = Stack.top function_stack in
@@ -332,9 +353,11 @@ and walk_expr expr_node = match expr_node.expr with
         closeScope();
         expr_node.expr_entry <- Some i;
         expr_node.expr_typ <- T_Unit;
-        (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) :: (expr3.expr_typ, T_Unit) :: constraints1 @ constraints2 @ constraints3
-  | E_Dim (a, id) ->
-    let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in     (* XXX Consider check whether a >= (dims a) *)
+        ( (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) 
+        :: (expr3.expr_typ, T_Unit) :: constraints1 
+        @ constraints2 @ constraints3 )
+  | E_Dim (a, id) -> (* XXX Consider check whether a >= (dims a) *)
+    let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in         
     let typ = getType id_entry in
       expr_node.expr_typ <- T_Int;
       expr_node.expr_entry <- Some id_entry;
@@ -344,19 +367,22 @@ and walk_expr expr_node = match expr_node.expr with
     let constraints2 = walk_expr expr2 in 
     let constraints3 = walk_expr expr3 in
       expr_node.expr_typ <- expr2.expr_typ;
-      (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, expr3.expr_typ) :: constraints1 @ constraints2 @ constraints3
+      (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, expr3.expr_typ) 
+      :: constraints1 @ constraints2 @ constraints3
   | E_Ifthen (expr1, expr2) -> 
     let constraints1 = walk_expr expr1 in
     let constraints2 = walk_expr expr2 in 
       expr_node.expr_typ <- T_Unit;
-      (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Unit) :: constraints1 @ constraints2
-  | E_Id (id, l) ->                                    (* function application *)
+      (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Unit) 
+      :: constraints1 @ constraints2
+  | E_Id (id, l) ->  (* function application *)
     let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
     let fun_typ = getType id_entry in
     let res_typ = fresh () in
-    let rec walk_params params = match params with (* walk parameters construct function type and generate constraints *)
+    (* walk parameters construct function type and generate constraints *)
+    let rec walk_params params = match params with 
       | [] -> (res_typ, [])
-      | x::xs -> 
+      | x :: xs -> 
         let constraints1 = walk_atom x in
         let (typ, constraints2) = walk_params xs in
           (T_Arrow (x.atom_typ, typ), constraints1 @ constraints2)
@@ -373,13 +399,16 @@ and walk_expr expr_node = match expr_node.expr with
             let constraints = 
               try ( List.fold_left2 (fun acc atom typ ->
                   let atom_constr = walk_atom atom in
-                    (atom.atom_typ, typ) :: atom_constr @ acc ) [] l (constructor_info.constructor_paramlist)) 
-              with Invalid_argument _ -> error "invalid number of arguments\n"; raise Exit
+                    (atom.atom_typ, typ) :: atom_constr @ acc )
+                      [] l (constructor_info.constructor_paramlist)) 
+              with Invalid_argument _ -> 
+                error "invalid number of arguments\n"; raise Exit
             in
               expr_node.expr_typ <- constructor_info.constructor_type;
               expr_node.expr_entry <- Some cid_entry;
               constraints
-          | _ -> internal "Kaname malakia, soz. expected constructor gia na ksereis"
+          | _ -> 
+              internal "Kaname malakia soz. expected constructor gia na ksereis"
       end
   | E_Match (expr1, l) -> 
     begin 
@@ -391,7 +420,9 @@ and walk_expr expr_node = match expr_node.expr with
   | E_New ty1 ->
     begin
       match ty1 with
-        | T_Array _ -> error "Cannot dynamically allocate array. This is not ruby. Or python. Or C. THIS IS LLAMA!"; raise Exit;
+        | T_Array _ -> 
+            error "Cannot dynamically allocate array. This is not ruby. \
+              Or python. Or C. THIS IS LLAMA!"; raise Exit;
         | ty1 -> 
           expr_node.expr_typ <- T_Ref ty1;
           []
@@ -455,7 +486,8 @@ and walk_atom t = match t.atom with
     let typ = fresh() in
       t.atom_typ <- T_Ref typ;
       t.atom_entry <- Some array_entry;
-      walk_array_expr expr_list [(typ_arr, T_Array (typ, D_Int (List.length expr_list)))] (* List.length was freshDim *)
+      walk_array_expr expr_list 
+        [(typ_arr, T_Array (typ, D_Int (List.length expr_list)))]
   | A_Expr expr -> 
     let constraints = walk_expr expr in
       t.atom_typ <- expr.expr_typ;
@@ -463,17 +495,21 @@ and walk_atom t = match t.atom with
 
 
 (*acc = [(tp1,te1,constr1),(tp2,te2,constr2),(tp3,te3,constr3)...]
- * (tp1,te) :: [(tp1,tp2),(tp2,tp3),(tp3,...),(te1,te2),(te2,te3),(te3,..)]@constr1@constr2...@constre
+ * (tp1,te) :: [(tp1,tp2),(tp2,tp3),(tp3,...),(te1,te2),(te2,te3),(te3,..)]
+ * @constr1@constr2...@constre
 *)
 
-and walk_clause_list lst =   (* Returns ( result_type , pattern_type, constraints)*)
+ (* Returns ( result_type , pattern_type, constraints)*)
+and walk_clause_list lst =    
   let rec walk_clause_aux l prev_clause acc =
     let (prev_pat_typ, prev_expr_typ, prev_constr) = prev_clause in
       match l with
         | [] -> (prev_expr_typ, prev_pat_typ , prev_constr @ acc)  
         | h :: t -> 
           let (pat_typ, expr_typ, constr) = walk_clause h in
-            walk_clause_aux t (pat_typ, expr_typ, constr) ((pat_typ, prev_pat_typ) :: (expr_typ, prev_expr_typ) :: acc @ prev_constr) 
+            walk_clause_aux t (pat_typ, expr_typ, constr) 
+              ((pat_typ, prev_pat_typ) :: (expr_typ, prev_expr_typ) 
+                :: acc @ prev_constr) 
   in
     match lst with 
       | [] -> internal "Clause list cannot be empty"
@@ -499,8 +535,10 @@ and walk_pattern p = match p.pattern with
           let constraints = 
             try ( List.fold_left2 (fun acc pattom typ -> 
                 let pattom_constraints = walk_pattom pattom in
-                  (pattom.pattom_typ, typ) :: pattom_constraints @ acc ) [] l constructor_info.constructor_paramlist )
-            with Invalid_argument _ -> error "Wrong number of constructor arguments\n"; raise Exit
+                  (pattom.pattom_typ, typ) :: pattom_constraints @ acc ) 
+                    [] l constructor_info.constructor_paramlist )
+            with Invalid_argument _ -> 
+              error "Wrong number of constructor arguments\n"; raise Exit
           in
             p.pattern_typ <- constructor_info.constructor_type;
             p.pattern_entry <- Some cid_entry;
@@ -526,7 +564,7 @@ and walk_pattom t = match t.pattom with
   | P_Bool b -> t.pattom_typ <- T_Bool;  []
   | P_Id id -> 
     let new_ty = fresh() in
-    let current_fun = Stack.top function_stack in (* Not sure pou leei k to zoo k o nick *)
+    let current_fun = Stack.top function_stack in 
     let id_entry = newVariable (id_make id) new_ty current_fun true in
       ignore id_entry;
       t.pattom_typ <- new_ty;
