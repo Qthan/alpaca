@@ -1,0 +1,11 @@
+incr : int ref -> unit
+decr : int ref -> unit
+
+float_of_int : int -> float
+int_of_float : float -> int
+round        : float -> int
+
+int_of_char : char -> int
+char_of_int : int -> char
+
+exit : int -> unit

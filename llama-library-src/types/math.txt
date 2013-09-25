@@ -1,0 +1,11 @@
+abs  : int -> int
+fabs : float -> float
+
+sqrt : float -> float
+sin  : float -> float
+cos  : float -> float
+tan  : float -> float
+atan : float -> float
+exp  : float -> float
+ln   : float -> float
+pi   : unit -> float

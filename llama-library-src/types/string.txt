@@ -1,0 +1,4 @@
+strlen : array of char -> int
+strcmp : array of char -> array of char -> int
+strcpy : array of char -> array of char -> unit
+strcat : array of char -> array of char -> unit

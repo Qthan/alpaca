@@ -1,9 +1,0 @@
-type list = Nil | Cons of int list
-
-let rec reverse x acc =
-  match x with
-   Nil -> acc
-   | Cons 3 lst -> reverse lst (Cons 3 acc)
-  end
-
-let main = (reverse (Cons 1 (Cons 2 (Cons 3 Nil))) Nil)

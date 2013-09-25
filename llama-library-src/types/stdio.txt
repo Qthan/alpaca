@@ -1,0 +1,11 @@
+print_int    : int -> unit
+print_bool   : bool -> unit
+print_char   : char -> unit
+print_float  : float -> unit
+print_string : array of char -> unit
+
+read_int    : unit -> int
+read_bool   : unit -> bool
+read_char   : unit -> char
+read_float  : unit -> float
+read_string : array of char -> unit

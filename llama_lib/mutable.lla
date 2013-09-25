@@ -1,8 +1,0 @@
-let main =
-  let mutable i in
-    i := 4;
-    print_int (!i);
-    incr i;
-    print_int (!i)
-
-(*works...*)

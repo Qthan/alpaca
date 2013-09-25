@@ -1,5 +1,0 @@
-let main = 
-  let a = true in
-  if (a = true) then print_string "blaaah"
-
-  (*worked with assembly warnings*)
