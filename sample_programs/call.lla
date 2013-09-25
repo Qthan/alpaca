@@ -1,0 +1,5 @@
+let f x y = print_int 1
+
+let main = f 2 3
+
+(*did not work *)
