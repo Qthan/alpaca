@@ -2,8 +2,6 @@ open Identifier
 open Types
 open AstTypes
 open SymbTypes
-open Symbol
-open Typeinf
 open Quads
 open Error
 
@@ -11,17 +9,17 @@ open Error
 let lookup_type entry =
   match entry with
     | None -> internal "Entry not found\n"
-    | Some e -> getType e
+    | Some e -> Symbol.getType e
 
 let lookup_res_type entry =
   match entry with
     | None -> internal "Entry not found\n"
-    | Some e -> getResType e
+    | Some e -> Symbol.getResType e
 
 let update_entry_typ entry =
-  let fresh_typ = getResType entry in
-  let typ = lookup_solved fresh_typ in
-    setType entry typ
+  let fresh_typ = Symbol.getResType entry in
+  let typ = Typeinf.lookup_solved fresh_typ in
+    Symbol.setType entry typ
 
 let update_def_typ def = 
   match def.def_entry with 
@@ -52,15 +50,9 @@ let split_decls decl =
     | S_Type _ -> internal "Cannot have type defs in such position"
 
 
-(* Function's local variables size*)
-let get_var_size entry =
-  match entry.entry_info with
-    | ENTRY_function f -> f.function_varsize
-    | _ -> internal "Looked for local variables of - Some thing - that's not a function"
-
 (* XXX Check if type is unit XXX*)
 let isUnit fresh_typ = 
-  match (lookup_solved fresh_typ) with 
+  match (Typeinf.lookup_solved fresh_typ) with 
     | T_Unit -> true
     | _ -> false
 
@@ -74,10 +66,12 @@ let rec gen_program ast subst outer_entry =
 
 and gen_decl_list ast outer_entry = 
   let delete_quads = ref (newQuadList ()) in
-  let () = fixOffsets outer_entry in              (* Stupid Some *)
-  let outer_size = get_var_size outer_entry in
+  let () = Symbol.fixOffsets outer_entry in
+  let outer_size = Symbol.getVarRef outer_entry in
   let () = Stack.push outer_size offset_stack in
-  let outer = genQuad (Q_Unit, O_Entry outer_entry, O_Empty, O_Empty) (newQuadList ()) in
+  let outer = 
+    genQuad (Q_Unit, O_Entry outer_entry, O_Empty, O_Empty) (newQuadList ()) 
+  in
   let quads = List.fold_left (fun o a -> gen_decl o a delete_quads) outer ast in
   let quads2 = mergeQuads !delete_quads quads in
   let final = genQuad (Q_Endu, O_Entry outer_entry, O_Empty, O_Empty) quads2 in
@@ -101,7 +95,7 @@ and gen_type_eq ty_name quads =
     | ENTRY_function f -> f
     | _ -> internal "Not a function"
   in
-  let var_size = get_var_size eqfun_entry in
+  let var_size = Symbol.getVarRef eqfun_entry in
   let () = Stack.push var_size offset_stack in
   let (a, b) = match eqfun_inf.function_paramlist with
     | [a; b] -> (a, b)
@@ -226,9 +220,9 @@ and gen_def quads def_node delete_quads =
                   let quads3 = genQuad (Q_Assign, e_info.place, O_Empty, O_Entry entry) quads2 in
                     quads3
             | (id, _) :: params ->
-              let () = fixOffsets entry in
+              let () = Symbol.fixOffsets entry in
               let typ = lookup_res_type (Some entry) in
-              let locals_size = get_var_size entry in
+              let locals_size = Symbol.getVarRef entry in
               let fQuads = newQuadList () in
               let () = Stack.push locals_size offset_stack in
               let fQuads1 = 
@@ -347,8 +341,12 @@ and gen_expr quads expr_node = match expr_node.expr with
           let typ = expr_node.expr_typ in
           let temp = newTemp typ (Stack.top offset_stack) in
           let quads3 = match typ with
-            | T_Int -> genQuad (getQuadUnop oper, O_Int 0, e1_info.place, temp) quads2
-            | T_Float -> genQuad (getQuadUnop oper, O_Float 0., e1_info.place, temp) quads2
+            | T_Int -> 
+                genQuad (getQuadUnop oper, O_Int 0, e1_info.place, temp) quads2
+            | T_Float -> 
+                genQuad (getQuadUnop oper, O_Float 0., e1_info.place, temp) 
+                  quads2
+            | _ -> internal "Arithmetic operations only work with Int/Floats"
           in
           let e_info = setExprInfo temp (newLabelList ()) in
             (quads3, e_info)
@@ -389,7 +387,7 @@ and gen_expr quads expr_node = match expr_node.expr with
         quads l
     in
     let fresh_typ = expr_node.expr_typ in
-    let typ = lookup_solved fresh_typ in
+    let typ = Typeinf.lookup_solved fresh_typ in
     let temp = newTemp typ (Stack.top offset_stack) in
     let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
     let callee_entry = match expr_node.expr_entry with
@@ -406,7 +404,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     let quads2 = backpatch quads1 cond_info.true_lst (nextLabel ()) in
     let (quads3, expr2_info) = gen_expr quads2 expr2 in
     let fresh_typ = expr_node.expr_typ in 
-    let typ = lookup_solved fresh_typ in
+    let typ = Typeinf.lookup_solved fresh_typ in
     let temp = newTemp typ (Stack.top offset_stack) in
     let quads4 = backpatch quads3 (expr2_info.next_expr) (nextLabel ()) in
     let quads5 = genQuad (Q_Assign, expr2_info.place, O_Empty, temp) quads4 in
@@ -452,7 +450,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     let (quads1, expr_info) = gen_expr quads expr in
     let quads2 = backpatch quads1 expr_info.next_expr (nextLabel ()) in
     let fresh_res_typ = expr_node.expr_typ in
-    let res_typ = lookup_solved fresh_res_typ in
+    let res_typ = Typeinf.lookup_solved fresh_res_typ in
     let temp = newTemp res_typ (Stack.top offset_stack) in
     let (quads3, last) =
       List.fold_left (fun (quads, last) (Clause (patt, expr1)) ->
@@ -482,7 +480,7 @@ and gen_expr quads expr_node = match expr_node.expr with
         | None -> internal "Expected entry"
       in
       (* allocate space for the constructor representation*)
-      let ty = getType c_entry in
+      let ty = Symbol.getType c_entry in
       let size = constructor_size c_entry in
       let new_entry = findAuxilEntry "_new" in
       let temp = newTemp (T_Ref ty) (Stack.top offset_stack) in
@@ -492,14 +490,14 @@ and gen_expr quads expr_node = match expr_node.expr with
       (* store constructor tag and arguments *)
       let temp2 = newTemp (T_Ref T_Int) (Stack.top offset_stack) in
       let quads4 = genQuad (Q_Constr, temp, O_Int 0, temp2) quads3 in
-      let quads5 = genQuad (Q_Assign, O_Int (getTag c_entry), O_Empty, O_Deref temp2) quads4 in
+      let quads5 = genQuad (Q_Assign, O_Int (Symbol.getTag c_entry), O_Empty, O_Deref temp2) quads4 in
       let (quads6, temps) = 
       List.fold_left 
         (fun (quads, offset) a ->
            let (quads1, a_info) = gen_atom quads a in
            let quads2 = backpatch quads1 a_info.next_expr (nextLabel ()) in
            let fresh_ty = a.atom_typ in
-           let atom_ty = lookup_solved fresh_ty in
+           let atom_ty = Typeinf.lookup_solved fresh_ty in
            let atom_temp = newTemp (T_Ref atom_ty) (Stack.top offset_stack) in
            let quads3 = genQuad (Q_Constr, temp, O_Int offset, atom_temp) quads2 in
            let quads4 = genQuad (Q_Assign, a_info.place, O_Empty, O_Deref atom_temp) quads3 in
@@ -518,7 +516,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           internal "Arithmetic operators cannot be conditions"
         | Seq | Nseq as oper ->
           let fresh_typ = expr1.expr_typ in
-          let typ = lookup_solved fresh_typ in
+          let typ = Typeinf.lookup_solved fresh_typ in
           let (quads1, e1_info) = gen_expr quads expr1 in
           let quads2 = 
             backpatch quads1 e1_info.next_expr (nextLabel ()) in
@@ -547,6 +545,7 @@ and gen_cond quads expr_node = match expr_node.expr with
               let cond_info = match oper with
                 | Seq -> setCondInfo t f
                 | Nseq -> setCondInfo f t
+                | _ -> internal "Only structural eq/neq is supported"
               in
                 (quads10, cond_info)
             | typ ->
@@ -871,7 +870,7 @@ and gen_atom quads atom_node = match atom_node.atom with
       | Some e -> e
       | None -> internal "Expected entry"
     in
-    let ty = getType c_entry in
+    let ty = Symbol.getType c_entry in
     let size = sizeOfType ty in
     let new_entry = findAuxilEntry "_new" in
     let temp = newTemp (T_Ref ty) (Stack.top offset_stack) in
@@ -880,7 +879,7 @@ and gen_atom quads atom_node = match atom_node.atom with
     let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Entry new_entry) quads2 in
     let temp2 = newTemp (T_Ref T_Int) (Stack.top offset_stack) in
     let quads4 = genQuad (Q_Constr, temp, O_Int 0, temp2) quads3 in
-    let quads5 = genQuad (Q_Assign, O_Int (getTag c_entry), O_Empty, O_Deref temp2) quads4 in
+    let quads5 = genQuad (Q_Assign, O_Int (Symbol.getTag c_entry), O_Empty, O_Deref temp2) quads4 in
       (quads5, setExprInfo temp (newLabelList ()))
   | A_Var v -> 
     let var_entry = match atom_node.atom_entry with 
@@ -893,7 +892,7 @@ and gen_atom quads atom_node = match atom_node.atom with
   | A_Bang a -> 
     let (quads1, expr_info) = gen_atom quads a in   
     let fresh_typ = a.atom_typ in
-    let typ = lookup_solved fresh_typ  in
+    let typ = Typeinf.lookup_solved fresh_typ  in
     let temp = newTemp typ (Stack.top offset_stack) in
     let quads2 = backpatch quads1 (expr_info.next_expr) (nextLabel ()) in
     let quads3 = genQuad (Q_Assign, expr_info.place, O_Empty, temp) quads2 in
@@ -901,7 +900,7 @@ and gen_atom quads atom_node = match atom_node.atom with
       (quads3, setExprInfo place (newLabelList ()))
   | A_Array (id, expr_list) ->
     let fresh_typ = atom_node.atom_typ in
-    let typ = lookup_solved fresh_typ  in
+    let typ = Typeinf.lookup_solved fresh_typ  in
     let array_entry = match atom_node.atom_entry with 
       | Some e -> e
       | None -> internal "Expected entry"  
@@ -950,7 +949,7 @@ and gen_pattern pat scrut quads =
       let (quads3, _, t, f) =
         List.fold_left (fun (quads, offset, t, f) patt ->
           let fresh_ty = patt.pattom_typ in
-          let ty = lookup_solved fresh_ty in
+          let ty = Typeinf.lookup_solved fresh_ty in
           let reftemp = newTemp (T_Ref ty) (Stack.top offset_stack) in
           let temp = newTemp ty (Stack.top offset_stack) in
           let quads1 = backpatch quads t (nextLabel ()) in
@@ -972,6 +971,7 @@ and gen_pattom pat scrut quads =
         | P_Sign (P_Minus, num) -> O_Int (-num)
         | P_Fsign (P_Fplus, num) -> O_Float num
         | P_Fsign (P_Fminus, num) -> O_Float (-. num)
+        | _ -> internal "Must be a sign pattern"
       in
       let t = makeLabelList (nextLabel ()) in
       let quads1 = genQuad (Q_Seq, scrut, op, O_Backpatch) quads in
@@ -985,6 +985,7 @@ and gen_pattom pat scrut quads =
         | P_Float f -> O_Float f
         | P_Chr c -> O_Char c
         | P_Bool b -> O_Bool b
+        | _ -> internal "Pattern should be one of the op"
       in
       let t = makeLabelList (nextLabel ()) in
       let quads1 = genQuad (Q_Seq, scrut, operand, O_Backpatch) quads in
@@ -1010,7 +1011,8 @@ and gen_pattom pat scrut quads =
         | None -> internal "yet another match............"
       in
       let t = makeLabelList (nextLabel ()) in
-      let quads1 = genQuad (Q_Match, scrut, O_Entry c_entry, O_Backpatch) quads in
+      let quads1 = 
+        genQuad (Q_Match, scrut, O_Entry c_entry, O_Backpatch) quads in
       let f = makeLabelList (nextLabel ()) in
       let quads2 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads1 in
       let cond_info = setCondInfo t f in

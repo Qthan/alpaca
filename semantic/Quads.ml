@@ -77,7 +77,7 @@ type quad_operands =
   | O_Res (* $$ *)
   | O_Ret (* RET *)
   | O_ByVal
-  | O_Entry of entry (* XXX *)
+  | O_Entry of entry 
   | O_Empty
   | O_Ref of quad_operands
   | O_Deref of quad_operands
@@ -165,7 +165,7 @@ let getQuadBop bop = match bop with
   | Ge -> Q_Ge
   | Eq -> Q_Eq
   | Neq -> Q_Neq
-  | And | Or | Semicolon -> internal "no operator for and/or/;" 
+  | And | Or | Semicolon | Power -> internal "no operator for and/or/;/pow" 
   | Assign -> Q_Assign
 
 let getQuadUnop unop = match unop with
@@ -196,6 +196,7 @@ let rec getQuadOpType operand =
         | _ -> internal "Cannot dereference a no reference")
     | O_Size _ -> internal "Size? Here?"
     | O_Dims _ -> internal "Dims? Dims here?"
+    | O_Index _ -> internal "Shouldn't be here, something went wrong"
 
 let newQuadList () = []
 let isEmptyQuadList quads = quads = []
@@ -325,6 +326,8 @@ let print_entry chan entry =
       fprintf chan "Constr[%a, type %a, arity %d, tag %d]" 
               pretty_id entry.entry_id pretty_typ c.constructor_type
               c.constructor_arity c.constructor_tag
+    | ENTRY_udt u -> internal "UDT entries should not be visible to user"
+    | ENTRY_none -> internal "Error, tried to access empty entry"
 
 
 let print_temp_head chan head = 
@@ -377,7 +380,7 @@ let normalizeQuads quads =
   in
   let temptbl = Hashtbl.copy labelsTbl in
   let _ = Hashtbl.clear labelsTbl in
-  let updateTbl = Hashtbl.iter (fun lbl _ -> 
+  let () = Hashtbl.iter (fun lbl _ -> 
                                   Hashtbl.add labelsTbl map.(lbl) 0) temptbl in
     List.iter updateLabel quads1;
     quads1

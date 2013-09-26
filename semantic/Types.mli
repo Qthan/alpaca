@@ -24,6 +24,7 @@ type cid_const = { cid_name : string; cid_pos : int * int; }
 type bool_const = { bval : bool; bpos : int * int; }
 type op = { pos : int * int; }
 val tag_size : int
+val ar_size : int
 val sizeOfType : typ -> int
 val sizeOfElement : typ -> int
 val equalType : typ -> typ -> bool

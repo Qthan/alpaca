@@ -67,6 +67,7 @@ type op = {
 
 
 let tag_size = 2 (* Tag of UDT constructors *)
+let ar_size = 8 (* Size of the static part of the AR *)
 
 let rec sizeOfType t =
   match t with
@@ -77,7 +78,8 @@ let rec sizeOfType t =
     | T_Bool           -> 1
     | T_Unit           -> 0
     | T_Ref typ        -> 2
-    | T_Arrow (_, _)   -> 4  (* 2 bytes for code pointer and 2 bytes for enviroment pointer *)
+    (* 2 bytes for code pointer and 2 bytes for enviroment pointer *)
+    | T_Arrow (_, _)   -> 4  
     | T_Id _           -> 2
     | T_Alpha _ | T_Notype 
     | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"

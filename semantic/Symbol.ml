@@ -76,7 +76,8 @@ let printSymbolTable () =
                 fprintf ppf "<none>"
               | ENTRY_variable inf ->
                 if show_offsets then
-                  fprintf ppf "[%d] :%a" inf.variable_offset pretty_typ inf.variable_type
+                  fprintf ppf "[%d] :%a" 
+                    inf.variable_offset pretty_typ inf.variable_type
               | ENTRY_function inf ->
                 let param ppf e =
                   match e.entry_info with
@@ -123,8 +124,12 @@ let printSymbolTable () =
                   fprintf ppf "[%d]" inf.temporary_offset
               | ENTRY_udt _ -> ()
               | ENTRY_constructor inf ->
-                let pp_list ppf l = List.iter (fprintf ppf "%a " pretty_typ) l in
-                  fprintf ppf " Type: %a Parameters: %a" pretty_typ inf.constructor_type pp_list inf.constructor_paramlist
+                let pp_list ppf l = 
+                  List.iter (fprintf ppf "%a " pretty_typ) l 
+                in
+                  fprintf ppf " Type: %a Parameters: %a" 
+                    pretty_typ inf.constructor_type 
+                    pp_list inf.constructor_paramlist
           end
       in
       let rec entries ppf es =
@@ -436,7 +441,10 @@ let getType e =
         | ENTRY_parameter p -> p.parameter_type
         | _ -> internal "Formal parameters must be parameter entries"
       in
-      let t = List.fold_right (fun param ty -> T_Arrow (param_typ param, ty)) params res_typ in
+      let t = 
+        List.fold_right (fun param ty -> T_Arrow (param_typ param, ty)) 
+          params res_typ 
+      in
         t
     | ENTRY_parameter p -> p.parameter_type
     | ENTRY_temporary t -> t.temporary_type
@@ -483,6 +491,12 @@ let getVarSize e =
     | ENTRY_function f -> !(f.function_varsize)
     | _ -> internal "Not a function"
 
+(* Function's local variables size*)
+let getVarRef entry =
+  match entry.entry_info with
+    | ENTRY_function f -> f.function_varsize
+    | _ -> internal "Looked for local variables of - Some thing - that's not a function"
+
 let fixOffsets entry =
   let rec fixParamOffsets parlist acc =
     match parlist with 
@@ -502,7 +516,9 @@ let fixOffsets entry =
   in
     match entry.entry_info with
       | ENTRY_function f ->
-        let par_size = (fixParamOffsets (List.rev f.function_paramlist) 8) - 8 in
+        let par_size = 
+          (fixParamOffsets (List.rev f.function_paramlist) ar_size) - ar_size 
+        in
         let var_size = fixVarOffsets f.function_varlist 0 in
           f.function_paramsize <- par_size;
           f.function_varsize <- ref var_size;

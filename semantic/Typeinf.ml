@@ -47,7 +47,7 @@ let rec lookup_solved tvar =
               match (try Some (checkType typ) 
                      with PolymorphicTypes -> None) with
                 | None -> 
-                    warning "Unused polymorphic type"; raise Exit (* print the type too *)
+                    warning "Unused polymorphic type"; raise Exit
                 | Some () -> typ
             end
       end
@@ -150,7 +150,7 @@ let unify c =
         unifyDims (subDim (D_Alpha alpha) dim1 lst) 
                   (subArray (D_Alpha alpha) dim1 acc)
     | (dim1, dim2) :: lst -> 
-        printf "Could not match dim %a with dim %a \n" pretty_dim dim1 pretty_dim dim2; raise Exit
+        raise (DimError (dim1, dim2))
   in 
   let rec unifyOrd ord = match ord with
     | [] -> ()
