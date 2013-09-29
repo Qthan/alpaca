@@ -118,13 +118,13 @@ and quadToFinal quad instr_lst =
             let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
               instr_lst4
           | T_Float ->
-              let instr_lst1 = loadReal (quad.arg1) instr_lst in
-              let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
-              let instr_lst3 = genInstr Fcompp instr_lst2 in
-              let instr_lst4 = genInstr (Fstsw (Reg Ax)) instr_lst3 in
-              let instr_lst5 = genInstr Sahf instr_lst4 in
-              let instr_lst6 = genInstr (CondJmp (relOpJmpF relop, Label (makeLabel quad.arg3))) instr_lst5 in
-                instr_lst6
+            let instr_lst1 = loadReal (quad.arg1) instr_lst in
+            let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
+            let instr_lst3 = genInstr Fcompp instr_lst2 in
+            let instr_lst4 = genInstr (Fstsw (Reg Ax)) instr_lst3 in
+            let instr_lst5 = genInstr Sahf instr_lst4 in
+            let instr_lst6 = genInstr (CondJmp (relOpJmpF relop, Label (makeLabel quad.arg3))) instr_lst5 in
+              instr_lst6
           | T_Array _ -> internal "Operator = does not support type array"
           | T_Arrow _ -> internal "Operator = does not support functions"
           | T_Id _ -> internal "fuck :)"
@@ -169,21 +169,21 @@ and quadToFinal quad instr_lst =
       | Q_Array -> 
         (* pairneis ton arithmo twn diastasew n tou pinaka, kai gia na vreis to i-osto stoixeio
          * pas addr+ int_size + i*size *)
-         (* (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size + int_size*dims
-          mov di, addr
-         load bx, en
-         mov dx, 1  ; dx holds Πdi
-         i : 
-            mov ax, word ptr [di + (i-1)*int_size]
-            mul dx
-            mov dx, ax
-            load ax, e(i-1)
-            imul dx
-            add bx, ax
-        mov ax, type_size
-        mul bx     ; ax = (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size 
-        add ax,2*dims  ; done
-         *)
+        (* (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size + int_size*dims
+           mov di, addr
+           load bx, en
+           mov dx, 1  ; dx holds Πdi
+           i : 
+           mov ax, word ptr [di + (i-1)*int_size]
+           mul dx
+           mov dx, ax
+           load ax, e(i-1)
+           imul dx
+           add bx, ax
+           mov ax, type_size
+           mul bx     ; ax = (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size 
+           add ax,2*dims  ; done
+        *)
         let rec loop exprs i instr_lst = 
           match i, exprs with
             | 1, [] -> instr_lst 
@@ -319,8 +319,8 @@ and quadToFinal quad instr_lst =
         in
           instr_lst4 
       | Q_Fail ->
-         let instr_lst1 = 
-           genInstr (Mov (Reg Ax, Immediate "4C01h")) instr_lst in
-         let instr_lst2 = genInstr (Interrupt (Immediate "21h")) instr_lst1 in
-           instr_lst2
+        let instr_lst1 = 
+          genInstr (Mov (Reg Ax, Immediate "4C01h")) instr_lst in
+        let instr_lst2 = genInstr (Interrupt (Immediate "21h")) instr_lst1 in
+          instr_lst2
 

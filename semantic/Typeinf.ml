@@ -47,7 +47,7 @@ let rec lookup_solved tvar =
               match (try Some (checkType typ) 
                      with PolymorphicTypes -> None) with
                 | None -> 
-                    warning "Unused polymorphic type"; raise Exit
+                  warning "Unused polymorphic type"; raise Exit
                 | Some () -> typ
             end
       end
@@ -91,7 +91,7 @@ let rec singleSub alpha t typ = match alpha, typ with
   | T_Alpha a, T_Alpha n when a = n -> t
   | T_Alpha _, T_Alpha _ -> typ
   | T_Alpha _, T_Arrow (typ1, typ2) -> 
-      T_Arrow ((singleSub alpha t typ1),(singleSub alpha t typ2))
+    T_Arrow ((singleSub alpha t typ1),(singleSub alpha t typ2))
   | T_Alpha _, T_Ref typ1 -> T_Ref (singleSub alpha t typ1)
   | T_Alpha _, T_Array (typ1,n)-> T_Array ((singleSub alpha t typ1), n)
   | T_Alpha _, _ -> typ
@@ -144,13 +144,13 @@ let unify c =
     | [] -> acc
     | (D_Int a, D_Int b) :: lst when a = b -> unifyDims lst acc 
     | (D_Alpha alpha, dim2) :: lst -> 
-        unifyDims (subDim (D_Alpha alpha) dim2 lst) 
-                  (subArray (D_Alpha alpha) dim2 acc)  
+      unifyDims (subDim (D_Alpha alpha) dim2 lst) 
+        (subArray (D_Alpha alpha) dim2 acc)  
     | (dim1, D_Alpha alpha) :: lst -> 
-        unifyDims (subDim (D_Alpha alpha) dim1 lst) 
-                  (subArray (D_Alpha alpha) dim1 acc)
+      unifyDims (subDim (D_Alpha alpha) dim1 lst) 
+        (subArray (D_Alpha alpha) dim1 acc)
     | (dim1, dim2) :: lst -> 
-        raise (DimError (dim1, dim2))
+      raise (DimError (dim1, dim2))
   in 
   let rec unifyOrd ord = match ord with
     | [] -> ()
@@ -189,7 +189,7 @@ let unify c =
       let sub_tlist = subc (T_Alpha alpha) tau1 in
       let sub_list = subl (T_Alpha alpha) tau1 in
         unifyAux (sub_tlist c) (sub_list ord) dims (sub_list nofun) 
-                 ((T_Alpha alpha, tau1) :: (sub_tlist acc))
+          ((T_Alpha alpha, tau1) :: (sub_tlist acc))
     | (typ1, typ2) :: lst -> raise (UnifyError (typ1,  typ2))
   in
   let solved = unifyAux c [] [] [] [] in

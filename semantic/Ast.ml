@@ -247,23 +247,23 @@ and walk_typedef_list l = match l with
     let walk_constructor tid cid types_list tag = 
       List.iter (function 
           | T_Id id -> 
-              let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
+            let entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in
               begin
                 match entry.entry_info with
                   | ENTRY_udt _ -> ()
                   | _ -> 
-                      error "Constructor %s parameters must \
-                        be of a valid type\n" cid; 
-                      raise Exit;
+                    error "Constructor %s parameters must \
+                           be of a valid type\n" cid; 
+                    raise Exit;
               end
           | _ -> ()) types_list;
       let c = newConstructor (id_make cid) (T_Id tid) types_list tag true in
         ignore c;
     in
       List.iter (fun (id, constructors_list) -> 
-                   List.iteri (fun i (cid, types_list) -> 
-                                 walk_constructor id cid types_list i) 
-                     constructors_list) l;
+          List.iteri (fun i (cid, types_list) -> 
+              walk_constructor id cid types_list i) 
+            constructors_list) l;
       [] (* Check return *)
 
 and walk_expr expr_node = match expr_node.expr with 
@@ -354,8 +354,8 @@ and walk_expr expr_node = match expr_node.expr with
         expr_node.expr_entry <- Some i;
         expr_node.expr_typ <- T_Unit;
         ( (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) 
-        :: (expr3.expr_typ, T_Unit) :: constraints1 
-        @ constraints2 @ constraints3 )
+          :: (expr3.expr_typ, T_Unit) :: constraints1 
+          @ constraints2 @ constraints3 )
   | E_Dim (a, id) -> (* XXX Consider check whether a >= (dims a) *)
     let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in         
     let typ = getType id_entry in
@@ -400,7 +400,7 @@ and walk_expr expr_node = match expr_node.expr with
               try ( List.fold_left2 (fun acc atom typ ->
                   let atom_constr = walk_atom atom in
                     (atom.atom_typ, typ) :: atom_constr @ acc )
-                      [] l (constructor_info.constructor_paramlist)) 
+                  [] l (constructor_info.constructor_paramlist)) 
               with Invalid_argument _ -> 
                 error "invalid number of arguments\n"; raise Exit
             in
@@ -408,7 +408,7 @@ and walk_expr expr_node = match expr_node.expr with
               expr_node.expr_entry <- Some cid_entry;
               constraints
           | _ -> 
-              internal "Kaname malakia soz. expected constructor gia na ksereis"
+            internal "Kaname malakia soz. expected constructor gia na ksereis"
       end
   | E_Match (expr1, l) -> 
     begin 
@@ -421,8 +421,8 @@ and walk_expr expr_node = match expr_node.expr with
     begin
       match ty1 with
         | T_Array _ -> 
-            error "Cannot dynamically allocate array. This is not ruby. \
-              Or python. Or C. THIS IS LLAMA!"; raise Exit;
+          error "Cannot dynamically allocate array. This is not ruby. \
+                 Or python. Or C. THIS IS LLAMA!"; raise Exit;
         | ty1 -> 
           expr_node.expr_typ <- T_Ref ty1;
           []
@@ -499,7 +499,7 @@ and walk_atom t = match t.atom with
  * @constr1@constr2...@constre
 *)
 
- (* Returns ( result_type , pattern_type, constraints)*)
+(* Returns ( result_type , pattern_type, constraints)*)
 and walk_clause_list lst =    
   let rec walk_clause_aux l prev_clause acc =
     let (prev_pat_typ, prev_expr_typ, prev_constr) = prev_clause in
@@ -509,7 +509,7 @@ and walk_clause_list lst =
           let (pat_typ, expr_typ, constr) = walk_clause h in
             walk_clause_aux t (pat_typ, expr_typ, constr) 
               ((pat_typ, prev_pat_typ) :: (expr_typ, prev_expr_typ) 
-                :: acc @ prev_constr) 
+               :: acc @ prev_constr) 
   in
     match lst with 
       | [] -> internal "Clause list cannot be empty"
@@ -536,7 +536,7 @@ and walk_pattern p = match p.pattern with
             try ( List.fold_left2 (fun acc pattom typ -> 
                 let pattom_constraints = walk_pattom pattom in
                   (pattom.pattom_typ, typ) :: pattom_constraints @ acc ) 
-                    [] l constructor_info.constructor_paramlist )
+                [] l constructor_info.constructor_paramlist )
             with Invalid_argument _ -> 
               error "Wrong number of constructor arguments\n"; raise Exit
           in

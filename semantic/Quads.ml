@@ -46,8 +46,6 @@ let peekLabel (l : labelList) =
 let mergeLabels (l1 : labelList) (l2 : labelList) =
   l1 @ l2
 
-
-
 (* Intermediate Types *)
 type temp_header = {
   temp_name : int;
@@ -298,7 +296,7 @@ let string_of_operator = function
   | Q_Jump -> "Jump" | Q_Jumpl -> "Jumpl" | Q_Label -> "Label??"
   | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 
   | Q_Match -> "match" | Q_Constr -> "constr" | Q_Fail -> "fail"
-  
+
 let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 
 let print_entry chan entry =
@@ -309,26 +307,26 @@ let print_entry chan entry =
         | None -> id_make "None"
       in
         fprintf chan "Fun[%a, index %d, params %d, vars %d, nest %d, parent %a]" 
-                pretty_id entry.entry_id
-                f.function_index f.function_paramsize 
-                !(f.function_varsize) f.function_nesting
-                pretty_id parent_id
+          pretty_id entry.entry_id
+          f.function_index f.function_paramsize 
+          !(f.function_varsize) f.function_nesting
+          pretty_id parent_id
     | ENTRY_variable v -> 
       fprintf chan "Var[%a, type %a, offset %d, nest %d]" 
-              pretty_id entry.entry_id pretty_typ v.variable_type 
-              v.variable_offset v.variable_nesting
+        pretty_id entry.entry_id pretty_typ v.variable_type 
+        v.variable_offset v.variable_nesting
     | ENTRY_parameter p -> 
       fprintf chan "Par[%a, type %a, offset %d, nest %d]" 
-              pretty_id entry.entry_id pretty_typ p.parameter_type 
-              p.parameter_offset p.parameter_nesting
+        pretty_id entry.entry_id pretty_typ p.parameter_type 
+        p.parameter_offset p.parameter_nesting
     | ENTRY_temporary t ->
       fprintf chan "Temp[%a, type %a, offset %d]" 
-              pretty_id entry.entry_id pretty_typ t.temporary_type 
-              t.temporary_offset
+        pretty_id entry.entry_id pretty_typ t.temporary_type 
+        t.temporary_offset
     | ENTRY_constructor c ->
       fprintf chan "Constr[%a, type %a, arity %d, tag %d]" 
-              pretty_id entry.entry_id pretty_typ c.constructor_type
-              c.constructor_arity c.constructor_tag
+        pretty_id entry.entry_id pretty_typ c.constructor_type
+        c.constructor_arity c.constructor_tag
     | ENTRY_udt u -> internal "UDT entries should not be visible to user"
     | ENTRY_none -> internal "Error, tried to access empty entry"
 
@@ -345,7 +343,7 @@ let rec print_indexes chan lst =
       | x :: xs -> fprintf ppf "%a, %a" print_operand x pp_indexes xs
   in
     fprintf chan "%a" pp_indexes lst
-    
+
 and print_operand chan op = match op with
   | O_Int i -> fprintf chan "%d" i 
   | O_Float f -> fprintf chan "%f" f 
@@ -384,7 +382,7 @@ let normalizeQuads quads =
   let temptbl = Hashtbl.copy labelsTbl in
   let _ = Hashtbl.clear labelsTbl in
   let () = Hashtbl.iter (fun lbl _ -> 
-                                  Hashtbl.add labelsTbl map.(lbl) 0) temptbl in
+      Hashtbl.add labelsTbl map.(lbl) 0) temptbl in
     List.iter updateLabel quads1;
     quads1
 
@@ -392,13 +390,11 @@ let normalizeQuads quads =
 let printQuad chan quad =
   fprintf chan "%d:\t %a, %a, %a, %a\n" 
     quad.label print_operator quad.operator 
-    print_operand quad.arg1 print_operand quad.arg2 print_operand quad.arg3
-(* A new line after Endu no longer satisfies us because it will also be
- * printed in the assembly file. *)
-(*match quad.operator with
-  | Q_Endu -> fprintf chan "\n"
-  | _ -> ()*)
+    print_operand quad.arg1 print_operand quad.arg2 print_operand quad.arg3;
+  match quad.operator with
+    | Q_Endu -> fprintf chan "\n"
+    | _ -> ()
 
-let printQuads quads = 
-  List.iter (fun q -> printf "%a" printQuad q) quads
+let printQuads chan quads = 
+  List.iter (fun q -> fprintf chan "%a" printQuad q) quads
 

@@ -286,37 +286,37 @@ let newUdt id err =
   let typ = T_Id (id_name id) in 
   let outer_entry = lookupEntry (id_make "_outer") LOOKUP_ALL_SCOPES true in
   let param_info1 = {
-      parameter_type = typ;
-      parameter_offset = 8 + (sizeOfType typ);
-      parameter_mode = PASS_BY_VALUE;
-      parameter_nesting = 0
+    parameter_type = typ;
+    parameter_offset = 8 + (sizeOfType typ);
+    parameter_mode = PASS_BY_VALUE;
+    parameter_nesting = 0
   } in
   let param_info2 = {
     param_info1 with parameter_offset = 8;
   } in
   let param_entry1 = {
-      entry_id = id_make "a";
-      entry_scope = !currentScope;
-      entry_info = ENTRY_parameter param_info1
+    entry_id = id_make "a";
+    entry_scope = !currentScope;
+    entry_info = ENTRY_parameter param_info1
   } in
-    let param_entry2 = {
-      entry_id = id_make "b";
-      entry_scope = !currentScope;
-      entry_info = ENTRY_parameter param_info2
+  let param_entry2 = {
+    entry_id = id_make "b";
+    entry_scope = !currentScope;
+    entry_info = ENTRY_parameter param_info2
   } in
   let fun_inf = {
-      function_isForward = false;
-      function_paramlist = [param_entry1; param_entry2];
-      function_varlist = [];
-      function_tmplist = [];
-      function_result = T_Bool;
-      function_pstatus = PARDEF_DEFINE;
-      function_varsize = ref 0; 
-      function_paramsize = 2*(sizeOfType typ);
-      function_nesting = 0;
-      function_parent = Some outer_entry;
-      function_index = (incr fun_index; !fun_index);
-      function_library = false 
+    function_isForward = false;
+    function_paramlist = [param_entry1; param_entry2];
+    function_varlist = [];
+    function_tmplist = [];
+    function_result = T_Bool;
+    function_pstatus = PARDEF_DEFINE;
+    function_varsize = ref 0; 
+    function_paramsize = 2*(sizeOfType typ);
+    function_nesting = 0;
+    function_parent = Some outer_entry;
+    function_index = (incr fun_index; !fun_index);
+    function_library = false 
   } in
   let fun_entry = {
     entry_id = id_make ("_eq" ^ (id_name id));
@@ -348,14 +348,14 @@ let newConstructor id typ typ_list tag err =
     constructor_tag = tag;
     constructor_arity = List.length typ_list
   } in
-    let c = newEntry id (ENTRY_constructor inf) err in
-    let tid = match typ with
-      | T_Id tid -> tid
-      | _ -> internal "not a udt"
-    in
-    let u_entry = lookupEntry (id_make tid) LOOKUP_CURRENT_SCOPE true in
-    let () = addConstructor u_entry c in
-      c
+  let c = newEntry id (ENTRY_constructor inf) err in
+  let tid = match typ with
+    | T_Id tid -> tid
+    | _ -> internal "not a udt"
+  in
+  let u_entry = lookupEntry (id_make tid) LOOKUP_CURRENT_SCOPE true in
+  let () = addConstructor u_entry c in
+    c
 
 let newFunction id parent err =
   try
@@ -482,7 +482,7 @@ let getConstructorParamList e =
   match e.entry_info with
     | ENTRY_constructor c -> c.constructor_paramlist
     | _ -> internal "cannot find parameters in a non constructor"
-    
+
 let getVarList e =
   match e.entry_info with
     | ENTRY_function f -> f.function_varlist
@@ -529,7 +529,7 @@ let fixOffsets entry =
 let addTemp tmp e =
   match e.entry_info with
     | ENTRY_function f -> 
-        f.function_tmplist <- tmp :: f.function_tmplist
+      f.function_tmplist <- tmp :: f.function_tmplist
     | _ -> internal "Cannot add new temp to non-function entry"
 
 let setLibraryFunction e = 
@@ -547,8 +547,8 @@ let getTag e =
   match e.entry_info with
     | ENTRY_constructor c -> c.constructor_tag
     | _ -> internal "Tag's are only supported by UDT"
-    
+
 let getEqFun u_entry = match u_entry.entry_info with
   | ENTRY_udt u -> u.eq_function
   | _ -> internal "Not a UDT"
-  
+
