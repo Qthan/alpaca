@@ -123,8 +123,9 @@ let addLabelTbl label = Hashtbl.replace labelsTbl label 0
 
 let newTemp =
   let k = ref 1 in
-    fun typ size -> 
-      let tempsize = sizeOfType typ in 
+    fun typ f -> 
+      let tempsize = sizeOfType typ in
+      let size = Symbol.getVarRef f in
         size := !size + tempsize; 
         let header = {  
           entry_id = id_make ("$" ^ string_of_int !k);
@@ -143,6 +144,7 @@ let newTemp =
             }
         }
         in
+          Symbol.addTemp header f;
           incr k;
           O_Entry header
 
@@ -251,6 +253,7 @@ let auxil_funs =
         function_isForward = false;
         function_paramlist = [];
         function_varlist = [];
+        function_tmplist = [];
         function_varsize = ref 0;
         function_paramsize = size;       
         function_result = typ;

@@ -308,6 +308,7 @@ let newUdt id err =
       function_isForward = false;
       function_paramlist = [param_entry1; param_entry2];
       function_varlist = [];
+      function_tmplist = [];
       function_result = T_Bool;
       function_pstatus = PARDEF_DEFINE;
       function_varsize = ref 0; 
@@ -381,6 +382,7 @@ let newFunction id parent err =
       function_isForward = false;
       function_paramlist = [];
       function_varlist = [];
+      function_tmplist = [];
       function_result = T_Notype;
       function_pstatus = PARDEF_DEFINE;
       function_varsize = ref 0; 
@@ -523,6 +525,12 @@ let fixOffsets entry =
           f.function_paramsize <- par_size;
           f.function_varsize <- ref var_size;
       | _ -> internal "cannot fix offsets in a non function"
+
+let addTemp tmp e =
+  match e.entry_info with
+    | ENTRY_function f -> 
+        f.function_tmplist <- tmp :: f.function_tmplist
+    | _ -> internal "Cannot add new temp to non-function entry"
 
 let setLibraryFunction e = 
   match e.entry_info with

@@ -67,6 +67,7 @@ val getVarList : SymbTypes.entry -> SymbTypes.entry list
 val getVarSize : SymbTypes.entry -> int
 val getVarRef : SymbTypes.entry -> int ref
 val fixOffsets : SymbTypes.entry -> unit
+val addTemp : SymbTypes.entry -> SymbTypes.entry -> unit
 val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
