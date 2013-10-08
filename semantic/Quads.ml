@@ -7,51 +7,62 @@ open SymbTypes
 open Symbol
 open Pretty_print
 
-(* Label lists interface *)
-(*module type LABEL_LIST =  
-  sig
-  type labelList
+
+module Label : 
+sig
+  type t = int
+  val label : t ref 
+  (* Create and return a new label *)
+  val newLabel : unit -> t
+  (* Return next label *)
+  val nextLabel : unit -> t
+end =
+struct
+  type t = int
+  let label = ref 0
+  let newLabel () = incr label; !label 
+  let nextLabel () = !label + 1
+end
+
+module type LABEL_LIST =  
+sig
+  type labelList = Label.t list
   (* create an empty labelList *)
   val newLabelList : unit -> labelList
   (* create a labelList with label n *) 
-  val makeLabelList : int -> labelList
+  val makeLabelList : Label.t -> labelList
   (* add a new label to labelList *)
-  val addLabel : int -> labelList -> labelList
+  val addLabel : Label.t -> labelList -> labelList
   (* return true if no labels are stored *)
   val is_empty : labelList -> bool
   (* raised on remove/peek of empty labelList *) 
   exception EmptyLabelList
   (* retrieve first element and return rest of labelList *)
-  val removeLabel : labelList -> int * labelList
+  val removeLabel : labelList -> Label.t * labelList
   (* peek at first element *)
-  val peekLabel : labelList -> int
+  val peekLabel : labelList -> Label.t
+  (* merge two labelLists *)
   val mergeLabels : labelList -> labelList -> labelList
-  end
-*)
+end
 
-type labelList = int list
-exception EmptyLabelList
-let newLabelList () : labelList = []
-let makeLabelList (n : int) = [n]
-let addLabel (n : int) (l : labelList) = n :: l
-let is_empty (l : labelList) = l = []
-let removeLabel (l : labelList) =
-  match l with 
-    | [] -> raise EmptyLabelList
-    | n :: t -> (n, t)
-let peekLabel (l : labelList) = 
-  match l with
-    | [] -> raise EmptyLabelList
-    | n :: _ -> n
-let mergeLabels (l1 : labelList) (l2 : labelList) =
-  l1 @ l2
-
-(* Intermediate Types *)
-type temp_header = {
-  temp_name : int;
-  temp_type : typ;
-  temp_offset : int
-}
+module Labels : LABEL_LIST =
+struct
+  type labelList = Label.t list
+  exception EmptyLabelList
+  let newLabelList () : labelList = []
+  let makeLabelList (n : Label.t) = [n]
+  let addLabel (n : Label.t) (l : labelList) = n :: l
+  let is_empty (l : labelList) = l = []
+  let removeLabel (l : labelList) =
+    match l with 
+      | [] -> raise EmptyLabelList
+      | n :: t -> (n, t)
+  let peekLabel (l : labelList) = 
+    match l with
+      | [] -> raise EmptyLabelList
+      | n :: _ -> n
+  let mergeLabels (l1 : labelList) (l2 : labelList) = l1 @ l2
+end
 
 type quad_operators =
   | Q_Unit | Q_Endu
@@ -84,7 +95,7 @@ type quad_operands =
   | O_Index of quad_operands list
 
 type quad = {
-  label : int;
+  label : Label.t;
   operator : quad_operators;
   arg1 : quad_operands;
   arg2 : quad_operands;
@@ -93,25 +104,19 @@ type quad = {
 
 type expr_info = {
   place : quad_operands;
-  next_expr  : labelList
+  next_expr  : Labels.labelList
 }
 
 type cond_info = {
-  true_lst  : labelList;
-  false_lst : labelList
+  true_lst  : Labels.labelList;
+  false_lst : Labels.labelList
 }
 
 type stmt_info = { 
-  next_stmt : labelList
+  next_stmt : Labels.labelList
 }
 
 (* Quads infrastructure *)
-
-let label = ref 0 
-
-let newLabel = fun () -> incr label; !label
-
-let nextLabel = fun () -> !label + 1
 
 let labelsTbl = Hashtbl.create 101 
 
@@ -119,6 +124,7 @@ let labelsTbl = Hashtbl.create 101
 let memLabelTbl label = Hashtbl.mem labelsTbl label 
 let addLabelTbl label = Hashtbl.replace labelsTbl label 0
 
+(* Create a new temp and register it with the symbol table *)
 let newTemp =
   let k = ref 1 in
     fun typ f -> 
@@ -203,7 +209,7 @@ let isEmptyQuadList quads = quads = []
 
 let genQuad (op, ar1, ar2, ar3) quad_lst =
   let quad = {
-    label = newLabel ();
+    label = Label.newLabel ();
     operator = op;
     arg1 = ar1;
     arg2 = ar2;
@@ -231,9 +237,7 @@ let backpatch quads lst patch =
         | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
 
-let entry_of_quadop op = match op with 
-  | O_Entry e -> e
-  | _ -> internal "expecting entry"
+
 
 let auxil_funs =
   let makeEntry id size typ = { 
@@ -331,10 +335,6 @@ let print_entry chan entry =
     | ENTRY_none -> internal "Error, tried to access empty entry"
 
 
-let print_temp_head chan head = 
-  fprintf chan "[%d, %a, %d]" head.temp_name pretty_typ 
-    head.temp_type head.temp_offset 
-
 let rec print_indexes chan lst =
   let rec pp_indexes ppf lst =
     match lst with
@@ -363,10 +363,16 @@ and print_operand chan op = match op with
   | O_Dims i -> fprintf chan "Dims %d" i
   | O_Index lst -> fprintf chan "Indexes [%a]" print_indexes lst
 
+
+let entry_of_quadop op = match op with 
+  | O_Entry e -> e
+  | _ -> fprintf (Format.std_formatter) "%a\n" print_operand op;
+    internal "expecting entry"
+
 (* Make quad labels consequent *)
 
 let normalizeQuads quads =
-  let map = Array.make (nextLabel()) 0 in
+  let map = Array.make (Label.nextLabel()) 0 in
   let quads1 = List.mapi (fun i q -> map.(q.label) <- (i+1);
                            { label = i+1;
                              operator = q.operator;

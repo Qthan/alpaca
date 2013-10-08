@@ -9,7 +9,7 @@ endif
 
 EXEFILE=gracec$(EXE)
 MLFILES=Hashcons.ml Identifier.ml Error.ml Types.ml Pretty_print.ml Typeinf.ml Symbol.ml \
-   Lexer.ml Ast.ml Quads.ml Intermediate.ml Final.ml CodeGen.ml EmitMasm.ml Parser.ml Main.ml
+   Lexer.ml Ast.ml Quads.ml Intermediate.ml Cfg.ml Final.ml CodeGen.ml EmitMasm.ml Parser.ml Main.ml
 MLIFILES=Hashcons.mli Identifier.mli Error.mli Types.mli Pretty_print.mli Typeinf.mli Symbol.mli \
    Lexer.mli AstTypes.mli Ast.mli Parser.mli
 
@@ -25,18 +25,19 @@ SRCFILES=Makefile extend.ml Lexer.mll Parser.mly \
 CAMLP5_FLAGS=-pp "camlp5o ./extend.cmo"
 OCAMLC_FLAGS=-g
 OCAMLOPT_FLAGS=
-OCAMLC=ocamlc $(OCAMLC_FLAGS)
-OCAMLOPT=ocamlopt $(OCAMLOPT_FLAGS)
-OCAMLDEP=ocamldep
+PACKAGES=ocamlgraph
+OCAMLC= ocamlfind ocamlc $(OCAMLC_FLAGS) -package $(PACKAGES)
+OCAMLOPT=ocamlfind ocamlopt $(OCAMLOPT_FLAGS) -package $(PACKAGES)
+OCAMLDEP=ocamlfind ocamldep -package $(PACKAGES)
 INCLUDES=
 
 default: Llama 
 
 Llama: $(CMOFILES)
-	$(OCAMLC) -o $@ $^
+	$(OCAMLC) -o $@ $^ -linkpkg
 
 extend.cmo: extend.ml
-	$(OCAMLC) -pp "camlp5o pa_extend.cmo q_MLast.cmo" -I +camlp5 -c $<
+	$(OCAMLC) -pp "camlp5o pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` -c $<
 
 %.cmo: %.ml %.mli extend.cmo
 	$(OCAMLC) $(CAMLP5_FLAGS) -c $<

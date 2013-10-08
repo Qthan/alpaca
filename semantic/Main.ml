@@ -59,6 +59,8 @@ let main =
       let ast = Parser.program Lexer.lexer lexbuf in
       let (solved, outer_entry, library_funs) = Ast.walk_program ast in
       let intermediate = Intermediate.gen_program ast solved outer_entry in
+      let cfg = Cfg.Blocks.create_blocks intermediate in
+      let () = Cfg.Blocks.print_blocks cfg in
       let () =  match default_config.quads with
         | true -> 
           Quads.printQuads (Format.formatter_of_out_channel cout) intermediate
@@ -74,13 +76,15 @@ let main =
           (lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum);
         exit 1
       | Typeinf.UnifyError (typ1, typ2) ->
-        error "Cannot match type %a with type %a" pretty_typ typ1 pretty_typ typ2;
+        error "Cannot match type %a with type %a" 
+          pretty_typ typ1 pretty_typ typ2;
         exit 2
       | Typeinf.TypeError (err, typ) ->
         error "Type error on type %a:\n %s" pretty_typ typ err;
         exit 2
       | Typeinf.DimError (dim1, dim2) ->
-        error "Array dimensions error. Cannot match dimension size %a with %a" pretty_dim dim1 pretty_dim dim2; 
+        error "Array dimensions error. Cannot match dimension size %a with %a" 
+          pretty_dim dim1 pretty_dim dim2; 
         exit 2
       | Intermediate.InvalidCompare typ ->
         error "Cannot compare values of type %a" pretty_typ typ;
