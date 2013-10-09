@@ -237,8 +237,6 @@ let backpatch quads lst patch =
         | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
 
-
-
 let auxil_funs =
   let makeEntry id size typ = { 
     entry_id = (id_make id);
@@ -274,6 +272,10 @@ let auxil_funs =
       ("_pow", makeEntry "_pow" 20 T_Float)]
 
 let findAuxilEntry id = List.assoc id auxil_funs
+
+let is_auxil_fun id =
+  List.mem_assoc (Identifier.id_name id) auxil_funs
+
 
 let string_of_operator = function 
   | Q_Unit -> "Unit" 

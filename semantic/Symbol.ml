@@ -552,3 +552,16 @@ let getEqFun u_entry = match u_entry.entry_info with
   | ENTRY_udt u -> u.eq_function
   | _ -> internal "Not a UDT"
 
+let entry_eq e1 e2 =
+  if (e1.entry_id = e2.entry_id) then true
+  else
+    match e1.entry_info, e2.entry_info with
+      | ENTRY_function f1, ENTRY_function f2 ->
+        f1.function_index = f2.function_index
+      | ENTRY_variable v1, ENTRY_variable v2 ->
+        v1.variable_offset = v2.variable_offset
+        && v1.variable_nesting = v2.variable_nesting
+      | ENTRY_parameter p1, ENTRY_parameter p2 ->
+        p1.parameter_offset = p2.parameter_offset
+        && p1.parameter_nesting = p2.parameter_nesting
+

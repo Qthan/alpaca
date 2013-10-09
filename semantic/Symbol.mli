@@ -72,3 +72,4 @@ val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
+val entry_eq : SymbTypes.entry -> SymbTypes.entry -> bool
