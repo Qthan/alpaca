@@ -14,20 +14,7 @@ module LS = struct
         (string_of_int e) ^ " " ^ acc) s ""
 end
 
-module Blocks :
-sig
-  include module type of List
-  type bblock = Quads.quad list
-  type block_elt = SymbTypes.entry option * SymbTypes.entry option 
-                   * LS.t * bblock
-  type blocks = block_elt list
-  val create_blocks_aux : bblock -> block_elt -> blocks -> blocks
-  val create_blocks : Quads.quad list -> blocks
-  val is_if : Quads.quad_operators -> bool
-  val is_jmp : Quads.quad_operators -> bool
-  val is_call : Quads.quad_operators -> bool
-  val print_blocks : blocks -> unit
-end =
+module Blocks =
 struct
   include List
   type bblock = Quads.quad list
@@ -141,13 +128,7 @@ struct
               (LS.print_set s) printQuads q) blocks
 end
 
-module V : 
-sig
-  type t = Blocks.bblock
-  val compare : t -> t -> int
-  val hash : t -> int
-  val equal : t -> t -> bool
-end = 
+module V = 
 struct
   type t = Blocks.bblock
   let compare = Pervasives.compare
@@ -157,20 +138,12 @@ end
 
 module G = Graph.Persistent.Digraph.Concrete (V)
 
-module CFG :
-sig
-  include module type of G
-  type cfg = G.t
-  type flow = G.edge
-  type vblock = G.vertex
-  val create_cfg : Quads.quad list -> cfg
-  val print_vertices : G.t -> unit
-end =
+module CFG =
 struct
+  include G
   type cfg = G.t
   type flow = G.edge
   type vblock = G.vertex
-  include G
 
   let find_unit vertices e =
     let (_, _, _, vertex) = 
@@ -305,4 +278,16 @@ struct
                   Quads.printQuads Format.std_formatter v) cfg
 
 end
+
+(*not yet ready *)
+module Dot = Graph.Graphviz.Dot(struct
+   include CFG (* use the graph module from above *)
+   let edge_attributes e = [`Color 4711]
+   let default_edge_attributes _ = []
+   let get_subgraph _ = None
+   let vertex_attributes _ = [`Shape `Box]
+   let vertex_name v = "st"
+   let default_vertex_attributes _ = []
+  let graph_attributes _ = []
+end)
 

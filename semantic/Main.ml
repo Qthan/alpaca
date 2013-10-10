@@ -60,8 +60,9 @@ let main =
       let (solved, outer_entry, library_funs) = Ast.walk_program ast in
       let intermediate = Intermediate.gen_program ast solved outer_entry in
       let blocks = Cfg.Blocks.create_blocks intermediate in
-      let () = Cfg.Blocks.print_blocks blocks in
       let cfg = Cfg.CFG.create_cfg intermediate in
+      let file = open_out_bin "mygraph.dot" in
+      let () = Cfg.Dot.output_graph file cfg in
       let () =  match default_config.quads with
         | true -> 
           Quads.printQuads (Format.formatter_of_out_channel cout) intermediate

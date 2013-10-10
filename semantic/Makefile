@@ -11,7 +11,7 @@ EXEFILE=gracec$(EXE)
 MLFILES=Hashcons.ml Identifier.ml Error.ml Types.ml Pretty_print.ml Typeinf.ml Symbol.ml \
    Lexer.ml Ast.ml Quads.ml Intermediate.ml Cfg.ml Final.ml CodeGen.ml EmitMasm.ml Parser.ml Main.ml
 MLIFILES=Hashcons.mli Identifier.mli Error.mli Types.mli Pretty_print.mli Typeinf.mli Symbol.mli \
-   Lexer.mli AstTypes.mli Ast.mli Parser.mli
+   SymbTypes.mli Lexer.mli AstTypes.mli Quads.mli Cfg.mli Ast.mli Parser.mli
 
 CMOFILES=$(patsubst %.ml,%.cmo,$(MLFILES))
 CMIFILES=$(patsubst %.ml,%.cmi,$(MLFILES))
@@ -25,10 +25,12 @@ SRCFILES=Makefile extend.ml Lexer.mll Parser.mly \
 CAMLP5_FLAGS=-pp "camlp5o ./extend.cmo"
 OCAMLC_FLAGS=-g
 OCAMLOPT_FLAGS=
+OCAMLDOC_FLAGS=-sort -html -colorize-code -d ../doc/
 PACKAGES=ocamlgraph
 OCAMLC= ocamlfind ocamlc $(OCAMLC_FLAGS) -package $(PACKAGES)
 OCAMLOPT=ocamlfind ocamlopt $(OCAMLOPT_FLAGS) -package $(PACKAGES)
 OCAMLDEP=ocamlfind ocamldep -package $(PACKAGES)
+OCAMLDOC=ocamlfind ocamldoc -package $(PACKAGES)
 INCLUDES=
 
 default: Llama 
@@ -68,6 +70,9 @@ Lexer.ml: Lexer.mll
 depend: $(MLFILES) $(MLIFILES) extend.cmo
 	$(OCAMLDEP) $(CAMLP5_FLAGS) $(INCLUDES) \
           $(filter-out extend.cmo,$^) > .depend
+
+doc: 
+	$(OCAMLDOC) $(OCAMLDOC_FLAGS) $(MLIFILES)
 
 clean:
 	$(RM) $(CMXFILES) $(CMOFILES) $(CMIFILES) $(OBJFILES) $(EXEFILES) \

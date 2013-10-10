@@ -1,7 +1,7 @@
 open Identifier
 open Types
 
-(** Symbol Table Types **)
+(** Symbol Table Types *)
 
 type pass_mode = PASS_BY_VALUE | PASS_BY_REFERENCE
 
