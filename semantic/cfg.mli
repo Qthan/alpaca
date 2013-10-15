@@ -69,7 +69,7 @@ module Blocks :
 
 module V :
   sig
-    type t = Blocks.bblock
+    type t = Blocks.bblock * LS.t
     val compare : t -> t -> int
     val hash : t -> int
     val equal : t -> t -> bool
@@ -148,6 +148,7 @@ module CFG :
     val create_cfg : Quads.quad list -> cfg
     val print_vertices : G.t -> unit
     val print_edges : G.t -> unit
+    val quads_of_cfg : G.t -> Quads.quad list
   end
 
 module Dot :  

@@ -150,7 +150,7 @@ end
 
 module V = 
 struct
-  type t = Blocks.bblock
+  type t = Blocks.bblock * LS.t
   let compare = Pervasives.compare
   let hash = Hashtbl.hash
   let equal = (=)
@@ -205,7 +205,7 @@ struct
       edge_to
 
 
-  let add_flows v vertices = 
+  let add_flows qs vertices = 
     (* in_flows comes from call and represents a return to call site *)
     let rec aux qs (out_f, in_f) =
       match qs with
@@ -270,14 +270,14 @@ struct
             (edge_to :: out_f, in_f)
         | q :: qs -> (out_f, in_f)
     in
-      aux v ([], [])
+      aux qs ([], [])
 
   let rec create_flows cfg vertices =
-    fold_vertex (fun v cfg ->
+    fold_vertex (fun (v, s) cfg ->
         let (out_e, in_e) = add_flows v vertices in
         let cfg = 
           List.fold_left (fun cfg edge_to ->
-              add_edge cfg v edge_to)
+              add_edge cfg (v, s) edge_to)
             cfg out_e 
         in
           (* add the return calls edges to the next quad *)
@@ -290,9 +290,9 @@ struct
                     cfg in_e
             | _ -> cfg) cfg cfg
 
-  let create_vertices blocks : Blocks.blocks * cfg = 
+  let create_vertices blocks = 
     Blocks.fold_left (fun (acc, cfg) (f_unit, f_endu, lset, b) -> 
-        let vertex = V.create b in
+        let vertex = V.create (b, lset) in
         let cfg = add_vertex cfg vertex in
         let acc = (f_unit, f_endu, lset, vertex) :: acc in
           (acc, cfg)) 
@@ -304,17 +304,24 @@ struct
     let cfg = create_flows cfg vertices in
       (* Normalize graph by reversing the quads in each basic block
        * (the future is here) *)
-      map_vertex (fun v -> Blocks.rev v) cfg
+      map_vertex (fun (v, s) -> (Blocks.rev v, s)) cfg
 
   let print_vertices cfg =
-    iter_vertex (fun v -> Printf.printf "Block\n";
+    iter_vertex (fun (v, _) -> Printf.printf "Block\n";
                   Quads.printQuads Format.std_formatter v) cfg
 
   let print_edges cfg =
-    iter_edges (fun v1 v2 -> Printf.printf "Flows\n";
+    iter_edges (fun (v1, _) (v2, _) -> Printf.printf "Flows\n";
                  Quads.printQuads Format.std_formatter v1;
                  Printf.printf "\t|\n\t|\n\t|\n";
                  Quads.printQuads Format.std_formatter v2) cfg
+
+  (* This implementation may require changes if we mess with the graph *)
+  let quads_of_cfg cfg = 
+    fold_vertex (fun (v, _) acc -> v @ acc) cfg [] 
+
+    
+
 
 end
 
@@ -323,10 +330,10 @@ module Dot = Graph.Graphviz.Dot(struct
     let edge_attributes e = [`Color 4711]
     let default_edge_attributes _ = []
     let get_subgraph _ = None
-    let vertex_attributes v =
+    let vertex_attributes (v, _) =
       let label = Blocks.dot_block v ", " in
         [`Shape `Box; `Label label; `Fontsize 11;]
-    let vertex_name v =
+    let vertex_name (v, _) =
       match v with
         | q :: qs -> string_of_int (q.label)
         | [] -> internal "an empty block is strange"

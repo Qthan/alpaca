@@ -7,6 +7,7 @@ type config = {
   mutable in_file : string option;
   mutable quads   : bool;
   mutable opt     : bool;
+  mutable cfg     : bool
 }
 
 type files = {
@@ -22,7 +23,8 @@ type files = {
 let default_config = {
   in_file = None;
   quads = false;
-  opt = false
+  opt = false;
+  cfg = false
 } 
 
 
@@ -38,7 +40,7 @@ let open_files () =
             let chopped = Filename.chop_extension name in
               { cin = open_in name;
                 cout = open_out (chopped ^ out_ext);
-                cgraph = open_out_bin (chooped ^ ".dot")
+                cgraph = open_out_bin (chopped ^ ".dot")
               }
           with
             | Invalid_argument _ ->
@@ -61,30 +63,45 @@ let read_args () =
     [("-i", Arg.Unit (fun () -> default_config.quads <- true), 
       "Emit intermediate code");
      ("-O", Arg.Unit (fun () -> default_config.opt <- true),
-      "Perform optimizations")]
+      "Perform optimizations");
+     ("-g", Arg.Unit (fun () -> default_config.cfg <- true),
+      "Output a cfg in .dot format")]
   in
-  let usage = "usage: " ^ Sys.argv.(0) ^ " [-i] [-o] [infile]" in
+  let usage = "usage: " ^ Sys.argv.(0) ^ " [-i] [-o] [-g] [infile]" in
     Arg.parse speclist (fun s -> default_config.in_file <- Some s) usage
 
 let main =
   let () = read_args () in
-  let (cin, cout, cgraph) = open_files () in
-  let lexbuf = Lexing.from_channel cin in
+  let files = open_files () in
+  let lexbuf = Lexing.from_channel files.cin in
     try
       let ast = Parser.program Lexer.lexer lexbuf in
       let (solved, outer_entry, library_funs) = Ast.walk_program ast in
-      let intermediate = Intermediate.gen_program ast solved outer_entry in
-      let blocks = Cfg.Blocks.create_blocks intermediate in
-      let cfg = Cfg.CFG.create_cfg intermediate in
-      let () = Cfg.Dot.output_graph cgraph cfg in
-      let () = Cfg.CFG.print_edges cfg in
+      let ir = Intermediate.gen_program ast solved outer_entry in
+      let ir =  match default_config.cfg, default_config.opt with
+        | true, true ->
+            let cfg = Cfg.CFG.create_cfg ir in
+              (* optimize here*)
+            let () = Cfg.Dot.output_graph files.cgraph cfg in
+              Printf.printf " I WORKED\n\n\n\n\n";
+              Cfg.CFG.quads_of_cfg cfg
+        | true, false -> 
+            let cfg = Cfg.CFG.create_cfg ir in
+              (* optimize here*)
+            let () = Cfg.Dot.output_graph files.cgraph cfg in
+              ir
+        | false, true ->
+            (* optimizations go here *)
+            ir
+        | false, false -> ir
+      in 
       let () =  match default_config.quads with
         | true -> 
-          Quads.printQuads (Format.formatter_of_out_channel cout) intermediate
+          Quads.printQuads (Format.formatter_of_out_channel files.cout) ir
         | false -> 
-          let final = CodeGen.codeGen intermediate outer_entry in
+          let final = CodeGen.codeGen ir outer_entry in
           let asm = EmitMasm.emit final library_funs in
-            Printf.fprintf cout "%s" asm;
+            Printf.fprintf files.cout "%s" asm;
       in
         exit 0
     with 
