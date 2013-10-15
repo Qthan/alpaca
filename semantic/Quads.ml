@@ -16,12 +16,14 @@ sig
   val newLabel : unit -> t
   (* Return next label *)
   val nextLabel : unit -> t
+  val label_of_string : t -> string
 end =
 struct
   type t = int
   let label = ref 0
   let newLabel () = incr label; !label 
   let nextLabel () = !label + 1
+  let label_of_string x = string_of_int x
 end
 
 module type LABEL_LIST =  
@@ -302,6 +304,48 @@ let string_of_operator = function
   | Q_Jump -> "Jump" | Q_Jumpl -> "Jumpl" | Q_Label -> "Label??"
   | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 
   | Q_Match -> "match" | Q_Constr -> "constr" | Q_Fail -> "fail"
+                                                          
+
+(** Simpler version of print_indexes, used for cfg*)
+let rec string_of_indexes = function
+    [] -> ""
+  | q :: [] -> string_of_operand q
+  | q :: qs -> (string_of_operand q) ^ "," ^ (string_of_indexes qs)
+
+(** Simpler version of print_entry, used for cfg*)
+and string_of_entry e =
+  let kind = match e.entry_info with
+    | ENTRY_function _ -> "fun: " 
+    | ENTRY_variable _ -> "var: "
+    | ENTRY_parameter _ -> "par: "
+    | ENTRY_temporary _ -> "tmp: "
+    | ENTRY_constructor _ -> "con: "
+    | ENTRY_udt _ -> "udt: "
+    | ENTRY_none -> internal "Empty entry occured"
+  in
+   kind ^ (Identifier.id_name e.entry_id)
+
+(** Returns a string from an operand *)
+and string_of_operand = function
+  | O_Int i -> Printf.sprintf "%d" i 
+  | O_Float f -> Printf.sprintf "%f" f 
+  | O_Char str -> Printf.sprintf "\'%s\'" str 
+  | O_Bool b -> Printf.sprintf "%b" b 
+  | O_Str str -> 
+      Printf.sprintf "\"%s\"" str 
+  | O_Backpatch -> "*"  
+  | O_Label i -> Printf.sprintf "l: %d" i 
+  | O_Res -> "$$" 
+  | O_Ret -> "RET" 
+  | O_ByVal -> "V"
+  | O_Entry e -> string_of_entry e
+  | O_Empty -> "--"
+  | O_Ref op -> Printf.sprintf "{%s}" (string_of_operand op)
+  | O_Deref op -> Printf.sprintf "[%s]" (string_of_operand op)
+  | O_Size i -> Printf.sprintf "Size %d" i
+  | O_Dims i -> Printf.sprintf "Dims %d" i
+  | O_Index lst -> Printf.sprintf "Index [%s]" (string_of_indexes lst)
+
 
 let print_operator chan op = fprintf chan "%s" (string_of_operator op)
 

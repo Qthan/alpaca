@@ -113,12 +113,12 @@ struct
           | Some f_unit, None ->
             Format.fprintf (Format.std_formatter) 
               "Basic Block %d\n Fun : %a\n
-                    Labels : %s\n %a" i Quads.print_entry f_unit
+                     Labels : %s\n %a" i Quads.print_entry f_unit
               (LS.print_set s) printQuads q
           | None, Some f_endu  ->
             Format.fprintf (Format.std_formatter) 
               "Basic Block %d\n EndFun : %a\n
-                    Labels : %s\n %a" i Quads.print_entry f_endu
+                     Labels : %s\n %a" i Quads.print_entry f_endu
               (LS.print_set s) printQuads q
           | Some f_unit, Some f_endu ->
             Format.fprintf (Format.std_formatter) 
@@ -126,6 +126,26 @@ struct
                Labels : %s\n %a" i Quads.print_entry f_unit 
               Quads.print_entry f_endu
               (LS.print_set s) printQuads q) blocks
+
+  (* Returns a double escaped string from a string, useful for CFG visual*)
+  let estring str = String.escaped (String.escaped str)
+
+  let dot_block block sep = 
+    let rec aux block acc =
+      match block with
+        | [] -> acc
+        | q :: qs ->
+            let l = Quads.Label.label_of_string q.label in 
+            let op = Quads.string_of_operator q.operator in
+            let arg1 = estring (Quads.string_of_operand q.arg1) in
+            let arg2 = estring (Quads.string_of_operand q.arg2) in
+            let arg3 = estring (Quads.string_of_operand q.arg3) in
+            aux qs (acc ^ l ^ ": " ^op ^ sep ^ arg1 
+                    ^ sep ^ arg2 ^ sep ^ arg3 ^ "\\n")
+    in
+      aux block ""
+
+
 end
 
 module V = 
@@ -175,6 +195,16 @@ struct
     in
       vertex
 
+  let find_next vertices next =
+    let (_, _, _, edge_to) =
+      try 
+        List.find (fun (_, _, lset, vertex) ->
+                     LS.mem next lset) vertices
+      with Not_found -> internal "label not in any basic block!"
+    in
+      edge_to
+
+
   let add_flows v vertices = 
     (* in_flows comes from call and represents a return to call site *)
     let rec aux qs (out_f, in_f) =
@@ -186,12 +216,7 @@ struct
             | O_Label i -> i
             | _ -> internal "Must jump to label"
           in
-          let (_, _, _, edge_to) =
-            try
-              List.find (fun (_, _, lset, vertex) ->
-                  LS.mem j_target lset) vertices
-            with Not_found -> internal "label not in any basic block!"
-          in
+          let edge_to = find_next vertices j_target in
             (* Recursively call aux if more flow changing commands follow*)
             (match qs with
               | [] -> (edge_to :: out_f, in_f)
@@ -203,14 +228,17 @@ struct
             (match c_target.entry_info with
               | ENTRY_function _ when Symbol.isLibraryFunction c_target 
                                    || Quads.is_auxil_fun c_target.entry_id ->
-                (out_f, in_f) (*no new edges created by
-                               * calls to library functions *)
+                  (* maybe library calls should be a dummy basic block 
+                   * or maybe not.*)
+                  let next = q.label + 1 in
+                  let edge_to = find_next vertices next in
+                    (edge_to :: out_f, in_f)
               | ENTRY_function f ->
                 (* Edge from callee Q_Endu *)
                 let edge_from = find_endu vertices c_target in
                 (* Edge to callee Q_Unit*)
                 let edge_to = find_unit vertices c_target in
-                  aux qs (edge_to :: out_f, edge_from :: in_f)
+                  (edge_to :: out_f, edge_from :: in_f)
               | ENTRY_variable _ | ENTRY_parameter _ ->
                 (* high order functions for the now (and ever)
                  * generate an edge towards all functions! *)
@@ -223,7 +251,7 @@ struct
                         | Some e, None ->
                           let v = find_unit vertices e in
                             (v :: edge_to, edge_from)
-                        | _, Some e ->
+                        | None, Some e ->
                           let v = find_endu vertices e in
                             (edge_to, v :: edge_from)
                         | Some e1, Some e2 ->
@@ -231,15 +259,14 @@ struct
                           let v2 = find_endu vertices e2 in
                             (v1 :: edge_to, v2 :: edge_from)) ([],[]) vertices
                 in
-                  (edges_to @ out_f, edges_from @ in_f))
+                  (edges_to @ out_f, edges_from @ in_f)
+              | ENTRY_temporary _ | ENTRY_constructor _
+              | ENTRY_none | ENTRY_udt _ ->
+                  internal "These entries cannot hold a function, hopefully"
+            )
         | q :: qs when qs <> [] -> 
           let next = q.label + 1 in
-          let (_, _, _, edge_to) =
-            try 
-              List.find (fun (_, _, lset, vertex) ->
-                  LS.mem next lset) vertices
-            with Not_found -> internal "label not in any basic block!"
-          in
+          let edge_to = find_next vertices next in
             (edge_to :: out_f, in_f)
         | q :: qs -> (out_f, in_f)
     in
@@ -253,9 +280,15 @@ struct
               add_edge cfg v edge_to)
             cfg out_e 
         in
-          List.fold_left (fun cfg edge_from ->
-              add_edge cfg edge_from v)
-            cfg in_e) cfg cfg
+          (* add the return calls edges to the next quad *)
+          match v with
+            | q :: qs when Blocks.is_call q.operator -> 
+                let next = q.label + 1 in
+                let edge_return = find_next vertices next in
+                  List.fold_left (fun cfg edge_from ->
+                                    add_edge cfg edge_from edge_return)
+                    cfg in_e
+            | _ -> cfg) cfg cfg
 
   let create_vertices blocks : Blocks.blocks * cfg = 
     Blocks.fold_left (fun (acc, cfg) (f_unit, f_endu, lset, b) -> 
@@ -271,23 +304,34 @@ struct
     let cfg = create_flows cfg vertices in
       (* Normalize graph by reversing the quads in each basic block
        * (the future is here) *)
-      map_vertex (fun v -> v) cfg
+      map_vertex (fun v -> Blocks.rev v) cfg
 
   let print_vertices cfg =
     iter_vertex (fun v -> Printf.printf "Block\n";
                   Quads.printQuads Format.std_formatter v) cfg
 
+  let print_edges cfg =
+    iter_edges (fun v1 v2 -> Printf.printf "Flows\n";
+                 Quads.printQuads Format.std_formatter v1;
+                 Printf.printf "\t|\n\t|\n\t|\n";
+                 Quads.printQuads Format.std_formatter v2) cfg
+
 end
 
-(*not yet ready *)
 module Dot = Graph.Graphviz.Dot(struct
-   include CFG (* use the graph module from above *)
-   let edge_attributes e = [`Color 4711]
-   let default_edge_attributes _ = []
-   let get_subgraph _ = None
-   let vertex_attributes _ = [`Shape `Box]
-   let vertex_name v = "st"
-   let default_vertex_attributes _ = []
-  let graph_attributes _ = []
-end)
+    include CFG (* use the graph module from above *)
+    let edge_attributes e = [`Color 4711]
+    let default_edge_attributes _ = []
+    let get_subgraph _ = None
+    let vertex_attributes v =
+      let label = Blocks.dot_block v ", " in
+        [`Shape `Box; `Label label; `Fontsize 11;]
+    let vertex_name v =
+      match v with
+        | q :: qs -> string_of_int (q.label)
+        | [] -> internal "an empty block is strange"
+    let default_vertex_attributes _ = []
+    let graph_attributes _ = [`Center true; `Nodesep 0.45; 
+                              `Ranksep 0.45; `Size (42.67, 32.42)]
+  end)
 

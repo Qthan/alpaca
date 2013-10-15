@@ -62,6 +62,9 @@ module Blocks :
     (** Checks if the operator is a call operator *)
     val print_blocks : blocks -> unit
     (** Prints the basic blocks as calculated by {!create_blocks}. *)
+    val dot_block : bblock -> string -> string
+    (** Creates a basic block suitable for printing 
+      to a .dot file for graphviz. Use {!Cfg.Dot} to get a .dot file  *)
   end
 
 module V :
@@ -144,6 +147,7 @@ module CFG :
     type vblock = G.vertex
     val create_cfg : Quads.quad list -> cfg
     val print_vertices : G.t -> unit
+    val print_edges : G.t -> unit
   end
 
 module Dot :  

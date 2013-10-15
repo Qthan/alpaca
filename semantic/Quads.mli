@@ -6,6 +6,7 @@ module Label :
     val label : t ref
     val newLabel : unit -> t
     val nextLabel : unit -> t
+    val label_of_string : t -> string
   end
 module type LABEL_LIST =
   sig
@@ -105,6 +106,9 @@ val auxil_funs : (string * SymbTypes.entry) list
 val findAuxilEntry : string -> SymbTypes.entry
 val is_auxil_fun : Identifier.id -> bool
 val string_of_operator : quad_operators -> string
+val string_of_indexes : quad_operands list -> string
+val string_of_entry : SymbTypes.entry -> string
+val string_of_operand : quad_operands -> string
 val print_operator : Format.formatter -> quad_operators -> unit
 val print_entry : Format.formatter -> SymbTypes.entry -> unit
 val print_indexes : Format.formatter -> quad_operands list -> unit

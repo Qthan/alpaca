@@ -5,8 +5,14 @@ open Pretty_print
 
 type config = {
   mutable in_file : string option;
-  mutable quads : bool;
-  mutable opt : bool;
+  mutable quads   : bool;
+  mutable opt     : bool;
+}
+
+type files = {
+  cin    : Pervasives.in_channel;
+  cout   : Pervasives.out_channel;
+  cgraph : Pervasives.out_channel
 }
 
 (* Default configuration is
@@ -16,8 +22,9 @@ type config = {
 let default_config = {
   in_file = None;
   quads = false;
-  opt = false;
+  opt = false
 } 
+
 
 let open_files () =
   let out_ext = match default_config.quads with
@@ -26,9 +33,13 @@ let open_files () =
   in
     match default_config.in_file with
       | Some name ->
-        let (cin, cout) =
-          try 
-            (open_in name, open_out ((Filename.chop_extension name) ^ out_ext))
+        let files =
+          try
+            let chopped = Filename.chop_extension name in
+              { cin = open_in name;
+                cout = open_out (chopped ^ out_ext);
+                cgraph = open_out_bin (chooped ^ ".dot")
+              }
           with
             | Invalid_argument _ ->
               error "Wrong file name. Extension must be .lla";
@@ -37,9 +48,13 @@ let open_files () =
               error "The file could not be opened.";
               exit 1
         in
-          (cin, cout)
+          files
       | None ->
-        (stdin, open_out ("a" ^ out_ext))
+          { cin = stdin; 
+            cout = open_out ("a" ^ out_ext);
+            cgraph = open_out_bin "a.dot"
+          }
+
 
 let read_args () =
   let speclist =
@@ -53,7 +68,7 @@ let read_args () =
 
 let main =
   let () = read_args () in
-  let (cin, cout) = open_files () in
+  let (cin, cout, cgraph) = open_files () in
   let lexbuf = Lexing.from_channel cin in
     try
       let ast = Parser.program Lexer.lexer lexbuf in
@@ -61,8 +76,8 @@ let main =
       let intermediate = Intermediate.gen_program ast solved outer_entry in
       let blocks = Cfg.Blocks.create_blocks intermediate in
       let cfg = Cfg.CFG.create_cfg intermediate in
-      let file = open_out_bin "mygraph.dot" in
-      let () = Cfg.Dot.output_graph file cfg in
+      let () = Cfg.Dot.output_graph cgraph cfg in
+      let () = Cfg.CFG.print_edges cfg in
       let () =  match default_config.quads with
         | true -> 
           Quads.printQuads (Format.formatter_of_out_channel cout) intermediate
