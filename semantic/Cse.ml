@@ -14,6 +14,24 @@ type symExpr =
   | Mod of symVal * symVal
 
 
+module type EqualityType =
+sig 
+  type t
+  val equal : t -> t -> bool
+end
+
+module type Dict =
+sig
+  type key
+  type 'a t
+
+  val empty   : unit -> 'a t
+  val add     : 'a t -> key -> 'a -> 'a t
+  val mem     : 'a t -> key -> bool
+  val update  : 'a t -> key -> 'a -> 'a t
+  val find  : 'a t -> key -> 'a option
+end
+
 module ListDict (Key : EqualityType) =
 struct
   type key = Key.t
