@@ -95,7 +95,8 @@ let simulate (info, s, block) =
     exp_to_tmp = ExpMap.empty ()
   } 
   in 
-  let rec aux block maps acc = 
+  let rec aux block maps acc =
+   (*Printf.printf "Block: %d\n" Blocks.(info.block_index);*)
     match block with
       | [] -> (info, s, Blocks.rev acc)
       | q :: qs when Quads.isBop q.operator ->

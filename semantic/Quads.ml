@@ -151,7 +151,6 @@ let newTemp =
             }
         }
         in
-          Printf.printf "temp %d in offset %d\n" (!k) (- (!size));
           Symbol.addTemp header f;
           incr k;
           O_Entry header

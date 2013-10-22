@@ -44,10 +44,10 @@ module Blocks :
   include module type of List
   type bblock = Quads.quad list
   type block_info = 
-      { f_unit  : SymbTypes.entry option;
-        f_endu  : SymbTypes.entry option;
-        cur_fun : SymbTypes.entry option;
-        block_index : int
+    { f_unit              : SymbTypes.entry option;
+      f_endu              : SymbTypes.entry option;
+      cur_fun             : SymbTypes.entry option;
+      mutable block_index : int
       }
   type block_elt = block_info * LS.t * bblock 
     (** An element of type [block_elt] is a quadraple of 

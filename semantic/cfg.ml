@@ -19,10 +19,10 @@ struct
   include List
   type bblock = Quads.quad list
   type block_info = 
-    { f_unit      : SymbTypes.entry option;
-      f_endu      : SymbTypes.entry option;
-      cur_fun     : SymbTypes.entry option;
-      block_index : int
+    { f_unit              : SymbTypes.entry option;
+      f_endu              : SymbTypes.entry option;
+      cur_fun             : SymbTypes.entry option;
+      mutable block_index : int
     }
 
   (*  a record would be much better*)
@@ -78,7 +78,7 @@ struct
           { f_unit = None;
             f_endu = new_end;
             cur_fun = cur_info.cur_fun;
-            block_index = (incr counter; !counter)
+            block_index = 0
           }
         in
           if (cur_block = []) then
@@ -92,7 +92,7 @@ struct
           { f_unit = new_fun;
             f_endu = None;
             cur_fun = new_fun;
-            block_index = (incr counter; !counter)
+            block_index = 0
           }
         in
         let new_set = LS.singleton q.label in
@@ -110,7 +110,7 @@ struct
           { f_unit = None;
             f_endu = None;
             cur_fun = cur_info.cur_fun;
-            block_index = (incr counter; !counter)
+            block_index = 0
           }
         in
         let cur_set1 = LS.add q.label cur_set in
@@ -131,11 +131,14 @@ struct
           { f_unit = None;
             f_endu = None;
             cur_fun = cur_info.cur_fun;
-            block_index = (incr counter; !counter)
+            block_index = 0
           }
         in
           create_blocks_aux qs (new_info, new_set, new_block) 
             ((cur_info, cur_set1, cur_block1) :: acc)
+
+  let index_blocks blocks =
+    iteri (fun i (info, _, _) -> info.block_index <- (i+1)) blocks
 
   let create_blocks quads =
     let cur_info =
@@ -146,7 +149,9 @@ struct
         block_index = 0;
       }
     in
-      create_blocks_aux quads (cur_info, LS.empty, []) []
+    let blocks =  create_blocks_aux quads (cur_info, LS.empty, []) [] in
+    let () = index_blocks blocks in
+      blocks
 
   let print_blocks blocks =
     iteri (fun i (f_info, s, q) ->
