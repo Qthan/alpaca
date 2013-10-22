@@ -52,10 +52,10 @@ let open_files () =
         in
           files
       | None ->
-          { cin = stdin; 
-            cout = open_out ("a" ^ out_ext);
-            cgraph = open_out_bin "a.dot"
-          }
+        { cin = stdin; 
+          cout = open_out ("a" ^ out_ext);
+          cgraph = open_out_bin "a.dot"
+        }
 
 
 let read_args () =
@@ -78,23 +78,15 @@ let main =
       let ast = Parser.program Lexer.lexer lexbuf in
       let (solved, outer_entry, library_funs) = Ast.walk_program ast in
       let ir = Intermediate.gen_program ast solved outer_entry in
-      let ir =  match default_config.cfg, default_config.opt with
-        | true, true ->
-            let cfg = Cfg.CFG.create_cfg ir in
-              (* optimize here*)
-            let () = Cfg.Dot.output_graph files.cgraph cfg in
-              Printf.printf " I WORKED\n\n\n\n\n";
-              Cfg.CFG.quads_of_cfg cfg
-        | true, false -> 
-            let cfg = Cfg.CFG.create_cfg ir in
-              (* optimize here*)
-            let () = Cfg.Dot.output_graph files.cgraph cfg in
-              ir
-        | false, true ->
-            (* optimizations go here *)
-            ir
-        | false, false -> ir
-      in 
+      let cfg = Cfg.CFG.create_cfg ir in
+      let cfg = match default_config.opt with
+          true -> 
+            let optimized_cfg = Optimizations.optimize cfg in
+              optimized_cfg
+        | false -> cfg
+      in
+        if default_config.cfg then Cfg.Dot.output_graph files.cgraph cfg;
+      let ir = Cfg.CFG.quads_of_cfg cfg in
       let () =  match default_config.quads with
         | true -> 
           Quads.printQuads (Format.formatter_of_out_channel files.cout) ir

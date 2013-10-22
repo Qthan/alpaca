@@ -42,9 +42,14 @@ module LS :
 module Blocks :
   sig
   include module type of List
-    type bblock = Quads.quad list
-    type block_elt =
-        SymbTypes.entry option * SymbTypes.entry option * LS.t * bblock
+  type bblock = Quads.quad list
+  type block_info = 
+      { f_unit  : SymbTypes.entry option;
+        f_endu  : SymbTypes.entry option;
+        cur_fun : SymbTypes.entry option;
+        block_index : int
+      }
+  type block_elt = block_info * LS.t * bblock 
     (** An element of type [block_elt] is a quadraple of 
       {!SymbTypes.entry} [option] holding an optional entry if 
       a {!Quads.quad_operators} [Q_Unit] is present in the current block, 
@@ -62,14 +67,14 @@ module Blocks :
     (** Checks if the operator is a call operator *)
     val print_blocks : blocks -> unit
     (** Prints the basic blocks as calculated by {!create_blocks}. *)
-    val dot_block : bblock -> string -> string
+    val dot_block : block_elt -> string -> string
     (** Creates a basic block suitable for printing 
       to a .dot file for graphviz. Use {!Cfg.Dot} to get a .dot file  *)
   end
 
 module V :
   sig
-    type t = Blocks.bblock * LS.t
+    type t = Blocks.block_elt
     val compare : t -> t -> int
     val hash : t -> int
     val equal : t -> t -> bool
@@ -145,6 +150,7 @@ module CFG :
     type cfg = G.t
     type flow = G.edge
     type vblock = G.vertex
+    val persistent_vmap : (vblock -> vblock) -> G.t -> G.t
     val create_cfg : Quads.quad list -> cfg
     val print_vertices : G.t -> unit
     val print_edges : G.t -> unit

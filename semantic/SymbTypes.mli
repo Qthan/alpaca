@@ -20,7 +20,8 @@ type scope = {
 and variable_info = {
   mutable variable_type    : typ;
   mutable variable_offset  : int;
-  mutable variable_nesting : int
+  mutable variable_nesting : int;
+  variable_index           : int
 }
 
 and function_info = {
@@ -42,12 +43,14 @@ and parameter_info = {
   mutable parameter_type    : typ;
   mutable parameter_offset  : int;
   mutable parameter_nesting : int;
-  parameter_mode            : pass_mode
+  parameter_mode            : pass_mode;
+  parameter_index           : int
 }
 
 and temporary_info = {
   temporary_type   : typ;
-  temporary_offset : int
+  temporary_offset : int;
+  temporary_index  : int
 }
 
 and constructor_info = {

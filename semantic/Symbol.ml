@@ -38,6 +38,8 @@ let no_entry id = {
 let currentScope = ref the_outer_scope
 let quadNext = ref 1
 let tempNumber = ref 1
+let varNumber = ref 0
+let parNumber = ref 0
 let fun_index = ref (-1)
 
 let tab = ref (H.create 0)
@@ -256,7 +258,8 @@ let newParameter id typ mode f err =
               parameter_type = typ;
               parameter_offset = 0;
               parameter_mode = mode;
-              parameter_nesting = fn.function_nesting
+              parameter_nesting = fn.function_nesting;
+              parameter_index = (incr parNumber; !parNumber)
             } in
             let e = newEntry id (ENTRY_parameter inf) err in
               fn.function_paramlist <- e :: fn.function_paramlist;
@@ -273,7 +276,8 @@ let newVariable id typ f err =
       let inf = {
         variable_type = typ;
         variable_offset = 0;
-        variable_nesting = fn.function_nesting
+        variable_nesting = fn.function_nesting;
+        variable_index = (incr varNumber; !varNumber)
       } in
       let e = newEntry id (ENTRY_variable inf) err in
         fn.function_varlist <- e :: fn.function_varlist;
@@ -289,10 +293,13 @@ let newUdt id err =
     parameter_type = typ;
     parameter_offset = 8 + (sizeOfType typ);
     parameter_mode = PASS_BY_VALUE;
-    parameter_nesting = 0
+    parameter_nesting = 0;
+    parameter_index = (incr parNumber; !parNumber)
   } in
   let param_info2 = {
-    param_info1 with parameter_offset = 8;
+    param_info1 with 
+      parameter_offset = 8;
+      parameter_index = (incr parNumber; !parNumber)
   } in
   let param_entry1 = {
     entry_id = id_make "a";
@@ -400,7 +407,8 @@ let newTemporary typ =
     !currentScope.sco_negofs <- !currentScope.sco_negofs - sizeOfType typ;
     let inf = {
       temporary_type = typ;
-      temporary_offset = !currentScope.sco_negofs
+      temporary_offset = !currentScope.sco_negofs;
+      temporary_index = !tempNumber
     } in
       incr tempNumber;
       newEntry id (ENTRY_temporary inf) false
@@ -553,15 +561,14 @@ let getEqFun u_entry = match u_entry.entry_info with
   | _ -> internal "Not a UDT"
 
 let entry_eq e1 e2 =
-  if (e1.entry_id = e2.entry_id) then true
-  else
-    match e1.entry_info, e2.entry_info with
-      | ENTRY_function f1, ENTRY_function f2 ->
-        f1.function_index = f2.function_index
-      | ENTRY_variable v1, ENTRY_variable v2 ->
-        v1.variable_offset = v2.variable_offset
-        && v1.variable_nesting = v2.variable_nesting
-      | ENTRY_parameter p1, ENTRY_parameter p2 ->
-        p1.parameter_offset = p2.parameter_offset
-        && p1.parameter_nesting = p2.parameter_nesting
+  match e1.entry_info, e2.entry_info with
+    | ENTRY_function f1, ENTRY_function f2 ->
+      f1.function_index = f2.function_index
+    | ENTRY_variable v1, ENTRY_variable v2 ->
+      v1.variable_index = v2.variable_index
+    | ENTRY_parameter p1, ENTRY_parameter p2 ->
+      p1.parameter_index = p2.parameter_index
+    | ENTRY_temporary t1, ENTRY_temporary t2 ->
+      t1.temporary_index = t2.temporary_index
+    | x, y -> x = y
 

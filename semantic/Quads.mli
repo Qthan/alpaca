@@ -117,3 +117,5 @@ val entry_of_quadop : quad_operands -> SymbTypes.entry
 val normalizeQuads : quad list -> quad list
 val printQuad : Format.formatter -> quad -> unit
 val printQuads : Format.formatter -> quad list -> unit
+val isBop : quad_operators -> bool
+val operand_eq : quad_operands -> quad_operands -> bool

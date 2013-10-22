@@ -146,10 +146,12 @@ let newTemp =
           entry_info = 
             ENTRY_temporary {
               temporary_type = typ;
-              temporary_offset = - !size
+              temporary_offset = - !size;
+              temporary_index = !k
             }
         }
         in
+          Printf.printf "temp %d in offset %d\n" (!k) (- (!size));
           Symbol.addTemp header f;
           incr k;
           O_Entry header
@@ -304,7 +306,7 @@ let string_of_operator = function
   | Q_Jump -> "Jump" | Q_Jumpl -> "Jumpl" | Q_Label -> "Label??"
   | Q_Call -> "call" | Q_Par -> "par" | Q_Ret -> "Ret??" 
   | Q_Match -> "match" | Q_Constr -> "constr" | Q_Fail -> "fail"
-                                                          
+
 
 (** Simpler version of print_indexes, used for cfg*)
 let rec string_of_indexes = function
@@ -323,7 +325,7 @@ and string_of_entry e =
     | ENTRY_udt _ -> "udt: "
     | ENTRY_none -> internal "Empty entry occured"
   in
-   kind ^ (Identifier.id_name e.entry_id)
+    kind ^ (Identifier.id_name e.entry_id)
 
 (** Returns a string from an operand *)
 and string_of_operand = function
@@ -332,7 +334,7 @@ and string_of_operand = function
   | O_Char str -> Printf.sprintf "\'%s\'" str 
   | O_Bool b -> Printf.sprintf "%b" b 
   | O_Str str -> 
-      Printf.sprintf "\"%s\"" str 
+    Printf.sprintf "\"%s\"" str 
   | O_Backpatch -> "*"  
   | O_Label i -> Printf.sprintf "l: %d" i 
   | O_Res -> "$$" 
@@ -450,3 +452,27 @@ let printQuad chan quad =
 let printQuads chan quads = 
   List.iter (fun q -> fprintf chan "%a" printQuad q) quads
 
+let isBop = function
+    Q_Plus | Q_Minus | Q_Mult
+  | Q_Div | Q_Mod | Q_Fplus
+  | Q_Fminus | Q_Fmult | Q_Fdiv -> true
+  | _ -> false 
+
+let rec operand_eq arg1 arg2 =
+  match arg1, arg2 with
+    | O_Int n, O_Int m -> n = m 
+    | O_Float n, O_Float m -> n = m
+    | O_Char n, O_Char m -> n = m
+    | O_Bool n, O_Bool m -> n = m
+    | O_Label n, O_Label m -> n = m
+    | O_Str n, O_Str m -> n = m
+    | O_Backpatch, O_Backpatch -> true
+    | O_Entry e, O_Entry f ->
+      Symbol.entry_eq e f
+    | O_Empty, O_Empty -> true
+    | O_Ref arg1, O_Ref arg2
+    | O_Deref arg1, O_Deref arg2 -> operand_eq arg1 arg2
+    | O_Size s, O_Size k -> s = k
+    | O_Dims n, O_Dims m -> n = m
+    | O_Index xs, O_Index ys -> xs = ys
+    | _, _ -> false

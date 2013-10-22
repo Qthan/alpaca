@@ -18,8 +18,15 @@ module Blocks =
 struct
   include List
   type bblock = Quads.quad list
-  type block_elt = SymbTypes.entry option * SymbTypes.entry option 
-                   * LS.t * bblock
+  type block_info = 
+    { f_unit      : SymbTypes.entry option;
+      f_endu      : SymbTypes.entry option;
+      cur_fun     : SymbTypes.entry option;
+      block_index : int
+    }
+
+  (*  a record would be much better*)
+  type block_elt = block_info * LS.t * bblock 
   type blocks = block_elt list
 
   (* Checks if quad op can change flow*)
@@ -40,6 +47,8 @@ struct
     | Q_Eq | Q_Neq -> true
     | _ -> false
 
+  let counter = ref 0
+
   (* Creates a list of triples (function entry, labels, bblock).
    *  Function entry is Some entry if a function is defined in this block
    *  (only one per basic block), labels are the labels of the quads 
@@ -53,8 +62,7 @@ struct
    *  cur_end : corresponding entry for Q_Endu 
    *  cur_set, cur_block : set of labels in quads block.
    *  Match expressions - not yet done. *)
-  let rec create_blocks_aux quads 
-      ((cur_fun, cur_end, cur_set, cur_block) as cur) acc =
+  let rec create_blocks_aux quads ((cur_info, cur_set, cur_block) as cur) acc =
     match quads with
       | [] -> 
         if (cur_block = []) then rev acc
@@ -66,46 +74,83 @@ struct
           | Q_Endu -> Some (Quads.entry_of_quadop q.arg1)
           | _ -> None
         in
+        let new_info = 
+          { f_unit = None;
+            f_endu = new_end;
+            cur_fun = cur_info.cur_fun;
+            block_index = (incr counter; !counter)
+          }
+        in
           if (cur_block = []) then
-            create_blocks_aux qs (None, new_end, new_set, new_block) acc
+            create_blocks_aux qs (new_info, new_set, new_block) acc
           else 
             create_blocks_aux qs 
-              (None, new_end, new_set, new_block) (cur :: acc)
+              (new_info, new_set, new_block) (cur :: acc)
       | q :: qs when (q.operator = Q_Unit) ->
-        let new_fun = Quads.entry_of_quadop q.arg1 in
+        let new_fun = Some (Quads.entry_of_quadop q.arg1) in
+        let new_info = 
+          { f_unit = new_fun;
+            f_endu = None;
+            cur_fun = new_fun;
+            block_index = (incr counter; !counter)
+          }
+        in
         let new_set = LS.singleton q.label in
         let new_block = q :: [] in
           if (cur_block = []) then
-            create_blocks_aux qs (Some new_fun, None, new_set, new_block) acc
+            create_blocks_aux qs (new_info, new_set, new_block) acc
           else
             create_blocks_aux qs 
-              (Some new_fun, None, new_set, new_block) (cur :: acc)
+              (new_info, new_set, new_block) (cur :: acc)
       | q :: qs when (q.operator = Q_Endu) ->
         let new_set = LS.empty in
         let new_block = [] in
         let cur_end = Quads.entry_of_quadop q.arg1 in
+        let new_info = 
+          { f_unit = None;
+            f_endu = None;
+            cur_fun = cur_info.cur_fun;
+            block_index = (incr counter; !counter)
+          }
+        in
         let cur_set1 = LS.add q.label cur_set in
         let cur_block1 = q :: cur_block in
-          create_blocks_aux qs (None, None, new_set, new_block) 
-            ((cur_fun, Some cur_end, cur_set1, cur_block1) :: acc)
+        let cur_info1 = { cur_info with f_endu = Some cur_end } in
+          create_blocks_aux qs (new_info, new_set, new_block) 
+            ((cur_info1, cur_set1, cur_block1) :: acc)
       | q :: qs when (new_flow q.operator = false) ->
         let cur_set1 = LS.add q.label cur_set in
         let cur_block1 = q :: cur_block in
-          create_blocks_aux qs (cur_fun, cur_end, cur_set1, cur_block1) acc
+          create_blocks_aux qs (cur_info, cur_set1, cur_block1) acc
       | q :: qs when (new_flow q.operator = true) ->
         let new_set = LS.empty in
         let new_block = [] in
         let cur_set1 = LS.add q.label cur_set in
         let cur_block1 = q :: cur_block in
-          create_blocks_aux qs (None, None, new_set, new_block) 
-            ((cur_fun, cur_end, cur_set1, cur_block1) :: acc)
+        let new_info =
+          { f_unit = None;
+            f_endu = None;
+            cur_fun = cur_info.cur_fun;
+            block_index = (incr counter; !counter)
+          }
+        in
+          create_blocks_aux qs (new_info, new_set, new_block) 
+            ((cur_info, cur_set1, cur_block1) :: acc)
 
   let create_blocks quads =
-    create_blocks_aux quads (None, None, LS.empty, []) []
+    let cur_info =
+      { 
+        f_unit = None;
+        f_endu = None;
+        cur_fun = None;
+        block_index = 0;
+      }
+    in
+      create_blocks_aux quads (cur_info, LS.empty, []) []
 
   let print_blocks blocks =
-    iteri (fun i (f_u, f_endu, s, q) ->
-        match f_u, f_endu with
+    iteri (fun i (f_info, s, q) ->
+        match f_info.f_unit, f_info.f_endu with
             None, None -> 
             Format.fprintf (Format.std_formatter) 
               "Basic Block %d\n \
@@ -130,27 +175,27 @@ struct
   (* Returns a double escaped string from a string, useful for CFG visual*)
   let estring str = String.escaped (String.escaped str)
 
-  let dot_block block sep = 
-    let rec aux block acc =
-      match block with
+  let dot_block (info, _, quads) sep = 
+    let rec aux quads acc =
+      match quads with
         | [] -> acc
         | q :: qs ->
-            let l = Quads.Label.label_of_string q.label in 
-            let op = Quads.string_of_operator q.operator in
-            let arg1 = estring (Quads.string_of_operand q.arg1) in
-            let arg2 = estring (Quads.string_of_operand q.arg2) in
-            let arg3 = estring (Quads.string_of_operand q.arg3) in
+          let l = Quads.Label.label_of_string q.label in 
+          let op = Quads.string_of_operator q.operator in
+          let arg1 = estring (Quads.string_of_operand q.arg1) in
+          let arg2 = estring (Quads.string_of_operand q.arg2) in
+          let arg3 = estring (Quads.string_of_operand q.arg3) in
             aux qs (acc ^ l ^ ": " ^op ^ sep ^ arg1 
                     ^ sep ^ arg2 ^ sep ^ arg3 ^ "\\n")
     in
-      aux block ""
+      aux quads (Printf.sprintf "Block: %d\n" info.block_index)
 
 
 end
 
 module V = 
 struct
-  type t = Blocks.bblock * LS.t
+  type t = Blocks.block_elt
   let compare = Pervasives.compare
   let hash = Hashtbl.hash
   let equal = (=)
@@ -165,11 +210,38 @@ struct
   type flow = G.edge
   type vblock = G.vertex
 
+
+  let persistent_vmap f cfg =
+    let tbl = Hashtbl.create 64 in
+      fold_edges (fun v1 v2 acc ->
+                    let v1 = 
+                      if (Hashtbl.mem tbl v1) then Hashtbl.find tbl v1
+                      else
+                        begin
+                          let v1_new = f v1 in
+                            Hashtbl.add tbl v1 v1_new;
+                            v1_new
+                        end
+                    in
+                    let v2 =
+                      if (Hashtbl.mem tbl v2) then Hashtbl.find tbl v2
+                      else 
+                        begin
+                          let v2_new = f v2 in
+                            Hashtbl.add tbl v2 v2_new;
+                            v2_new
+                        end
+                    in
+                      add_edge acc v1 v2) cfg empty 
+
+
+
   let find_unit vertices e =
-    let (_, _, _, vertex) = 
+    let module B = Blocks in
+    let vertex = 
       try
-        Blocks.find (fun (f_unit, _, _, vertex) ->
-            match f_unit with
+        B.find (fun (f_info, _, _) ->
+            match B.(f_info.f_unit) with
                 None -> false
               | Some f -> Symbol.entry_eq e f) vertices
       with
@@ -181,10 +253,11 @@ struct
       vertex
 
   let find_endu vertices e =
-    let (_, _, _, vertex) = 
+    let module B = Blocks in
+    let vertex = 
       try
-        Blocks.find (fun (_, f_endu, _, vertex) ->
-            match f_endu with
+        B.find (fun (f_info, _, _) ->
+            match B.(f_info.f_endu) with
                 None -> false
               | Some f -> Symbol.entry_eq e f) vertices
       with
@@ -196,10 +269,10 @@ struct
       vertex
 
   let find_next vertices next =
-    let (_, _, _, edge_to) =
+    let edge_to =
       try 
-        List.find (fun (_, _, lset, vertex) ->
-                     LS.mem next lset) vertices
+        List.find (fun (_, lset, _) ->
+            LS.mem next lset) vertices
       with Not_found -> internal "label not in any basic block!"
     in
       edge_to
@@ -228,11 +301,11 @@ struct
             (match c_target.entry_info with
               | ENTRY_function _ when Symbol.isLibraryFunction c_target 
                                    || Quads.is_auxil_fun c_target.entry_id ->
-                  (* maybe library calls should be a dummy basic block 
-                   * or maybe not.*)
-                  let next = q.label + 1 in
-                  let edge_to = find_next vertices next in
-                    (edge_to :: out_f, in_f)
+                (* maybe library calls should be a dummy basic block 
+                 * or maybe not.*)
+                let next = q.label + 1 in
+                let edge_to = find_next vertices next in
+                  (edge_to :: out_f, in_f)
               | ENTRY_function f ->
                 (* Edge from callee Q_Endu *)
                 let edge_from = find_endu vertices c_target in
@@ -245,8 +318,8 @@ struct
                 let (edges_to, edges_from) =
                   Blocks.fold_left 
                     (fun ((edge_to, edge_from) as acc) 
-                      (callee_u, callee_endu, _, vertex) ->
-                      match callee_u, callee_endu with
+                      (callee_info, _, vertex) ->
+                      match Blocks.(callee_info.f_unit, callee_info.f_endu) with
                         | None, None -> acc
                         | Some e, None ->
                           let v = find_unit vertices e in
@@ -262,7 +335,7 @@ struct
                   (edges_to @ out_f, edges_from @ in_f)
               | ENTRY_temporary _ | ENTRY_constructor _
               | ENTRY_none | ENTRY_udt _ ->
-                  internal "These entries cannot hold a function, hopefully"
+                internal "These entries cannot hold a function, hopefully"
             )
         | q :: qs when qs <> [] -> 
           let next = q.label + 1 in
@@ -273,28 +346,28 @@ struct
       aux qs ([], [])
 
   let rec create_flows cfg vertices =
-    fold_vertex (fun (v, s) cfg ->
+    fold_vertex (fun (i, s, v) cfg ->
         let (out_e, in_e) = add_flows v vertices in
         let cfg = 
           List.fold_left (fun cfg edge_to ->
-              add_edge cfg (v, s) edge_to)
+              add_edge cfg (i, s, v) edge_to)
             cfg out_e 
         in
           (* add the return calls edges to the next quad *)
           match v with
             | q :: qs when Blocks.is_call q.operator -> 
-                let next = q.label + 1 in
-                let edge_return = find_next vertices next in
-                  List.fold_left (fun cfg edge_from ->
-                                    add_edge cfg edge_from edge_return)
-                    cfg in_e
+              let next = q.label + 1 in
+              let edge_return = find_next vertices next in
+                List.fold_left (fun cfg edge_from ->
+                    add_edge cfg edge_from edge_return)
+                  cfg in_e
             | _ -> cfg) cfg cfg
 
   let create_vertices blocks = 
-    Blocks.fold_left (fun (acc, cfg) (f_unit, f_endu, lset, b) -> 
-        let vertex = V.create (b, lset) in
+    Blocks.fold_left (fun (acc, cfg) (f_info, lset, b) -> 
+        let vertex = V.create (f_info, lset, b) in
         let cfg = add_vertex cfg vertex in
-        let acc = (f_unit, f_endu, lset, vertex) :: acc in
+        let acc = vertex :: acc in
           (acc, cfg)) 
       ([], empty) blocks
 
@@ -304,23 +377,31 @@ struct
     let cfg = create_flows cfg vertices in
       (* Normalize graph by reversing the quads in each basic block
        * (the future is here) *)
-      map_vertex (fun (v, s) -> (Blocks.rev v, s)) cfg
+      persistent_vmap 
+        (fun (f_info, lset, b) -> (f_info, lset, Blocks.rev b)) cfg
 
   let print_vertices cfg =
-    iter_vertex (fun (v, _) -> Printf.printf "Block\n";
+    iter_vertex (fun (_, _, v) -> Printf.printf "Block\n";
                   Quads.printQuads Format.std_formatter v) cfg
 
   let print_edges cfg =
-    iter_edges (fun (v1, _) (v2, _) -> Printf.printf "Flows\n";
+    iter_edges (fun (_, _, v1) (_, _, v2) -> Printf.printf "Flows\n";
                  Quads.printQuads Format.std_formatter v1;
                  Printf.printf "\t|\n\t|\n\t|\n";
                  Quads.printQuads Format.std_formatter v2) cfg
 
   (* This implementation may require changes if we mess with the graph *)
   let quads_of_cfg cfg = 
-    fold_vertex (fun (v, _) acc -> v @ acc) cfg [] 
-
-    
+    let v_list = fold_vertex (fun v acc -> v :: acc) cfg [] in
+    let rec aux i acc =
+      match (try Some List.find (fun (info, _, b) -> 
+                         Blocks.(info.block_index) = i) v_list 
+             with Not_found -> None)
+      with
+          Some (_,_, b) -> aux (i+1) (acc @ b)
+        | None -> acc
+    in 
+      aux 1 []
 
 
 end
@@ -330,13 +411,10 @@ module Dot = Graph.Graphviz.Dot(struct
     let edge_attributes e = [`Color 4711]
     let default_edge_attributes _ = []
     let get_subgraph _ = None
-    let vertex_attributes (v, _) =
+    let vertex_attributes v =
       let label = Blocks.dot_block v ", " in
         [`Shape `Box; `Label label; `Fontsize 11;]
-    let vertex_name (v, _) =
-      match v with
-        | q :: qs -> string_of_int (q.label)
-        | [] -> internal "an empty block is strange"
+    let vertex_name (i,_, _) = string_of_int Blocks.(i.block_index)
     let default_vertex_attributes _ = []
     let graph_attributes _ = [`Center true; `Nodesep 0.45; 
                               `Ranksep 0.45; `Size (42.67, 32.42)]

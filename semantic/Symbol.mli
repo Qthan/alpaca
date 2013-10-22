@@ -25,6 +25,8 @@ val no_entry : Identifier.id -> SymbTypes.entry
 val currentScope : SymbTypes.scope ref
 val quadNext : int ref
 val tempNumber : int ref
+val varNumber : int ref
+val parNumber : int ref
 val fun_index : int ref
 val tab : SymbTypes.entry H.t ref
 val initSymbolTable : int -> unit
