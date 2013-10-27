@@ -1,7 +1,7 @@
-The Alpaca LLama Compiler 
+The Alpaca Compiler for LLama 
 -------------------------
 
-Compiler project for the  compiler course 
+Compiler project for NTUA compilers course. 
 
 The language scpecification can be found [here](http://courses.softlab.ntua.gr/compilers/2012a/llama2012.pdf) in greek.
 

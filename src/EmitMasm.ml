@@ -1,5 +1,6 @@
 open Final
 open Types
+open Error
 
 let library_funs : (string * Types.typ * (string * Types.typ) list) list ref =
   ref []
@@ -40,6 +41,9 @@ let rec operandToString = function
   | Pointer (size, operand, i) when i < 0 -> 
     Printf.sprintf "%s ptr [%s-%d]" (sizeToString size) 
       (operandToString operand) (-i)
+  | Pointer _ -> 
+      internal 
+        "Because OCaml doesn't understand that the above matching is exhaustive"
   | LabelPtr (size, label) ->
     Printf.sprintf "%s ptr %s" 
       (sizeToString size) label

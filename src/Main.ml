@@ -1,5 +1,6 @@
 open Error
 open Pretty_print
+open Lazy
 
 (* Argument parsing *)
 
@@ -13,7 +14,7 @@ type config = {
 type files = {
   cin    : Pervasives.in_channel;
   cout   : Pervasives.out_channel;
-  cgraph : Pervasives.out_channel
+  cgraph : Pervasives.out_channel lazy_t
 }
 
 (* Default configuration is
@@ -40,7 +41,7 @@ let open_files () =
             let chopped = Filename.chop_extension name in
               { cin = open_in name;
                 cout = open_out (chopped ^ out_ext);
-                cgraph = open_out_bin (chopped ^ ".dot")
+                cgraph = lazy (open_out_bin (chopped ^ ".dot"))
               }
           with
             | Invalid_argument _ ->
@@ -54,7 +55,7 @@ let open_files () =
       | None ->
         { cin = stdin; 
           cout = open_out ("a" ^ out_ext);
-          cgraph = open_out_bin "a.dot"
+          cgraph = lazy (open_out_bin "a.dot")
         }
 
 
@@ -85,7 +86,8 @@ let main =
               optimized_cfg
         | false -> cfg
       in
-        if default_config.cfg then Cfg.Dot.output_graph files.cgraph cfg;
+        if default_config.cfg then 
+          Cfg.Dot.output_graph (force files.cgraph) cfg;
       let ir = Cfg.CFG.quads_of_cfg cfg in
       let () =  match default_config.quads with
         | true -> 
@@ -116,11 +118,16 @@ let main =
         error "Cannot compare values of type %a" pretty_typ typ;
         exit 2
       | Ast.RecDef typ ->
-        error "%s connot be recursive" typ
+        error "%s connot be recursive" typ;
+        exit 2
       | Ast.ConstrParamTyp (cid, tid) ->
-        error "Constructor %s has one undefined argument, namely %s" cid tid     
+        error "Constructor %s has one undefined argument, namely %s" cid tid;    
+        exit 2
       | Ast.ConstrParamArity (cid, expected, got) ->
         error "The constructor %s expects %n argument(s),\
-                 but is applied here to %n argument(s)" cid expected got
+                 but is applied here to %n argument(s)" cid expected got;
+        exit 2
       | Ast.NewArray ->
-        error "Cannot allocate array with new"
+        error "Cannot allocate array with new";
+        exit 2
+

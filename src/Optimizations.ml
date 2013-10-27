@@ -28,7 +28,10 @@ let remove_temps (info, s, b) =
             (info, s, Blocks.rev acc)
       | q :: q1 :: qs when removable_temp q q1 ->
           let tmp_e = Quads.deep_entry_of_quadop q.arg3 in
-          let (Some e_f) = Blocks.(info.cur_fun) in
+          let e_f = match Blocks.(info.cur_fun) with
+            | None -> internal "there should be a function entry here..."
+            | Some e_f -> e_f
+          in          
           let () = Symbol.remove_temp e_f tmp_e in
           let () = q.arg3 <- q1.arg3 in
             aux qs (q :: acc)

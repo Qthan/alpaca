@@ -6,7 +6,7 @@ open Error
 open Types 
 
 let params_size = ref 0 
-let debug_codeGen = ref true
+let debug_codeGen = ref false
 
 let rec codeGen quads outer = 
   let prelude = genInstr (Prelude outer) (newInstrList ()) in
@@ -41,7 +41,6 @@ and quadToFinal quad instr_lst =
           genInstr (Sub (Reg Sp, Immediate (string_of_int (getVarSize e)))) 
                    instr_lst3 
         in
-          (*if (!debug_codeGen) then (printAR e);*)
           current_fun := e;
           instr_lst4
       | Q_Endu -> 
