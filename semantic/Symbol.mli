@@ -58,6 +58,7 @@ val newFunction : H.key -> SymbTypes.entry option -> bool -> SymbTypes.entry
 val newTemporary : Types.typ -> SymbTypes.entry
 val forwardFunction : SymbTypes.entry -> unit
 val endFunctionHeader : SymbTypes.entry -> Types.typ -> unit
+val entry_eq : SymbTypes.entry -> SymbTypes.entry -> bool
 val setType : SymbTypes.entry -> Types.typ -> unit
 val getType : SymbTypes.entry -> Types.typ
 val getResType : SymbTypes.entry -> Types.typ
@@ -68,10 +69,12 @@ val getConstructorParamList : SymbTypes.entry -> Types.typ list
 val getVarList : SymbTypes.entry -> SymbTypes.entry list
 val getVarSize : SymbTypes.entry -> int
 val getVarRef : SymbTypes.entry -> int ref
+val fixVarOffsets : SymbTypes.function_info -> unit
+val fixTmpOffsets : SymbTypes.function_info -> unit
 val fixOffsets : SymbTypes.entry -> unit
 val addTemp : SymbTypes.entry -> SymbTypes.entry -> unit
+val remove_temp : SymbTypes.entry -> SymbTypes.entry -> unit
 val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
-val entry_eq : SymbTypes.entry -> SymbTypes.entry -> bool

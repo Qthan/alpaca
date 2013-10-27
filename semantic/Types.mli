@@ -4,7 +4,6 @@ type typ =
     T_Unit
   | T_Int
   | T_Char
-  | T_Str
   | T_Bool
   | T_Float
   | T_Arrow of typ * typ

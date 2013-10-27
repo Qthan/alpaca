@@ -258,7 +258,8 @@ let auxil_funs =
         function_varlist = [];
         function_tmplist = [];
         function_varsize = ref 0;
-        function_paramsize = size;       
+        function_paramsize = size;
+        function_localsize = 0;       
         function_result = typ;
         function_pstatus = PARDEF_COMPLETE;
         function_nesting = 0;
@@ -416,6 +417,11 @@ let entry_of_quadop op = match op with
   | _ -> fprintf (Format.std_formatter) "%a\n" print_operand op;
     internal "expecting entry"
 
+let rec deep_entry_of_quadop op = match op with
+    O_Entry e -> e
+  | O_Ref op | O_Deref op -> deep_entry_of_quadop op
+  | _ -> internal "not an entry"
+
 (* Make quad labels consequent *)
 
 let normalizeQuads quads =
@@ -456,6 +462,10 @@ let isBop = function
   | Q_Div | Q_Mod | Q_Fplus
   | Q_Fminus | Q_Fmult | Q_Fdiv -> true
   | _ -> false 
+
+let isEntry = function
+  | O_Entry _ -> true
+  | _ -> false
 
 let rec operand_eq arg1 arg2 =
   match arg1, arg2 with

@@ -82,7 +82,7 @@ let rec notIn alpha typ = match typ with
   | T_Arrow (t1, t2) -> (notIn alpha t1) && (notIn alpha t2)
   | T_Array(a,n) -> a != alpha 
   | T_Ref tref -> tref != alpha
-  | T_Int  | T_Char  | T_Str | T_Unit| T_Id _ 
+  | T_Int  | T_Char  | T_Unit| T_Id _ 
   | T_Ord | T_Bool | T_Float | T_Nofun -> true
   | T_Notype -> internal "Found undefined type in type inference (T_Notype)"
 

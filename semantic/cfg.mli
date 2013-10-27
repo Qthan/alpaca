@@ -50,10 +50,8 @@ module Blocks :
       mutable block_index : int
       }
   type block_elt = block_info * LS.t * bblock 
-    (** An element of type [block_elt] is a quadraple of 
-      {!SymbTypes.entry} [option] holding an optional entry if 
-      a {!Quads.quad_operators} [Q_Unit] is present in the current block, 
-      likewise for a [Q_Endu], a set {!Cfg.LabelSet.t} with the labels of the 
+    (** An element of type [block_elt] is a tuple of 
+      {!Blocks.block_info}, a set {!Cfg.LabelSet.t} with the labels of the 
       quads in the block and finally the block of quads. *)
     type blocks = block_elt list
     val create_blocks : bblock -> blocks

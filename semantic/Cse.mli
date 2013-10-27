@@ -48,7 +48,7 @@ module ExpMap :
     val update : 'a -> 'b -> 'c -> 'a
     val find : (symExpr * 'a) list -> symExpr -> 'a option
   end
-type maps = {
+type cse_maps = {
   var_to_val : symVal VarMap.t;
   exp_to_val : symVal ExpMap.t;
   exp_to_tmp : Quads.quad_operands ExpMap.t;

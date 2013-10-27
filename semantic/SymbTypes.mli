@@ -29,8 +29,9 @@ and function_info = {
   mutable function_paramlist : entry list;
   mutable function_varlist   : entry list;
   mutable function_tmplist   : entry list;
-  mutable function_varsize   : int ref;          
+  mutable function_varsize   : int ref; (* size of both local and temps *)
   mutable function_paramsize : int;
+  mutable function_localsize : int; (* size of local variables *)
   mutable function_result    : typ;
   mutable function_pstatus   : param_status;
   mutable function_nesting   : int;
@@ -48,9 +49,9 @@ and parameter_info = {
 }
 
 and temporary_info = {
-  temporary_type   : typ;
-  temporary_offset : int;
-  temporary_index  : int
+  mutable temporary_offset : int;
+  temporary_type           : typ;
+  temporary_index          : int
 }
 
 and constructor_info = {

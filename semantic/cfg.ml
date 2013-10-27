@@ -49,8 +49,7 @@ struct
 
   let counter = ref 0
 
-  (* Creates a list of triples (function entry, labels, bblock).
-   *  Function entry is Some entry if a function is defined in this block
+  (* Creates a list of triples block_elt.
    *  (only one per basic block), labels are the labels of the quads 
    *  that are included in the basic block and bblock the quads.
    *  The quads in each basic block are reversed,
@@ -58,7 +57,8 @@ struct
    *  Assumes that relops are always followed by jumps so no attempt to "trap"
    *  relops is made.
    *  quads : List of quads
-   *  cur_fun : function entry of Q_Unit if applicable to current block
+   *  f_unit : function entry that the current block belongs to
+   *  cur_fun : function entry of Q_Unit if there is in current block
    *  cur_end : corresponding entry for Q_Endu 
    *  cur_set, cur_block : set of labels in quads block.
    *  Match expressions - not yet done. *)
@@ -136,6 +136,9 @@ struct
         in
           create_blocks_aux qs (new_info, new_set, new_block) 
             ((cur_info, cur_set1, cur_block1) :: acc)
+      | q :: qs -> 
+          internal "You shouldn't bump here, \
+            but this function is not well-tested :)"
 
   let index_blocks blocks =
     iteri (fun i (info, _, _) -> info.block_index <- (i+1)) blocks

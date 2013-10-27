@@ -16,8 +16,6 @@ let rec pretty_typ ppf typ =
       fprintf ppf "char"
     | T_Bool ->
       fprintf ppf "bool"
-    | T_Str ->
-      fprintf ppf "string"
     | T_Float ->
       fprintf ppf "float"
     | T_Notype ->

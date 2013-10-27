@@ -5,15 +5,15 @@ open Quads
 open Symbol
 open Error
 
-(* available register types*)
+(** available register types*)
 type register = Ax | Bx | Cx | Dx | Di | Si | Bp | Sp
               | Al | Ah | Bl | Bh | Cl | Ch | Dl | Dh
               | ST of int
 
-(* available size types *) 
+(** available size types *) 
 type size = Byte | Word | TByte | DWord | Near
 
-(* instruction operands *)
+(** instruction operands *)
 type operand =
   | Reg of register
   | Pointer of (size * operand * int)
@@ -21,7 +21,7 @@ type operand =
   | Label of string
   | Immediate of string
 
-(*  available instruction types *)  
+(**  available instruction types *)  
 type instruction =
   | Prelude of entry
   | Epilogue
@@ -60,35 +60,35 @@ type instruction =
   | Comment of string
   | Interrupt of operand
 
-(* CPU word size*)
+(** CPU word size*)
 let word_size = 2
 
-(* A reference to the current function compiled start with a dummy reference. *)
+(** A reference to the current function compiled start with a dummy reference. *)
 let current_fun = ref (Quads.findAuxilEntry "_dummy")
 
-(* An empty instruction list *)
+(** An empty instruction list *)
 let newInstrList () = []
 
-(* A function adding a new instruction *)
+(** A function adding a new instruction *)
 let genInstr instr instr_lst = instr :: instr_lst 
 
-(* A list holding strings and their unique id *)
+(** A list holding strings and their unique id *)
 let str_lst = ref []
 
 let strLabel id = Printf.sprintf "@str%d" id
 
-(* A closure for saving new strings *)
+(** A closure for saving new strings *)
 let saveString =
   let str_no = ref 0 in
     fun str -> incr str_no; 
       str_lst := (str, !str_no) :: !str_lst;
       strLabel !str_no
 
-(*A list holding float constants and their unique id*)
+(** A list holding float constants and their unique id*)
 let flt_lst = ref []
 
 let fltLabel id = Printf.sprintf "@flt%d" id
-(* A closure for saving new floats *)
+(** A closure for saving new floats *)
 let saveFloat =
   let flt_no = ref 0 in
     fun flt -> incr flt_no;
@@ -142,7 +142,13 @@ let getRegister r ty =
         | Ax -> Al
         | Bx -> Bl
         | Cx -> Cl
-        | Dx -> Dl)
+        | Dx -> Dl
+        | Di | Si | Bp | Sp | ST _ -> internal "unused registers"
+        | Al | Ah | Bl | Bh | Cl | Ch| Dl| Dh -> 
+            internal "unapplicable registers")
+    | TByte -> internal "not applicable"
+    | DWord -> internal "unused"
+    | Near -> internal "not a size"
 
 (* A function returning the label of a function*) 
 let makeFunctionLabel e = 
@@ -180,6 +186,7 @@ let relOpJmpF = function
   | Q_Le -> "jae"
   | Q_Seq -> "je"
   | Q_Nseq -> "jne"
+  | _ -> internal "unconverted relop or bug"
 
 (* A function returning the result type of a function *)
 let functionResult e = 
@@ -204,31 +211,6 @@ let getAR a instr_lst =
       (genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, 2*word_size))) instr_lst)
 
 
-(* match callee_entry.entry_info with
-    | ENTRY_function f ->
-      let p_nest = getNesting (!current_fun) in
-      let x_nest = f.function_nesting in
-        (match p_nest = x_nest with
-          | true -> genInstr (Push (Pointer (Word, Reg Bp, 2*word_size))) instr_lst
-          | false when p_nest < x_nest -> genInstr (Push (Reg Bp)) instr_lst
-          | false ->  
-            let rec aux i acc =
-              match i with
-                | 0 -> genInstr (Push (Pointer (Word,Reg Si, 2*word_size))) acc
-                | i -> aux (i-1) (genInstr (Mov (Reg Si, Pointer (Word,Reg Si, 2*word_size))) acc) 
-            in
-              aux (p_nest - x_nest - 1) (genInstr (Mov (Reg Si, Pointer (Word,Reg Bp, 2*word_size))) instr_lst))
-    | ENTRY_parameter p ->  
-      let offset = p.parameter_offset in
-      let instr_lst1 = genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, offset))) instr_lst in
-      let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
-        instr_lst2
-    | ENTRY_variable v -> 
-      let offset = v.variable_offset in
-      let instr_lst1 = genInstr (Mov (Reg Si, Pointer (Word, Reg Bp, offset))) instr_lst in
-      let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
-        instr_lst2 *)
-
 (* A function for loading a into register r *)
 let rec load r a instr_lst =
   match a with
@@ -251,7 +233,7 @@ let rec load r a instr_lst =
             let size = getSize e in
             let offset = getOffset e in
               genInstr (Mov (Reg r, Pointer (size, Reg Si, offset))) instr_lst1
-          | n when n < 0 -> internal "too internal to judge")
+          | n -> internal "too internal to judge")
     | O_Deref op ->
       let size = 
         match op with 
@@ -282,8 +264,9 @@ and loadAddress r a instr_lst =
             let size = getSize e in
             let offset = getOffset e in
               genInstr (Lea (Reg r, Pointer (size, Reg Si, offset))) instr_lst1
-          | n when n < 0 -> internal "too internal to judge")
+          | n -> internal "too internal to judge")
     | O_Deref op -> load r op instr_lst
+    | _ -> internal "Must be a string or potentialy an entry"
 
 (* A function for loading float values into float stack *)
 let loadReal a instr_lst =
@@ -304,7 +287,7 @@ let loadReal a instr_lst =
             let size = getSize e in
             let offset = getOffset e in
               genInstr (Fld (Pointer (size, Reg Si, offset))) instr_lst1
-          | n when n < 0 -> internal "too internal to judge")
+          | n  -> internal "too internal to judge")
     | O_Deref op -> 
       let size = 
         match op with 
@@ -313,6 +296,7 @@ let loadReal a instr_lst =
       in
       let instr_lst1 = load Di op instr_lst in
         genInstr (Fld (Pointer (size, Reg Di, 0))) instr_lst1
+    | _ -> internal "must be a float or an entry"
 
 (* A function for storing register's r contents into a *)
 let store r a instr_lst =
@@ -346,6 +330,7 @@ let store r a instr_lst =
         genInstr (Mov (Pointer (size, Reg Si, 0), Reg r)) instr_lst1 
       in
         instr_lst2
+    | _ -> internal "must be an entry"
 
 (* A function for storing float stack contents into a *)
 let storeReal a instr_lst =
@@ -377,6 +362,7 @@ let storeReal a instr_lst =
       in
       let instr_lst2 = genInstr (Fstp (Pointer (size, Reg Si, 0))) instr_lst1 in
         instr_lst2
+    | _ -> internal "must be a float or an entry"
 
 (* A function for loading a function's enviroment into register r *)
 let loadFunEnv r e instr_lst =
@@ -434,7 +420,8 @@ let loadFunCode r e instr_lst =
                 genInstr (Mov (Reg r, Pointer (Word, Reg Si, off))) instr_lst2
           in
             instr_lst1
-        | ENTRY_temporary _ -> internal "Cannot have temporary here")
+        | ENTRY_temporary _ | ENTRY_udt _ | ENTRY_none
+        | ENTRY_constructor _ -> internal "Cannot have temp/udt/cons here")
     | O_Deref op ->
       let instr_lst1 = load Di op instr_lst in
       let instr_lst2 = 
@@ -449,65 +436,6 @@ let loadFun r1 r2 e instr_lst =
   let instr_lst1 = loadFunCode r1 e instr_lst in
   let instr_lst2 = loadFunEnv r2 e instr_lst1 in
     instr_lst2
-
-(* old load fun
- * match e with 
-   |  O_Entry e ->
-    (match e.entry_info with
-      | ENTRY_function f ->
-        let code_ptr = makeFunctionLabel e in
-        let instr_lst1 = genInstr (Lea (Reg r1, LabelPtr (Near, code_ptr))) instr_lst in 
-        let c_nest = getNesting (!current_fun) in
-        let f_nest = f.function_nesting in
-        let instr_lst2 = match c_nest = f_nest with
-          | true -> genInstr (Mov (Reg r2, (Pointer (Word, Reg Bp, 2*word_size)))) instr_lst1
-          | false when c_nest < f_nest -> genInstr (Mov (Reg r2, Reg Bp)) instr_lst1
-          | false ->  
-            let rec aux i acc =
-              match i with
-                | 0 -> genInstr (Mov (Reg r2, (Pointer (Word, Reg Si, 2*word_size)))) acc
-                | i -> aux (i-1) (genInstr (Mov (Reg Si, Pointer (Word,Reg Si, 2*word_size))) acc) 
-            in
-              aux (c_nest - f_nest - 1) (genInstr (Mov (Reg Si, Pointer (Word,Reg Bp, 2*word_size))) instr_lst1)
-        in
-          instr_lst2
-      | ENTRY_variable v ->
-        let offset = getOffset e in
-        let c_nest = getNesting (!current_fun) in
-        let f_nest = v.variable_nesting in
-        let instr_lst1 = match c_nest = f_nest with
-            | true ->
-              let instr_lst2 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
-                genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst2
-            | false when c_nest < f_nest -> internal "trying to call unreachable variable"
-            | false ->
-              let instr_lst2 = getAR e instr_lst in
-              let instr_lst3 = genInstr (Mov (Reg r1, Pointer (Word, Reg Si, offset + word_size))) instr_lst2 in
-                genInstr (Mov (Reg r2, Pointer (Word, Reg Si, offset))) instr_lst3
-        in      
-          instr_lst1
-      | ENTRY_parameter p ->
-        let offset = getOffset e in
-        let c_nest = getNesting (!current_fun) in
-        let f_nest = p.parameter_nesting in
-        let instr_lst1 = match c_nest = f_nest with
-            | true ->
-              let instr_lst2 = genInstr (Mov (Reg r1, Pointer (Word, Reg Bp, offset + word_size))) instr_lst in
-                genInstr (Mov (Reg r2, Pointer (Word, Reg Bp, offset))) instr_lst2 
-            | false when c_nest < f_nest -> internal "trying to call unreachable variable"
-            | false ->
-              let instr_lst2 = getAR e instr_lst in
-              let instr_lst3 = genInstr (Mov (Reg r1, Pointer (Word, Reg Si, offset + word_size))) instr_lst2 in
-                genInstr (Mov (Reg r2, Pointer (Word, Reg Si, offset))) instr_lst3 
-        in      
-          instr_lst1
-      | ENTRY_temporary _ -> internal "Cannot have temporary here")
-   | O_Deref op ->
-    let instr_lst1 = load Di op instr_lst in
-    let instr_lst2 = genInstr (Mov (Reg r2, Pointer (Word, Reg Di, 0))) instr_lst1 in
-    let instr_lst3 = genInstr (Mov (Reg r2, Pointer (Word, Reg Di, word_size))) instr_lst2 in
-      instr_lst3
-   | _ -> internal "Only entry or deref can be fun" *)
 
 (* A function for updating the active link of the callee *)    
 let updateAL callee_entry instr_lst =
@@ -552,7 +480,8 @@ let storeFun r1 r2 a instr_lst =
       let instr_lst3 =
         genInstr (Mov (Pointer (Word, Reg Di, word_size), Reg r2)) instr_lst2 
       in
-        instr_lst3 
+        instr_lst3
+    | _ -> internal "must be an entry" 
 (*
 let printAR f =
   let rec var_info lst = 
@@ -560,7 +489,8 @@ let printAR f =
       | [] -> []
       | x :: xs -> (x.entry_id, getOffset x, getType x) :: (var_info xs)
   in
-  let print_list = List.iter (fun (id, offset, typ) -> Format.printf "%d: %a : %a\n" offset pretty_id id pretty_typ typ) in
+  let print_list = List.iter (fun (id, offset, typ) -> 
+ Format.printf "%d: %a : %a\n" offset pretty_id id pretty_typ typ) in
   match f.entry_info with 
     | ENTRY_function f ->
 

@@ -67,7 +67,7 @@ module ExpMap = ListDict (struct type t = symExpr
     let equal = (=)
   end)
 
-type maps = { 
+type cse_maps = { 
   var_to_val : (symVal VarMap.t);
   exp_to_val : (symVal ExpMap.t);
   exp_to_tmp : (Quads.quad_operands ExpMap.t)
@@ -99,7 +99,7 @@ let simulate (info, s, block) =
    (*Printf.printf "Block: %d\n" Blocks.(info.block_index);*)
     match block with
       | [] -> (info, s, Blocks.rev acc)
-      | q :: qs when Quads.isBop q.operator ->
+      | q :: qs when Quads.isBop q.operator && Quads.isEntry q.arg3 ->
         let vtv = maps.var_to_val in
           (match VarMap.find vtv q.arg1, VarMap.find vtv q.arg2 with
             | None, None ->
@@ -159,7 +159,7 @@ let simulate (info, s, block) =
               let symExpr = symExpr_of_bop sym1 sym2 q.operator in
               let var_to_val2 = VarMap.add var_to_val q.arg3 sym3 in
               let exp_to_val = ExpMap.add maps.exp_to_val symExpr sym3 in
-              let e = Quads.entry_of_quadop q.arg3 in
+              let e = Quads.deep_entry_of_quadop q.arg3 in
               let f = match info.cur_fun with
                   Some f -> f
                 | None -> internal "I haven't stored the fun info, bad.."
@@ -226,3 +226,24 @@ let simulate (info, s, block) =
       | q :: qs -> aux qs maps (q :: acc)
   in
     aux block maps []
+
+(* Copy propagation *)
+(*
+type cp_maps =
+    { 
+      tmp_to_var : Quads.quad_operands VarMap.t;
+      var_to_tmp : (Quads.quad_operands option) VarMap.t
+    }
+
+let copy_propagate (info, s, block) =
+  let maps = 
+    {
+      tmp_to_var = VarMap.empty ();
+      var_to_tmp = VarMap.empty ()
+    }
+  in
+  let rec aux block maps acc =
+    match block with
+      | [] -> (info, s, Blocks.rev acc)*)
+
+  

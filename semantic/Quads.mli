@@ -114,8 +114,10 @@ val print_entry : Format.formatter -> SymbTypes.entry -> unit
 val print_indexes : Format.formatter -> quad_operands list -> unit
 val print_operand : Format.formatter -> quad_operands -> unit
 val entry_of_quadop : quad_operands -> SymbTypes.entry
+val deep_entry_of_quadop : quad_operands -> SymbTypes.entry
 val normalizeQuads : quad list -> quad list
 val printQuad : Format.formatter -> quad -> unit
 val printQuads : Format.formatter -> quad list -> unit
 val isBop : quad_operators -> bool
+val isEntry : quad_operands -> bool
 val operand_eq : quad_operands -> quad_operands -> bool

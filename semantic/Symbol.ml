@@ -318,7 +318,8 @@ let newUdt id err =
     function_tmplist = [];
     function_result = T_Bool;
     function_pstatus = PARDEF_DEFINE;
-    function_varsize = ref 0; 
+    function_varsize = ref 0;
+    function_localsize = 0; 
     function_paramsize = 2*(sizeOfType typ);
     function_nesting = 0;
     function_parent = Some outer_entry;
@@ -394,6 +395,7 @@ let newFunction id parent err =
       function_pstatus = PARDEF_DEFINE;
       function_varsize = ref 0; 
       function_paramsize = 0;
+      function_localsize = 0;
       function_nesting = nesting;
       function_parent = parent;
       function_index = (incr fun_index; !fun_index);
@@ -435,6 +437,18 @@ let endFunctionHeader e typ =
     | _ ->
       internal "Cannot end parameters in a non-function"
 
+let entry_eq e1 e2 =
+  match e1.entry_info, e2.entry_info with
+    | ENTRY_function f1, ENTRY_function f2 ->
+      f1.function_index = f2.function_index
+    | ENTRY_variable v1, ENTRY_variable v2 ->
+      v1.variable_index = v2.variable_index
+    | ENTRY_parameter p1, ENTRY_parameter p2 ->
+      p1.parameter_index = p2.parameter_index
+    | ENTRY_temporary t1, ENTRY_temporary t2 ->
+      t1.temporary_index = t2.temporary_index
+    | x, y -> x = y
+
 let setType entry typ = match entry.entry_info with
   | ENTRY_function f -> f.function_result <- typ
   | ENTRY_variable v -> v.variable_type <- typ
@@ -471,6 +485,7 @@ let setOffset e offset =
   match e.entry_info with
     | ENTRY_variable v -> v.variable_offset <-  offset
     | ENTRY_parameter p -> p.parameter_offset <- offset
+    | ENTRY_temporary t -> t.temporary_offset <- offset
     | _ -> internal "cannot fix offset in a non variable or parameter entry"
 
 let getOffset e = 
@@ -507,6 +522,31 @@ let getVarRef entry =
     | ENTRY_function f -> f.function_varsize
     | _ -> internal "Looked for local variables of - Some thing - that's not a function"
 
+let fixVarOffsets f =
+  let rec aux varlist acc = 
+    match varlist with 
+      | [] -> 
+          f.function_varsize <- ref (-acc);
+          f.function_localsize <- -acc
+      | v :: vs ->
+        let s = sizeOfType (lookup_solved (getType v)) in
+          setOffset v (acc-s);
+          aux vs (acc-s)
+  in
+    aux f.function_varlist 0
+
+let fixTmpOffsets f =
+  let rec aux tmplist acc = 
+    match tmplist with 
+      | [] -> 
+          f.function_varsize <- ref (-acc)
+      | t :: ts ->
+        let s = sizeOfType (lookup_solved (getType t)) in
+          setOffset t (acc-s);
+          aux ts (acc-s)
+  in
+    aux f.function_tmplist (-f.function_localsize)
+
 let fixOffsets entry =
   let rec fixParamOffsets parlist acc =
     match parlist with 
@@ -516,22 +556,13 @@ let fixOffsets entry =
           setOffset p acc;
           fixParamOffsets ps (acc+s)
   in
-  let rec fixVarOffsets varlist acc =
-    match varlist with 
-      | [] -> -acc
-      | v :: vs ->
-        let s = sizeOfType (lookup_solved (getType v)) in
-          setOffset v (acc-s);
-          fixVarOffsets vs (acc-s)
-  in
     match entry.entry_info with
       | ENTRY_function f ->
         let par_size = 
           (fixParamOffsets (List.rev f.function_paramlist) ar_size) - ar_size 
         in
-        let var_size = fixVarOffsets f.function_varlist 0 in
-          f.function_paramsize <- par_size;
-          f.function_varsize <- ref var_size;
+        let () = fixVarOffsets f in
+          f.function_paramsize <- par_size
       | _ -> internal "cannot fix offsets in a non function"
 
 let addTemp tmp e =
@@ -539,6 +570,14 @@ let addTemp tmp e =
     | ENTRY_function f -> 
       f.function_tmplist <- tmp :: f.function_tmplist
     | _ -> internal "Cannot add new temp to non-function entry"
+
+(* this is as inefficient as I could do*)
+let remove_temp e tmp_e =
+  match e.entry_info with
+      ENTRY_function f ->
+        let tmps = List.filter (fun e -> not (entry_eq tmp_e e)) f.function_tmplist in
+          f.function_tmplist <- tmps;
+    | _ -> internal "doesn't apply to non functions"
 
 let setLibraryFunction e = 
   match e.entry_info with
@@ -560,15 +599,5 @@ let getEqFun u_entry = match u_entry.entry_info with
   | ENTRY_udt u -> u.eq_function
   | _ -> internal "Not a UDT"
 
-let entry_eq e1 e2 =
-  match e1.entry_info, e2.entry_info with
-    | ENTRY_function f1, ENTRY_function f2 ->
-      f1.function_index = f2.function_index
-    | ENTRY_variable v1, ENTRY_variable v2 ->
-      v1.variable_index = v2.variable_index
-    | ENTRY_parameter p1, ENTRY_parameter p2 ->
-      p1.parameter_index = p2.parameter_index
-    | ENTRY_temporary t1, ENTRY_temporary t2 ->
-      t1.temporary_index = t2.temporary_index
-    | x, y -> x = y
+
 

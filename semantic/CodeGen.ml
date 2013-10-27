@@ -37,7 +37,10 @@ and quadToFinal quad instr_lst =
         let instr_lst1 = genInstr (Fun (makeFunctionLabel e)) instr_lst in
         let instr_lst2 = genInstr (Push (Reg Bp)) instr_lst1 in
         let instr_lst3 = genInstr (Mov (Reg Bp, Reg Sp)) instr_lst2 in
-        let instr_lst4 = genInstr (Sub (Reg Sp, Immediate (string_of_int (getVarSize e)))) instr_lst3 in
+        let instr_lst4 = 
+          genInstr (Sub (Reg Sp, Immediate (string_of_int (getVarSize e)))) 
+                   instr_lst3 
+        in
           (*if (!debug_codeGen) then (printAR e);*)
           current_fun := e;
           instr_lst4
@@ -45,7 +48,9 @@ and quadToFinal quad instr_lst =
         let instr_lst1 = genInstr (Mov (Reg Sp, Reg Bp)) instr_lst in
         let instr_lst2 = genInstr (Pop (Reg Bp)) instr_lst1 in
         let instr_lst3 = genInstr Ret instr_lst2 in
-        let instr_lst4 = genInstr (EndFun (makeFunctionLabel !current_fun)) instr_lst3 in
+        let instr_lst4 = 
+          genInstr (EndFun (makeFunctionLabel !current_fun)) instr_lst3 
+        in
           instr_lst4
       | Q_Plus -> 
         let instr_lst1 = load Ax (quad.arg1) instr_lst in
@@ -109,13 +114,19 @@ and quadToFinal quad instr_lst =
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
-            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+            let instr_lst4 = 
+              genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) 
+                       instr_lst3 
+            in
               instr_lst4
           | T_Char | T_Bool -> 
             let instr_lst1 = load Al (quad.arg1) instr_lst in
             let instr_lst2 = load Dl (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
-            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+            let instr_lst4 =
+              genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) 
+                       instr_lst3 
+            in
               instr_lst4
           | T_Float ->
             let instr_lst1 = loadReal (quad.arg1) instr_lst in
@@ -123,11 +134,17 @@ and quadToFinal quad instr_lst =
             let instr_lst3 = genInstr Fcompp instr_lst2 in
             let instr_lst4 = genInstr (Fstsw (Reg Ax)) instr_lst3 in
             let instr_lst5 = genInstr Sahf instr_lst4 in
-            let instr_lst6 = genInstr (CondJmp (relOpJmpF relop, Label (makeLabel quad.arg3))) instr_lst5 in
+            let instr_lst6 = 
+              genInstr (CondJmp (relOpJmpF relop, Label (makeLabel quad.arg3))) 
+                instr_lst5 
+            in
               instr_lst6
           | T_Array _ -> internal "Operator = does not support type array"
           | T_Arrow _ -> internal "Operator = does not support functions"
-          | T_Id _ -> internal "fuck :)"
+          | T_Id _ -> 
+              internal "Structual equality has been implemented elsewhere"
+          | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun ->
+              internal "Internal typed occured!"
         )
       | Q_Eq | Q_Neq as relop ->
         (match (getQuadOpType quad.arg1) with
@@ -135,41 +152,47 @@ and quadToFinal quad instr_lst =
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
-            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+            let instr_lst4 = 
+              genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) 
+                instr_lst3 
+            in
               instr_lst4
           | T_Char | T_Bool -> 
             let instr_lst1 = load Al (quad.arg1) instr_lst in
             let instr_lst2 = load Dl (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
-            let instr_lst4 = genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) instr_lst3 in
+            let instr_lst4 = 
+              genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) 
+                instr_lst3 
+            in
               instr_lst4
           | T_Float -> internal "not yet implemented"
           | T_Array _ -> internal "Operator = does not support type array"
           | T_Arrow _ -> internal "Operator = does not support functions"
-          | T_Id _ -> internal "a different kind of fuck :)")
+          | T_Id _ -> internal "Implemented elsewhere"
+          | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun ->
+              internal "Internal typed occured!"
+        )
       | Q_Dim -> 
-        (*prepei na phgainei sth dieuthinsh tou pinaka (addr) kai na psaxei to megethos sto addr + (i-1)*int_size - des moodle *)
+        (*prepei na phgainei sth dieuthinsh tou pinaka (addr) 
+        * kai na psaxei to megethos sto addr + (i-1)*int_size - des moodle *)
         let dim = match quad.arg2 with
           | O_Int d -> d
           | _ -> internal "Dimensions must be integers"
         in
         let instr_lst1 = load Si quad.arg1 instr_lst in
-        let instr_lst2 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Si, word_size*(dim - 1)))) instr_lst1 in
+        let instr_lst2 = 
+          genInstr (Mov (Reg Ax, Pointer (Word, Reg Si, word_size*(dim - 1)))) 
+            instr_lst1 
+        in
         let instr_lst3 = store Ax quad.arg3 instr_lst2 in
           instr_lst3
-      (* old version
-         let instr_lst1 = load Ax (quad.arg2 - 1) instr_lst in
-         let instr_lst2 = genInstr (Mov (Reg Cx, word_size)) instr_lst1 in
-         let instr_lst3 = genInstr (Imul (Reg Cx)) instr_lst2 in
-         let instr_lst4 = loadAddr Cx quad.arg1 instr_lst3 in
-         let instr_lst5 = genInstr (Add (Reg Ax, Reg Cx)) instr_lst4 in
-         let instr_lst6 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Ax, 0))) instr_lst5 in
-         let instr_lst7 = store Ax quad.arg3 instr_lst6 in
-         instr_lst7 *)
       | Q_Array -> 
-        (* pairneis ton arithmo twn diastasew n tou pinaka, kai gia na vreis to i-osto stoixeio
+        (* pairneis ton arithmo twn diastasew n tou pinaka, 
+         * kai gia na vreis to i-osto stoixeio
          * pas addr+ int_size + i*size *)
-        (* (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size + int_size*dims
+        (* (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * 
+           type_size + int_size*dims
            mov di, addr
            load bx, en
            mov dx, 1  ; dx holds Πdi
@@ -181,14 +204,18 @@ and quadToFinal quad instr_lst =
            imul dx
            add bx, ax
            mov ax, type_size
-           mul bx     ; ax = (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * type_size 
+           mul bx     ; ax = (e1 * (d2*d3*...dn) + 
+           e2 * (d3*...*dn) + ... en) * type_size 
            add ax,2*dims  ; done
         *)
         let rec loop exprs i instr_lst = 
           match i, exprs with
             | 1, [] -> instr_lst 
             | i, e :: es ->
-              let instr_lst1 = genInstr (Mov (Reg Ax, Pointer (Word, Reg Di, (i-1)*word_size))) instr_lst in
+              let instr_lst1 = 
+                genInstr (Mov (Reg Ax, Pointer (Word, Reg Di, (i-1)*word_size))) 
+                  instr_lst 
+              in
               let instr_lst2 = genInstr (Imul (Reg Dx)) instr_lst1 in
               let instr_lst3 = genInstr (Mov (Reg Dx, Reg Ax)) instr_lst2 in
               let instr_lst4 = load Ax e instr_lst3 in
@@ -199,7 +226,8 @@ and quadToFinal quad instr_lst =
         in
         let (dims, type_size) = match getQuadOpType quad.arg1 with
           | T_Array (typ, D_Int d) -> (d, sizeToBytes (getTypeSize typ))
-          | T_Array (_, D_Alpha _) -> internal "Not solved dimention type"
+          | T_Array (_, D_Alpha _) -> internal "Not solved dimension type"
+          | _ -> internal "Only T_Array applicable"
         in
         let entry_lst = match quad.arg2 with 
           | O_Index lst -> lst
@@ -209,9 +237,14 @@ and quadToFinal quad instr_lst =
         let instr_lst2 = load Bx (List.hd entry_lst) instr_lst1 in
         let instr_lst3 = genInstr (Mov (Reg Dx, Immediate "1")) instr_lst2 in
         let instr_lst4 = loop (List.tl entry_lst) dims instr_lst3 in
-        let instr_lst5 = genInstr (Mov (Reg Ax, Immediate type_size)) instr_lst4 in
+        let instr_lst5 = 
+          genInstr (Mov (Reg Ax, Immediate type_size)) instr_lst4 
+        in
         let instr_lst6 = genInstr (Imul (Reg Bx)) instr_lst5 in
-        let instr_lst7 = genInstr (Add (Reg Ax, Immediate (string_of_int (word_size*dims)))) instr_lst6 in
+        let instr_lst7 = 
+          genInstr (Add (Reg Ax, Immediate (string_of_int (word_size*dims)))) 
+            instr_lst6 
+        in
         let instr_lst8 = genInstr (Add (Reg Ax, Reg Di)) instr_lst7 in
         let instr_lst9 = store Ax quad.arg3 instr_lst8 in
           instr_lst9
@@ -233,7 +266,9 @@ and quadToFinal quad instr_lst =
       | Q_Ifb ->
         let instr_lst1 = load Al quad.arg1 instr_lst in
         let instr_lst2 = genInstr (Or (Reg Al, Reg Al)) instr_lst1 in
-        let instr_lst3 = genInstr (CondJmp ("jnz", Label (makeLabel quad.arg3))) instr_lst2 in
+        let instr_lst3 = 
+          genInstr (CondJmp ("jnz", Label (makeLabel quad.arg3))) instr_lst2 
+        in
           instr_lst3
       | Q_Jump -> 
         genInstr (Jmp (Label (makeLabel quad.arg3))) instr_lst
@@ -243,37 +278,48 @@ and quadToFinal quad instr_lst =
           | O_Entry e ->
             let res = functionResult e in
             let instr_lst1 = match res with
-              | T_Unit -> genInstr (Sub (Reg Sp, Immediate (string_of_int word_size))) instr_lst
+              | T_Unit ->
+                  let size = string_of_int word_size in 
+                    genInstr (Sub (Reg Sp, Immediate size)) instr_lst
               | _ -> instr_lst
             in  
             let instr_lst2 = updateAL quad.arg3 instr_lst1 in
               (match e.entry_info with
                 | ENTRY_function f ->
                   let par_size = f.function_paramsize in
-                  let _  = params_size := 0 in (* was not present before, hope for the best *)
-                  let instr_lst3 = genInstr (Call (LabelPtr (Near, makeFunctionLabel e))) instr_lst2 in
-                  let instr_lst4 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst3 in
+                  let _  = params_size := 0 in
+                  let instr_lst3 = 
+                    genInstr (Call (LabelPtr (Near, makeFunctionLabel e))) 
+                      instr_lst2 
+                  in
+                  let new_sp = (string_of_int (par_size + 2*word_size)) in
+                  let instr_lst4 = 
+                    genInstr (Add (Reg Sp, Immediate new_sp )) instr_lst3 
+                  in
                     instr_lst4
-                | ENTRY_parameter _ | ENTRY_variable _ | ENTRY_temporary _ -> (* temporary is REDUNDANT *)
+                | ENTRY_parameter _ | ENTRY_variable _ | ENTRY_temporary _ ->
                   let instr_lst3 = loadFunCode Ax quad.arg3 instr_lst2 in
                   let par_size = !params_size in
                   let _  = params_size := 0 in
                   let instr_lst4 = genInstr (Call (Reg Ax)) instr_lst3 in
-                  let instr_lst5 = genInstr (Add (Reg Sp, Immediate (string_of_int (par_size + 2*word_size)))) instr_lst4 in
+                  let new_sp = (string_of_int (par_size + 2*word_size)) in
+                  let instr_lst5 = 
+                    genInstr (Add (Reg Sp, Immediate new_sp)) instr_lst4 
+                  in
                     instr_lst5
-                | _ -> internal "Cannot call non function/parameter/variable"))
+                | _ -> internal "Cannot call non function/parameter/variable")
+           | _ -> internal "Calls can be made to entries only")
       | Q_Par ->  
         (match quad.arg2 with
           | O_Ret ->
-            let size = Word in
-            (*let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in*) (* already included in nickies 4*)
             let instr_lst1 = loadAddress Si quad.arg1 instr_lst in
             let instr_lst2 = genInstr (Push (Reg Si)) instr_lst1 in
               instr_lst2  
           | O_ByVal ->
             let typ = getQuadOpType quad.arg1 in
             let size = getTypeSize typ in
-            let _ = params_size := !params_size + (int_of_string (sizeToBytes size)) in
+            let _ = 
+              params_size := !params_size+(int_of_string (sizeToBytes size)) in
               (match typ with
                 | T_Int | T_Array _ 
                 | T_Ref _ | T_Id _ ->
@@ -282,24 +328,36 @@ and quadToFinal quad instr_lst =
                     instr_lst2                    
                 | T_Float ->
                   let instr_lst1 = loadReal quad.arg1 instr_lst in
-                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) instr_lst1 in
+                  let instr_lst2 = 
+                    genInstr (Sub (Reg Sp, Immediate (sizeToBytes TByte))) 
+                      instr_lst1 
+                  in
                   let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                  let instr_lst4 = genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 in
+                  let instr_lst4 =
+                    genInstr (Fstp (Pointer (TByte, Reg Si, 0))) instr_lst3 
+                  in
                     instr_lst4                    
                 | T_Char | T_Bool ->
                   let instr_lst1 = load Al quad.arg1 instr_lst in
-                  let instr_lst2 = genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) instr_lst1 in
+                  let instr_lst2 = 
+                    genInstr (Sub (Reg Sp, Immediate (sizeToBytes Byte))) 
+                      instr_lst1 
+                  in
                   let instr_lst3 = genInstr (Mov (Reg Si, Reg Sp)) instr_lst2 in
-                  let instr_lst4 = genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) instr_lst3 in
+                  let instr_lst4 = 
+                    genInstr (Mov (Pointer (Byte, Reg Si, 0), Reg Al)) 
+                      instr_lst3 
+                  in
                     instr_lst4                  
                 | T_Arrow (_, _) ->
                   let instr_lst1 = loadFun Ax Bx quad.arg1 instr_lst in
                   let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
                   let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
                     instr_lst3
-                | T_Alpha _ | T_Notype | T_Ord | T_Nofun -> internal "Type inference failed"
-                | T_Unit -> internal "Intermediate failed"
-                | T_Str -> internal "T_Str is redundant. GET OVER IT."))
+                | T_Alpha _ | T_Notype | T_Ord | T_Nofun -> 
+                    internal "Type inference failed"
+                | T_Unit -> internal "Intermediate failed")
+           | _ -> internal "Only call by val and return is supported")
       | Q_Ret ->  internal "Don't have"
       | Q_Constr -> 
         let instr_lst1 = load Ax quad.arg1 instr_lst in
