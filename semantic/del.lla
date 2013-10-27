@@ -1,7 +1,0 @@
-let f x =
-    let mutable a [10] in
-    a[1]:=10;
-    !a[1]
-
-let main = 
-    f ()

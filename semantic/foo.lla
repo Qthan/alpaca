@@ -1,4 +1,0 @@
-let main =
-let mutable a in
-a:=1;
-print_int !a+1
