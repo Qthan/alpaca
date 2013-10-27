@@ -1,0 +1,3 @@
+let f a b = a + b
+
+let main = f 3 3

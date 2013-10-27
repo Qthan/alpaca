@@ -1,0 +1,6 @@
+let g x = 4 + x
+
+let main =
+let mutable f in
+f := g;
+!f 5

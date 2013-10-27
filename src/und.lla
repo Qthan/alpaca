@@ -1,0 +1,5 @@
+type t = Tup of int int | Nil
+
+
+let dup y = Tup y y 
+let a = dup(dup(dup(dup(dup(dup(dup(dup 1)))))))

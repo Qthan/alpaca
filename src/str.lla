@@ -1,0 +1,5 @@
+let main =
+	let a = "lalal" in
+	a[0] := 'a';
+    print_string a
+
