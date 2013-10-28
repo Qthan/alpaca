@@ -99,8 +99,8 @@ type quad_operands =
 type quad = {
   label : Label.t;
   operator : quad_operators;
-  arg1 : quad_operands;
-  arg2 : quad_operands;
+  mutable arg1 : quad_operands; (* due to optimizations *)
+  mutable arg2 : quad_operands;
   mutable arg3 : quad_operands
 }
 
@@ -467,6 +467,8 @@ let isEntry = function
   | O_Entry _ -> true
   | _ -> false
 
+(* this is not physical nor structural equality due to the use
+ * of Symbol.scoped_eq. It merely checks if two entries use the same id*)
 let rec operand_eq arg1 arg2 =
   match arg1, arg2 with
     | O_Int n, O_Int m -> n = m 
@@ -477,7 +479,7 @@ let rec operand_eq arg1 arg2 =
     | O_Str n, O_Str m -> n = m
     | O_Backpatch, O_Backpatch -> true
     | O_Entry e, O_Entry f ->
-      Symbol.entry_eq e f
+      Symbol.scoped_eq e f
     | O_Empty, O_Empty -> true
     | O_Ref arg1, O_Ref arg2
     | O_Deref arg1, O_Deref arg2 -> operand_eq arg1 arg2

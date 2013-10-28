@@ -59,6 +59,7 @@ val newTemporary : Types.typ -> SymbTypes.entry
 val forwardFunction : SymbTypes.entry -> unit
 val endFunctionHeader : SymbTypes.entry -> Types.typ -> unit
 val entry_eq : SymbTypes.entry -> SymbTypes.entry -> bool
+val scoped_eq : SymbTypes.entry -> SymbTypes.entry -> bool
 val setType : SymbTypes.entry -> Types.typ -> unit
 val getType : SymbTypes.entry -> Types.typ
 val getResType : SymbTypes.entry -> Types.typ
@@ -78,3 +79,4 @@ val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
+val isTemporary : SymbTypes.entry -> bool

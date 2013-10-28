@@ -75,8 +75,8 @@ type quad_operands =
 type quad = {
   label : Label.t;
   operator : quad_operators;
-  arg1 : quad_operands;
-  arg2 : quad_operands;
+  mutable arg1 : quad_operands;
+  mutable arg2 : quad_operands;
   mutable arg3 : quad_operands;
 }
 type expr_info = { place : quad_operands; next_expr : Labels.labelList; }

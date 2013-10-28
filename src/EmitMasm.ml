@@ -42,8 +42,8 @@ let rec operandToString = function
     Printf.sprintf "%s ptr [%s-%d]" (sizeToString size) 
       (operandToString operand) (-i)
   | Pointer _ -> 
-      internal 
-        "Because OCaml doesn't understand that the above matching is exhaustive"
+    internal 
+      "Because OCaml doesn't understand that the above matching is exhaustive"
   | LabelPtr (size, label) ->
     Printf.sprintf "%s ptr %s" 
       (sizeToString size) label

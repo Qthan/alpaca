@@ -145,7 +145,7 @@ let getRegister r ty =
         | Dx -> Dl
         | Di | Si | Bp | Sp | ST _ -> internal "unused registers"
         | Al | Ah | Bl | Bh | Cl | Ch| Dl| Dh -> 
-            internal "unapplicable registers")
+          internal "unapplicable registers")
     | TByte -> internal "not applicable"
     | DWord -> internal "unused"
     | Near -> internal "not a size"

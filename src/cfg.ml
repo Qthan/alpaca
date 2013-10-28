@@ -137,8 +137,8 @@ struct
           create_blocks_aux qs (new_info, new_set, new_block) 
             ((cur_info, cur_set1, cur_block1) :: acc)
       | q :: qs -> 
-          internal "You shouldn't bump here, \
-            but this function is not well-tested :)"
+        internal "You shouldn't bump here, \
+                  but this function is not well-tested :)"
 
   let index_blocks blocks =
     iteri (fun i (info, _, _) -> info.block_index <- (i+1)) blocks
@@ -222,25 +222,25 @@ struct
   let persistent_vmap f cfg =
     let tbl = Hashtbl.create 64 in
       fold_edges (fun v1 v2 acc ->
-                    let v1 = 
-                      if (Hashtbl.mem tbl v1) then Hashtbl.find tbl v1
-                      else
-                        begin
-                          let v1_new = f v1 in
-                            Hashtbl.add tbl v1 v1_new;
-                            v1_new
-                        end
-                    in
-                    let v2 =
-                      if (Hashtbl.mem tbl v2) then Hashtbl.find tbl v2
-                      else 
-                        begin
-                          let v2_new = f v2 in
-                            Hashtbl.add tbl v2 v2_new;
-                            v2_new
-                        end
-                    in
-                      add_edge acc v1 v2) cfg empty 
+          let v1 = 
+            if (Hashtbl.mem tbl v1) then Hashtbl.find tbl v1
+            else
+              begin
+                let v1_new = f v1 in
+                  Hashtbl.add tbl v1 v1_new;
+                  v1_new
+              end
+          in
+          let v2 =
+            if (Hashtbl.mem tbl v2) then Hashtbl.find tbl v2
+            else 
+              begin
+                let v2_new = f v2 in
+                  Hashtbl.add tbl v2 v2_new;
+                  v2_new
+              end
+          in
+            add_edge acc v1 v2) cfg empty 
 
 
 
@@ -403,8 +403,8 @@ struct
     let v_list = fold_vertex (fun v acc -> v :: acc) cfg [] in
     let rec aux i acc =
       match (try Some List.find (fun (info, _, b) -> 
-                         Blocks.(info.block_index) = i) v_list 
-             with Not_found -> None)
+          Blocks.(info.block_index) = i) v_list 
+         with Not_found -> None)
       with
           Some (_,_, b) -> aux (i+1) (acc @ b)
         | None -> acc

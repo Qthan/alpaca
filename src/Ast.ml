@@ -409,7 +409,7 @@ and walk_expr expr_node = match expr_node.expr with
                          (id, 
                           (List.length constructor_info.constructor_paramlist), 
                           (List.length l))
-                )
+                      )
             in
               expr_node.expr_typ <- constructor_info.constructor_type;
               expr_node.expr_entry <- Some cid_entry;
@@ -460,8 +460,8 @@ and walk_atom t = match t.atom with
             t.atom_entry <- Some cid_entry;
             []
           | ENTRY_constructor c_info ->
-              raise (ConstrParamArity 
-                       (cid, List.length c_info.constructor_paramlist, 0))
+            raise (ConstrParamArity 
+                     (cid, List.length c_info.constructor_paramlist, 0))
           | _ -> internal "internal error"
       end
   | A_Var v -> 
@@ -548,7 +548,7 @@ and walk_pattern p = match p.pattern with
                        (cid,
                         (List.length constructor_info.constructor_paramlist),
                         (List.length l))
-              )
+                    )
           in
             p.pattern_typ <- constructor_info.constructor_type;
             p.pattern_entry <- Some cid_entry;
@@ -589,8 +589,8 @@ and walk_pattom t = match t.pattom with
             t.pattom_entry <- Some cid_entry;
             []
           | ENTRY_constructor c_info ->
-              raise (ConstrParamArity 
-                       (cid, (List.length c_info.constructor_paramlist), 0))
+            raise (ConstrParamArity 
+                     (cid, (List.length c_info.constructor_paramlist), 0))
           | _ -> internal "we failed you again"
       end
   | P_Pattern p -> 

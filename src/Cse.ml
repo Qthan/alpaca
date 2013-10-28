@@ -29,7 +29,8 @@ sig
   val add     : 'a t -> key -> 'a -> 'a t
   val mem     : 'a t -> key -> bool
   val update  : 'a t -> key -> 'a -> 'a t
-  val find  : 'a t -> key -> 'a option
+  val find    : 'a t -> key -> 'a option
+  val remove  : 'a t -> key -> 'a t
 end
 
 module ListDict (Key : EqualityType) =
@@ -47,13 +48,28 @@ struct
         else aux xs
     in
       aux d
-  let update d k v = d (* not needed for lists *)
+  let update d k v = 
+    let rec aux = function
+        [] -> []
+      | ((x, _) as z) :: ds ->
+        if Key.equal k x then (k, v)  :: (aux ds)
+        else z :: aux ds
+    in
+      aux d
   let find d k =
     let rec aux = function
       | [] -> None
       | (x, v) :: xs ->
         if Key.equal k x then Some v
         else aux xs
+    in
+      aux d
+  let remove d k =
+    let rec aux = function
+        [] -> []
+      | (x, v) :: ds -> 
+        if Key.equal k x then aux ds
+        else (x, v) :: (aux ds)
     in
       aux d
 end
@@ -96,7 +112,7 @@ let simulate (info, s, block) =
   } 
   in 
   let rec aux block maps acc =
-   (*Printf.printf "Block: %d\n" Blocks.(info.block_index);*)
+    (*Printf.printf "Block: %d\n" Blocks.(info.block_index);*)
     match block with
       | [] -> (info, s, Blocks.rev acc)
       | q :: qs when Quads.isBop q.operator && Quads.isEntry q.arg3 ->
@@ -228,12 +244,25 @@ let simulate (info, s, block) =
     aux block maps []
 
 (* Copy propagation *)
-(*
+
 type cp_maps =
-    { 
-      tmp_to_var : Quads.quad_operands VarMap.t;
-      var_to_tmp : (Quads.quad_operands option) VarMap.t
-    }
+  { 
+    tmp_to_var : Quads.quad_operands VarMap.t;
+    var_to_tmp : Quads.quad_operands VarMap.t
+  }
+
+(* Propagates variables to a quad*)
+let propagate_var q maps =
+  let aux = function
+    | (O_Entry e) as z when Symbol.isTemporary e ->
+      (match VarMap.find maps.tmp_to_var z with
+          None -> z
+        | Some x -> x)
+    | x -> x
+  in
+    q.arg1 <- aux q.arg1;
+    q.arg2 <- aux q.arg2
+
 
 let copy_propagate (info, s, block) =
   let maps = 
@@ -244,6 +273,42 @@ let copy_propagate (info, s, block) =
   in
   let rec aux block maps acc =
     match block with
-      | [] -> (info, s, Blocks.rev acc)*)
+      | [] -> (info, s, Blocks.rev acc)
+      | q :: qs when Quads.isBop q.operator && Quads.isEntry q.arg3 ->
+        propagate_var q maps;
+        let new_maps =
+          match VarMap.find maps.var_to_tmp q.arg3 with
+              None -> maps
+            | Some tmp ->
+              let vmap = VarMap.remove maps.var_to_tmp q.arg3 in
+              let tmap = VarMap.remove maps.tmp_to_var tmp in
+                { tmp_to_var = tmap; var_to_tmp = vmap}
+        in
+          aux qs new_maps (q :: acc)
+      | q :: qs when Quads.(q.operator = Q_Assign && isEntry q.arg3) ->
+        propagate_var q maps;
+        let new_maps = match VarMap.find maps.var_to_tmp q.arg3 with
+            None -> maps
+          | Some tmp ->
+            let tmap = VarMap.remove maps.tmp_to_var tmp in
+            let vmap = VarMap.remove maps.var_to_tmp q.arg3 in
+            let new_maps = { tmp_to_var = tmap; var_to_tmp = vmap} in
+              new_maps
+        in
+          (match q.arg3 with
+              O_Entry e when Symbol.isTemporary e ->
+              let tmap = VarMap.add new_maps.tmp_to_var q.arg3 q.arg1 in
+              let vmap = VarMap.add new_maps.var_to_tmp q.arg1 q.arg3 in
+              let new_maps2 = { tmp_to_var = tmap; var_to_tmp = vmap} in
+                aux qs new_maps2 (q :: acc)
+            | _ -> aux qs new_maps (q :: acc))
+      | q :: qs ->
+        propagate_var q maps;
+        aux qs maps (q :: acc)
+  in
+    aux block maps []
 
-  
+
+
+
+

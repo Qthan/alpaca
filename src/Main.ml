@@ -82,22 +82,22 @@ let main =
       let cfg = Cfg.CFG.create_cfg ir in
       let cfg = match default_config.opt with
           true -> 
-            let optimized_cfg = Optimizations.optimize cfg in
-              optimized_cfg
+          let optimized_cfg = Optimizations.optimize cfg in
+            optimized_cfg
         | false -> cfg
       in
         if default_config.cfg then 
           Cfg.Dot.output_graph (force files.cgraph) cfg;
-      let ir = Cfg.CFG.quads_of_cfg cfg in
-      let () =  match default_config.quads with
-        | true -> 
-          Quads.printQuads (Format.formatter_of_out_channel files.cout) ir
-        | false -> 
-          let final = CodeGen.codeGen ir outer_entry in
-          let asm = EmitMasm.emit final library_funs in
-            Printf.fprintf files.cout "%s" asm;
-      in
-        exit 0
+        let ir = Cfg.CFG.quads_of_cfg cfg in
+        let () =  match default_config.quads with
+          | true -> 
+            Quads.printQuads (Format.formatter_of_out_channel files.cout) ir
+          | false -> 
+            let final = CodeGen.codeGen ir outer_entry in
+            let asm = EmitMasm.emit final library_funs in
+              Printf.fprintf files.cout "%s" asm;
+        in
+          exit 0
     with 
       | Parsing.Parse_error ->
         Printf.eprintf "Line %d: syntax error\n"
@@ -125,7 +125,7 @@ let main =
         exit 2
       | Ast.ConstrParamArity (cid, expected, got) ->
         error "The constructor %s expects %n argument(s),\
-                 but is applied here to %n argument(s)" cid expected got;
+               but is applied here to %n argument(s)" cid expected got;
         exit 2
       | Ast.NewArray ->
         error "Cannot allocate array with new";

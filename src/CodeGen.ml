@@ -39,7 +39,7 @@ and quadToFinal quad instr_lst =
         let instr_lst3 = genInstr (Mov (Reg Bp, Reg Sp)) instr_lst2 in
         let instr_lst4 = 
           genInstr (Sub (Reg Sp, Immediate (string_of_int (getVarSize e)))) 
-                   instr_lst3 
+            instr_lst3 
         in
           current_fun := e;
           instr_lst4
@@ -115,7 +115,7 @@ and quadToFinal quad instr_lst =
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
             let instr_lst4 = 
               genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) 
-                       instr_lst3 
+                instr_lst3 
             in
               instr_lst4
           | T_Char | T_Bool -> 
@@ -124,7 +124,7 @@ and quadToFinal quad instr_lst =
             let instr_lst3 = genInstr (Cmp (Reg Al, Reg Dl)) instr_lst2 in
             let instr_lst4 =
               genInstr (CondJmp (relOpJmp relop, Label (makeLabel quad.arg3))) 
-                       instr_lst3 
+                instr_lst3 
             in
               instr_lst4
           | T_Float ->
@@ -141,9 +141,9 @@ and quadToFinal quad instr_lst =
           | T_Array _ -> internal "Operator = does not support type array"
           | T_Arrow _ -> internal "Operator = does not support functions"
           | T_Id _ -> 
-              internal "Structual equality has been implemented elsewhere"
+            internal "Structual equality has been implemented elsewhere"
           | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun ->
-              internal "Internal typed occured!"
+            internal "Internal typed occured!"
         )
       | Q_Eq | Q_Neq as relop ->
         (match (getQuadOpType quad.arg1) with
@@ -170,11 +170,11 @@ and quadToFinal quad instr_lst =
           | T_Arrow _ -> internal "Operator = does not support functions"
           | T_Id _ -> internal "Implemented elsewhere"
           | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun ->
-              internal "Internal typed occured!"
+            internal "Internal typed occured!"
         )
       | Q_Dim -> 
         (*prepei na phgainei sth dieuthinsh tou pinaka (addr) 
-        * kai na psaxei to megethos sto addr + (i-1)*int_size - des moodle *)
+         * kai na psaxei to megethos sto addr + (i-1)*int_size - des moodle *)
         let dim = match quad.arg2 with
           | O_Int d -> d
           | _ -> internal "Dimensions must be integers"
@@ -278,8 +278,8 @@ and quadToFinal quad instr_lst =
             let res = functionResult e in
             let instr_lst1 = match res with
               | T_Unit ->
-                  let size = string_of_int word_size in 
-                    genInstr (Sub (Reg Sp, Immediate size)) instr_lst
+                let size = string_of_int word_size in 
+                  genInstr (Sub (Reg Sp, Immediate size)) instr_lst
               | _ -> instr_lst
             in  
             let instr_lst2 = updateAL quad.arg3 instr_lst1 in
@@ -307,7 +307,7 @@ and quadToFinal quad instr_lst =
                   in
                     instr_lst5
                 | _ -> internal "Cannot call non function/parameter/variable")
-           | _ -> internal "Calls can be made to entries only")
+          | _ -> internal "Calls can be made to entries only")
       | Q_Par ->  
         (match quad.arg2 with
           | O_Ret ->
@@ -354,9 +354,9 @@ and quadToFinal quad instr_lst =
                   let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
                     instr_lst3
                 | T_Alpha _ | T_Notype | T_Ord | T_Nofun -> 
-                    internal "Type inference failed"
+                  internal "Type inference failed"
                 | T_Unit -> internal "Intermediate failed")
-           | _ -> internal "Only call by val and return is supported")
+          | _ -> internal "Only call by val and return is supported")
       | Q_Ret ->  internal "Don't have"
       | Q_Constr -> 
         let instr_lst1 = load Ax quad.arg1 instr_lst in

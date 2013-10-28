@@ -449,6 +449,8 @@ let entry_eq e1 e2 =
       t1.temporary_index = t2.temporary_index
     | x, y -> x = y
 
+let scoped_eq e1 e2 = e1.entry_id = e2.entry_id
+
 let setType entry typ = match entry.entry_info with
   | ENTRY_function f -> f.function_result <- typ
   | ENTRY_variable v -> v.variable_type <- typ
@@ -527,8 +529,8 @@ let fixVarOffsets f =
   let rec aux varlist acc = 
     match varlist with 
       | [] -> 
-          f.function_varsize <- ref (-acc);
-          f.function_localsize <- -acc
+        f.function_varsize <- ref (-acc);
+        f.function_localsize <- -acc
       | v :: vs ->
         let s = sizeOfType (lookup_solved (getType v)) in
           setOffset v (acc-s);
@@ -540,7 +542,7 @@ let fixTmpOffsets f =
   let rec aux tmplist acc = 
     match tmplist with 
       | [] -> 
-          f.function_varsize <- ref (-acc)
+        f.function_varsize <- ref (-acc)
       | t :: ts ->
         let s = sizeOfType (lookup_solved (getType t)) in
           setOffset t (acc-s);
@@ -576,9 +578,9 @@ let addTemp tmp e =
 let remove_temp e tmp_e =
   match e.entry_info with
       ENTRY_function f ->
-        let tmps = List.filter (fun e -> not (entry_eq tmp_e e)) 
-                               f.function_tmplist in
-          f.function_tmplist <- tmps;
+      let tmps = List.filter (fun e -> not (entry_eq tmp_e e)) 
+          f.function_tmplist in
+        f.function_tmplist <- tmps;
     | _ -> internal "doesn't apply to non functions"
 
 let setLibraryFunction e = 
@@ -600,6 +602,11 @@ let getTag e =
 let getEqFun u_entry = match u_entry.entry_info with
   | ENTRY_udt u -> u.eq_function
   | _ -> internal "Not a UDT"
+
+let isTemporary e =
+  match e.entry_info with
+    | ENTRY_temporary _ -> true
+    | _ -> false
 
 
 
