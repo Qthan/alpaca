@@ -51,7 +51,6 @@ let split_decls decl =
         (S_Rec funs, S_Rec vars)
     | S_Type _ -> internal "Cannot have type defs in such position"
 
-
 (* XXX Check if type is unit XXX*)
 let isUnit fresh_typ = 
   match (Typeinf.lookup_solved fresh_typ) with 
@@ -59,6 +58,13 @@ let isUnit fresh_typ =
     | _ -> false
 
 let fun_stack = Stack.create ()
+
+let isTail expr = 
+  match expr.expr_entry with
+      None -> internal "Function entry not found"
+    | Some e ->
+        let cur_fun = Stack.top fun_stack in
+          !Quads.tailRecOpt && expr.expr_tail && (Symbol.entry_eq cur_fun e)
 
 let rec gen_program ast subst outer_entry =
   let quads = gen_decl_list ast outer_entry in
@@ -227,6 +233,7 @@ and gen_def quads def_node delete_quads =
               let fQuads1 = 
                 genQuad (Q_Unit, O_Entry entry, O_Empty, O_Empty) fQuads 
               in
+              let () = Symbol.setFunctionLabel entry (Label.nextLabel ()) in
                 if (isUnit typ)
                 then
                   let (fQuads2, s_info) = gen_stmt fQuads1 expr in
@@ -367,13 +374,44 @@ and gen_expr quads expr_node = match expr_node.expr with
           let quads5 = backpatch quads4 cond_info.false_lst (Label.nextLabel ()) in
           let quads6 = genQuad (Q_Assign, O_Bool false, O_Empty, temp) quads5 in
             (quads6, e_info)
-    end 
+    end
+  | E_Id (id, l) when isTail expr_node ->
+      let callee_entry = match expr_node.expr_entry with
+        | Some e -> e
+        | None -> internal "Callee is not a function"
+      in
+      let params = Symbol.getParamList callee_entry in
+      let quads1 =
+        List.fold_left2
+          (fun quads e p ->
+             if (isUnit e.atom_typ) then 
+               let (quads1, s_info) = gen_atom_stmt quads e in
+               let quads2 = 
+                 backpatch quads1 s_info.next_stmt (Label.nextLabel ())
+               in
+                 quads2
+             else
+                 let (quads1, e_info) = gen_atom quads e in
+                 let quads2 = 
+                   backpatch quads1 e_info.next_expr (Label.nextLabel ()) 
+                 in
+                 let quads3 = 
+                   genQuad (Q_Assign, e_info.place, O_Empty, O_Entry p) quads2 
+                 in
+                   quads3
+          ) quads l params
+      in
+      let jmp_target = Symbol.getFunctionLabel callee_entry in
+      let quads2 = 
+        genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads1
+      in
+      let e_info = setExprInfo (O_Int 1) (Labels.newLabelList ()) in
+        (quads2, e_info)
   | E_Id (id, l) -> 
     let quads1 =
       List.fold_left 
         (fun quads e ->
-           if (isUnit e.atom_typ)
-           then
+           if (isUnit e.atom_typ) then
              let (quads1, s_info) = gen_atom_stmt quads e in
              let quads2 = backpatch quads1 s_info.next_stmt (Label.nextLabel ()) in
                quads2

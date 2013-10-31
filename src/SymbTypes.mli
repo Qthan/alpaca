@@ -37,7 +37,8 @@ and function_info = {
   mutable function_nesting   : int;
   mutable function_parent    : entry option;
   mutable function_index     : int;
-  mutable function_library   : bool
+  mutable function_library   : bool;
+  mutable function_label     : int 
 }
 
 and parameter_info = {

@@ -220,6 +220,7 @@ and walk_recdef t = match t.def with
           let () = Stack.push p function_stack in
           let new_ty = getResType p in
           let () = hideScope !currentScope false in
+          let () = e.expr_tail <- true in
           let constraints = walk_expr e in
           let _ = Stack.pop function_stack in
             closeScope ();
@@ -336,6 +337,7 @@ and walk_expr expr_node = match expr_node.expr with
             (expr1.expr_typ, T_Bool) :: constraints1
     end
   | E_Block expr1 -> 
+    let () = expr1.expr_tail <- expr_node.expr_tail in 
     let constraints = walk_expr expr1 in
       expr_node.expr_typ <- expr1.expr_typ;
       constraints  
@@ -365,15 +367,18 @@ and walk_expr expr_node = match expr_node.expr with
       expr_node.expr_typ <- T_Int;
       expr_node.expr_entry <- Some id_entry;
       [(typ, T_Array (fresh (), freshDim ()))]
-  | E_Ifthenelse (expr1, expr2, expr3)  ->
+  | E_Ifthenelse (expr1, expr2, expr3) ->
     let constraints1 = walk_expr expr1 in
+    let () = expr2.expr_tail <- expr_node.expr_tail in 
     let constraints2 = walk_expr expr2 in 
+    let () = expr3.expr_tail <- expr_node.expr_tail in 
     let constraints3 = walk_expr expr3 in
       expr_node.expr_typ <- expr2.expr_typ;
       (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, expr3.expr_typ) 
       :: constraints1 @ constraints2 @ constraints3
   | E_Ifthen (expr1, expr2) -> 
     let constraints1 = walk_expr expr1 in
+    let () = expr2.expr_tail <- expr_node.expr_tail in 
     let constraints2 = walk_expr expr2 in 
       expr_node.expr_typ <- T_Unit;
       (expr1.expr_typ, T_Bool) :: (expr2.expr_typ, T_Unit) 
@@ -420,6 +425,9 @@ and walk_expr expr_node = match expr_node.expr with
   | E_Match (expr1, l) -> 
     begin 
       let constraints1 = walk_expr expr1 in
+      let () = 
+        List.iter (fun (Clause (_, e)) -> e.expr_tail <- expr_node.expr_tail) l
+      in
       let (result_typ, pat_typ, result_constraints) = walk_clause_list l in
         expr_node.expr_typ <- result_typ;
         (expr1.expr_typ, pat_typ) :: constraints1 @ result_constraints
@@ -435,11 +443,13 @@ and walk_expr expr_node = match expr_node.expr with
   | E_Letin (l, expr) -> 
     openScope();
     let constraints1 = walk_stmt l in
+    let () = expr.expr_tail <- expr_node.expr_tail in 
     let constraints2 = walk_expr expr in
       expr_node.expr_typ <- expr.expr_typ;
       closeScope();
       constraints1 @ constraints2       
-  | E_Atom a -> 
+  | E_Atom a ->
+    let () = a.atom_tail <- expr_node.expr_tail in
     let constraints = walk_atom a in
       expr_node.expr_typ <- a.atom_typ;
       expr_node.expr_entry <- a.atom_entry;
@@ -495,6 +505,7 @@ and walk_atom t = match t.atom with
       walk_array_expr expr_list 
         [(typ_arr, T_Array (typ, D_Int (List.length expr_list)))]
   | A_Expr expr -> 
+    let () = expr.expr_tail <- t.atom_tail in
     let constraints = walk_expr expr in
       t.atom_typ <- expr.expr_typ;
       constraints

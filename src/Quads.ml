@@ -120,7 +120,8 @@ type stmt_info = {
 
 (* Quads infrastructure *)
 
-let labelsTbl = Hashtbl.create 101 
+let tailRecOpt = ref false
+let labelsTbl = Hashtbl.create 101  
 
 (* Modularity *)
 let memLabelTbl label = Hashtbl.mem labelsTbl label 
@@ -272,7 +273,8 @@ let auxil_funs =
         function_nesting = 0;
         function_parent = None;
         function_index = -1;
-        function_library = true
+        function_library = true;
+        function_label = -1
       } } 
   in
     [ ("_make_array", makeEntry "_make_array" 4 (T_Array (T_Unit, D_Int 1)));

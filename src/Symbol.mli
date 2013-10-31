@@ -77,6 +77,8 @@ val addTemp : SymbTypes.entry -> SymbTypes.entry -> unit
 val removeTemp : SymbTypes.entry -> SymbTypes.entry -> unit
 val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
+val getFunctionLabel : SymbTypes.entry -> int
+val setFunctionLabel : SymbTypes.entry -> int -> unit
 val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
 val isTemporary : SymbTypes.entry -> bool

@@ -63,7 +63,8 @@ let read_args () =
   let speclist =
     [("-i", Arg.Unit (fun () -> default_config.quads <- true), 
       "Emit intermediate code");
-     ("-O", Arg.Unit (fun () -> default_config.opt <- true),
+     ("-O", Arg.Unit (fun () -> default_config.opt <- true; 
+                                Quads.tailRecOpt := true),
       "Perform optimizations");
      ("-g", Arg.Unit (fun () -> default_config.cfg <- true),
       "Output a cfg in .dot format")]

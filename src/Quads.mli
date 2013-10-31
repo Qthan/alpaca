@@ -85,6 +85,7 @@ type cond_info = {
   false_lst : Labels.labelList;
 }
 type stmt_info = { next_stmt : Labels.labelList; }
+val tailRecOpt : bool ref
 val labelsTbl : (int, int) Hashtbl.t
 val memLabelTbl : int -> bool
 val addLabelTbl : int -> unit

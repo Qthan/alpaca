@@ -324,7 +324,8 @@ let newUdt id err =
     function_nesting = 0;
     function_parent = Some outer_entry;
     function_index = (incr fun_index; !fun_index);
-    function_library = false 
+    function_library = false;
+    function_label = -1
   } in
   let fun_entry = {
     entry_id = id_make ("_eq" ^ (id_name id));
@@ -399,7 +400,8 @@ let newFunction id parent err =
       function_nesting = nesting;
       function_parent = parent;
       function_index = (incr fun_index; !fun_index);
-      function_library = false
+      function_library = false;
+      function_label = -1;
     } in
       newEntry id (ENTRY_function inf) false
 
@@ -594,6 +596,16 @@ let setLibraryFunction e =
 let isLibraryFunction e = 
   match e.entry_info with
     | ENTRY_function f -> f.function_library
+    | _ -> internal "Entry not a function"
+
+let getFunctionLabel e =
+  match e.entry_info with
+    | ENTRY_function f -> f.function_label
+    | _ -> internal "Entry not a function"
+
+let setFunctionLabel e v =
+  match e.entry_info with
+    | ENTRY_function f -> f.function_label <- v
     | _ -> internal "Entry not a function"
 
 (* Getters for UDT entries *)

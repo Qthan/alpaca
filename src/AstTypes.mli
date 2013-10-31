@@ -34,7 +34,8 @@ and ast_atom_node = {
   atom                   : ast_atom;
   atom_pos               : (int * int);
   mutable atom_typ       : typ;
-  mutable atom_entry     : entry option
+  mutable atom_entry     : entry option;
+  mutable atom_tail      : bool
 }
 
 and ast_atom =
@@ -49,12 +50,14 @@ and ast_atom =
     | A_Bang of ast_atom_node
     | A_Array of string * ast_expr_node list
     | A_Expr of ast_expr_node
+    | A_None
 
 and ast_expr_node = {
   expr                   : ast_expr;
   expr_pos               : (int * int);
   mutable expr_typ       : typ;
-  mutable expr_entry     : entry option
+  mutable expr_entry     : entry option;
+  mutable expr_tail      : bool
 }
 
 and ast_expr =
@@ -72,6 +75,7 @@ and ast_expr =
     | E_Match of ast_expr_node * ast_clause list
     | E_Letin of ast_stmt * ast_expr_node
     | E_New of typ
+    | E_None (* dummy expr*)
 
 and ast_clause =
       Clause of ast_pattern_node * ast_expr_node
