@@ -402,6 +402,7 @@ and gen_expr quads expr_node = match expr_node.expr with
           ) quads l params
       in
       let jmp_target = Symbol.getFunctionLabel callee_entry in
+      let () = addLabelTbl jmp_target in
       let quads2 = 
         genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads1
       in

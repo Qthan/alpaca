@@ -306,6 +306,7 @@ and walk_expr expr_node = match expr_node.expr with
             :: constraints1 @ constraints2
         | Semicolon -> 
           let constraints1 = walk_expr expr1 in
+          let () = expr2.expr_tail <- expr_node.expr_tail in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- expr2.expr_typ;
             constraints1 @ constraints2

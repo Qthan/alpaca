@@ -12,7 +12,7 @@ let rec plist l =
 let rec reverse x acc =
   match x with
    Nil -> acc
-   | Cons 3 lst -> reverse lst (Cons 3 acc)
+   | Cons y lst -> reverse lst (Cons y acc)
   end
 
 let main = 
