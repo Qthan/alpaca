@@ -281,7 +281,8 @@ struct
       try 
         List.find (fun (_, lset, _) ->
             LS.mem next lset) vertices
-      with Not_found -> internal "label not in any basic block!"
+      with Not_found -> 
+        internal "label %d not in any basic block!" next 
     in
       edge_to
 
@@ -345,11 +346,11 @@ struct
               | ENTRY_none | ENTRY_udt _ ->
                 internal "These entries cannot hold a function, hopefully"
             )
-        | q :: qs when qs <> [] -> 
+        | q :: qs when Quads.(q.operator = Q_Endu) -> (out_f, in_f)
+        | q :: qs -> 
           let next = q.label + 1 in
           let edge_to = find_next vertices next in
             (edge_to :: out_f, in_f)
-        | q :: qs -> (out_f, in_f)
     in
       aux qs ([], [])
 

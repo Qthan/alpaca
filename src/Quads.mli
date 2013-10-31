@@ -88,7 +88,8 @@ type stmt_info = { next_stmt : Labels.labelList; }
 val labelsTbl : (int, int) Hashtbl.t
 val memLabelTbl : int -> bool
 val addLabelTbl : int -> unit
-val newTemp : Types.typ -> SymbTypes.entry -> quad_operands
+val newTemp : Types.typ -> SymbTypes.entry -> bool -> quad_operands
+val removeTemp : quad_operands -> SymbTypes.entry -> unit
 val getQuadBop : AstTypes.binop -> quad_operators
 val getQuadUnop : AstTypes.unop -> quad_operators
 val getQuadOpType : quad_operands -> Types.typ

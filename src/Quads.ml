@@ -129,7 +129,7 @@ let addLabelTbl label = Hashtbl.replace labelsTbl label 0
 (* Create a new temp and register it with the symbol table *)
 let newTemp =
   let k = ref 1 in
-    fun typ f -> 
+    fun typ f opt -> 
       let tempsize = sizeOfType typ in
       let size = Symbol.getVarRef f in
         size := !size + tempsize; 
@@ -147,13 +147,20 @@ let newTemp =
             ENTRY_temporary {
               temporary_type = typ;
               temporary_offset = - !size;
-              temporary_index = !k
+              temporary_index = !k;
+              temporary_opt = opt
             }
         }
         in
           Symbol.addTemp header f;
           incr k;
           O_Entry header
+
+let removeTemp arg f = 
+  match arg with
+      O_Entry e when Symbol.isTemporary e ->
+      Symbol.removeTemp e f
+    | _ -> internal "Not a temporary"
 
 (* Return quad operator from Llama binary operator *)
 let getQuadBop bop = match bop with 

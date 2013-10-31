@@ -74,9 +74,10 @@ val fixVarOffsets : SymbTypes.function_info -> unit
 val fixTmpOffsets : SymbTypes.function_info -> unit
 val fixOffsets : SymbTypes.entry -> unit
 val addTemp : SymbTypes.entry -> SymbTypes.entry -> unit
-val remove_temp : SymbTypes.entry -> SymbTypes.entry -> unit
+val removeTemp : SymbTypes.entry -> SymbTypes.entry -> unit
 val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
 val isTemporary : SymbTypes.entry -> bool
+val isOptTemp : SymbTypes.entry -> bool

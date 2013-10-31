@@ -51,7 +51,8 @@ and parameter_info = {
 and temporary_info = {
   mutable temporary_offset : int;
   temporary_type           : typ;
-  temporary_index          : int
+  temporary_index          : int;
+  temporary_opt            : bool
 }
 
 and constructor_info = {

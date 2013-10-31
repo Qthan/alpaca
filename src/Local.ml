@@ -3,6 +3,7 @@ open Quads
 open Blocks
 open Error
 open SymbTypes
+open Misc
 
 type symVal = SymVal of int
 
@@ -133,7 +134,7 @@ let simulate (info, s, block) =
                 | None -> internal "I haven't stored the fun info, bad.."
               in
               let tmp = 
-                Quads.newTemp (Intermediate.lookup_type (Some e)) f
+                Quads.newTemp (Intermediate.lookup_type (Some e)) f true
               in
               let quad = Quads.genQuad (Q_Assign, q.arg3, O_Empty, tmp) [q] in
               let exp_to_tmp = ExpMap.add maps.exp_to_tmp symExpr tmp in
@@ -157,7 +158,7 @@ let simulate (info, s, block) =
                 | None -> internal "I haven't stored the fun info, bad.."
               in
               let tmp = 
-                Quads.newTemp (Intermediate.lookup_type (Some e)) f
+                Quads.newTemp (Intermediate.lookup_type (Some e)) f true
               in                
               let quad = Quads.genQuad (Q_Assign, q.arg3, O_Empty, tmp) [q] in
               let exp_to_tmp = ExpMap.add maps.exp_to_tmp symExpr tmp in
@@ -181,7 +182,7 @@ let simulate (info, s, block) =
                 | None -> internal "I haven't stored the fun info, bad.."
               in
               let tmp = 
-                Quads.newTemp (Intermediate.lookup_type (Some e)) f
+                Quads.newTemp (Intermediate.lookup_type (Some e)) f true
               in                
               let quad = Quads.genQuad (Q_Assign, q.arg3, O_Empty, tmp) [q] in
               let exp_to_tmp = ExpMap.add maps.exp_to_tmp symExpr tmp in
@@ -208,7 +209,7 @@ let simulate (info, s, block) =
                       | None -> internal "I haven't stored the fun info, bad.."
                     in
                     let tmp = 
-                      Quads.newTemp (Intermediate.lookup_type (Some e)) f
+                      Quads.newTemp (Intermediate.lookup_type (Some e)) f true
                     in                        
                     let quad = 
                       Quads.genQuad (Q_Assign, q.arg3, O_Empty, tmp) [q] 
@@ -307,6 +308,68 @@ let copy_propagate (info, s, block) =
         aux qs maps (q :: acc)
   in
     aux block maps []
+
+(* Dead code elimination *)
+
+module TS = Set.Make (struct type t = Quads.quad_operands
+    let compare = compare
+  end)
+
+let deletable = function
+    O_Entry e when (Symbol.isTemporary e) && (Symbol.isOptTemp e) -> true
+  | _ -> false
+
+let add_tmp tmp temps =
+  match tmp with
+      O_Entry e when deletable tmp ->
+      TS.add tmp temps
+    | _ -> temps
+
+(* Must call fixTmpOffsets after this*)
+let dce (info, s, block) =
+  let temps = TS.empty in
+  let rec aux block temps acc =
+    match block with
+        [] -> (info, s, acc)
+      | q :: qs when Quads.((isBop q.operator) || q.operator = Q_Assign) ->
+        if (deletable q.arg3) then
+          if (TS.mem q.arg3 temps) then
+            begin
+              let new_temps =
+                temps
+                |> add_tmp q.arg1
+                |> add_tmp q.arg2
+              in 
+                aux qs new_temps (q :: acc)
+            end
+          else
+            begin
+              let f = match info.cur_fun with
+                  None -> internal "there must be a function"
+                | Some f -> f 
+              in
+                Quads.removeTemp q.arg3 f;
+                aux qs temps acc
+            end
+        else
+          begin
+            let new_temps =
+              temps
+              |> add_tmp q.arg1
+              |> add_tmp q.arg2
+            in 
+              aux qs new_temps (q :: acc)
+          end
+      | q :: qs ->
+        let new_temps =
+          temps
+          |> add_tmp q.arg1
+          |> add_tmp q.arg2
+        in 
+          aux qs new_temps (q :: acc)
+
+  in
+    aux (Blocks.rev block) temps []
 
 
 

@@ -403,14 +403,17 @@ let newFunction id parent err =
     } in
       newEntry id (ENTRY_function inf) false
 
-
+(* I don't think we are using this
+ * we have one in Quads, which we should probably transfer here and delete this
+ * one*)
 let newTemporary typ =
   let id = id_make ("$" ^ string_of_int !tempNumber) in
     !currentScope.sco_negofs <- !currentScope.sco_negofs - sizeOfType typ;
     let inf = {
       temporary_type = typ;
       temporary_offset = !currentScope.sco_negofs;
-      temporary_index = !tempNumber
+      temporary_index = !tempNumber;
+      temporary_opt = false
     } in
       incr tempNumber;
       newEntry id (ENTRY_temporary inf) false
@@ -575,13 +578,13 @@ let addTemp tmp e =
     | _ -> internal "Cannot add new temp to non-function entry"
 
 (* this is as inefficient as I could do*)
-let remove_temp e tmp_e =
+let removeTemp tmp_e e =
   match e.entry_info with
       ENTRY_function f ->
       let tmps = List.filter (fun e -> not (entry_eq tmp_e e)) 
           f.function_tmplist in
         f.function_tmplist <- tmps;
-    | _ -> internal "doesn't apply to non functions"
+    | _ -> internal "doesn't apply to non functions %s" (id_name e.entry_id)
 
 let setLibraryFunction e = 
   match e.entry_info with
@@ -607,6 +610,14 @@ let isTemporary e =
   match e.entry_info with
     | ENTRY_temporary _ -> true
     | _ -> false
+
+let isOptTemp e =
+  match e.entry_info with
+      ENTRY_temporary t ->
+      t.temporary_opt
+    | _ -> internal "not a temporary" (*returning false here would perhaps
+                                        let some bugs slip, so we'll play
+                                        safe for now.*)
 
 
 
