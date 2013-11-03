@@ -47,6 +47,7 @@ module Blocks :
     { f_unit              : SymbTypes.entry option;
       f_endu              : SymbTypes.entry option;
       cur_fun             : SymbTypes.entry option;
+      entry_block         : bool;
       mutable block_index : int
       }
   type block_elt = block_info * LS.t * bblock 
@@ -68,6 +69,8 @@ module Blocks :
     val dot_block : block_elt -> string -> string
     (** Creates a basic block suitable for printing 
       to a .dot file for graphviz. Use {!Cfg.Dot} to get a .dot file  *)
+    val equal : block_elt -> block_elt -> bool
+    val hash : block_elt -> int
   end
 
 module V :

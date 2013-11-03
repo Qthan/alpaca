@@ -22,6 +22,7 @@ struct
     { f_unit              : SymbTypes.entry option;
       f_endu              : SymbTypes.entry option;
       cur_fun             : SymbTypes.entry option;
+      entry_block         : bool;
       mutable block_index : int
     }
 
@@ -78,6 +79,7 @@ struct
           { f_unit = None;
             f_endu = new_end;
             cur_fun = cur_info.cur_fun;
+            entry_block = false;
             block_index = 0
           }
         in
@@ -87,11 +89,16 @@ struct
             create_blocks_aux qs 
               (new_info, new_set, new_block) (cur :: acc)
       | q :: qs when (q.operator = Q_Unit) ->
-        let new_fun = Some (Quads.entry_of_quadop q.arg1) in
+        let new_fun = Quads.entry_of_quadop q.arg1 in
+        let is_entry = 
+          if (new_fun.entry_id = (Identifier.id_make "_outer")) then true
+          else false
+        in
         let new_info = 
-          { f_unit = new_fun;
+          { f_unit = Some new_fun;
             f_endu = None;
-            cur_fun = new_fun;
+            cur_fun = Some new_fun;
+            entry_block = is_entry;
             block_index = 0
           }
         in
@@ -110,6 +117,7 @@ struct
           { f_unit = None;
             f_endu = None;
             cur_fun = cur_info.cur_fun;
+            entry_block = false;
             block_index = 0
           }
         in
@@ -131,6 +139,7 @@ struct
           { f_unit = None;
             f_endu = None;
             cur_fun = cur_info.cur_fun;
+            entry_block = false;
             block_index = 0
           }
         in
@@ -149,7 +158,8 @@ struct
         f_unit = None;
         f_endu = None;
         cur_fun = None;
-        block_index = 0;
+        entry_block = false;
+        block_index = 0
       }
     in
     let blocks =  create_blocks_aux quads (cur_info, LS.empty, []) [] in
@@ -198,6 +208,10 @@ struct
     in
       aux quads (Printf.sprintf "Block: %d\n" info.block_index)
 
+  let equal (b1, _, _) (b2, _, _) =
+    b1.block_index = b2.block_index
+
+  let hash (b1, _, _) = Hashtbl.hash b1.block_index
 
 end
 
@@ -206,7 +220,7 @@ struct
   type t = Blocks.block_elt
   let compare = Pervasives.compare
   let hash = Hashtbl.hash
-  let equal = (=)
+  let equal = Blocks.equal
 end
 
 module G = Graph.Persistent.Digraph.Concrete (V)
@@ -401,14 +415,18 @@ struct
 
   (* This implementation may require changes if we mess with the graph *)
   let quads_of_cfg cfg = 
-    let v_list = fold_vertex (fun v acc -> v :: acc) cfg [] in
+    let nb_v = nb_vertex cfg in
+    let table = Hashtbl.create nb_v in
+    let () = iter_vertex (fun (i, s, b) as v ->
+                            Hashtbl.add table (Blocks.(i.block_index)) v) cfg 
+    in
     let rec aux i acc =
-      match (try Some List.find (fun (info, _, b) -> 
-          Blocks.(info.block_index) = i) v_list 
-         with Not_found -> None)
-      with
-          Some (_,_, b) -> aux (i+1) (acc @ b)
-        | None -> acc
+      if (Hashtbl.length table) = 0 then
+        acc
+      else
+        match (try Some Hashtbl.find table i with Not_found -> None) with
+            Some (_, _, b) -> Hashtbl.remove table i; aux (i+1) (acc @ b)
+          | None -> aux (i+1) acc
     in 
       aux 1 []
 
