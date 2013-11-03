@@ -29,6 +29,8 @@ type instruction =
   | Lea of operand * operand
   | Add of operand * operand
   | Sub of operand * operand
+  | Inc of operand
+  | Dec of operand
   | Neg of operand
   | Imul of operand
   | Idiv of operand
@@ -175,6 +177,20 @@ let relOpJmp = function
   | Q_Seq -> "je"
   | Q_Nseq -> "jne"
   | _ -> internal "Not a relative operator"
+
+let revertCond = function
+  | "jl" -> "jge"
+  | "jle" -> "jg"
+  | "jg" -> "jle"
+  | "jge" -> "jl"
+  | "je" -> "jne"
+  | "jne" -> "je"
+  | "jb" -> "jae"
+  | "jbe" -> "ja"
+  | "ja" -> "jbe"
+  | "jae" -> "jb"
+  | "jnz" -> "jz"
+  | str -> internal "unsupported relop %s\n" str
 
 
 (* http://stackoverflow.com/questions/7057501/

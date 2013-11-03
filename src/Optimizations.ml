@@ -47,10 +47,32 @@ let remove_temps (info, s, b) =
   in
     aux b []
 
+(* DFS *)
 let unreachable cfg =
-  let vertices = CFG.fold_vertex (fun v acc -> v :: acc) cfg [] in
+  let entry_ref = ref None in
+  let vertices = CFG.fold_vertex (fun ((i, s, b) as v) acc ->
+                                    if Blocks.(i.entry_block) then 
+                                      entry_ref := Some v;
+                                    v :: acc) cfg [] in
+  let entry_vert = match !entry_ref with
+      None -> internal "No entry block"
+    | Some v -> v
+  in
+  let rec search stack visited =
+    match stack with
+      | [] -> visited
+      | v :: vs -> 
+          let children = CFG.succ cfg v in
+          let unexplored = 
+            List.filter (fun c 
+                         -> not (List.exists (fun v -> V.equal v c) visited)) 
+              children
+          in
+            search (unexplored @ vs) (v :: visited)
+  in
+  let reachable = search [entry_vert] [] in
     List.fold_left (fun acc (i, s, b) as v -> 
-                      if (CFG.in_degree cfg v) = 0 && not Blocks.(i.entry_block) 
+                      if not (List.exists (fun r -> V.equal r v) reachable) 
                       then 
                         CFG.remove_vertex acc v
                       else

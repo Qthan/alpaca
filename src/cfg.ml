@@ -42,8 +42,12 @@ struct
       Q_Jump -> true
     | _ -> false
 
+  and is_match = function
+      Q_Match -> true
+    | _ -> false
+
   and is_if = function
-      Q_L | Q_Le | Q_G
+      Q_L | Q_Le | Q_G | Q_Ifb
     | Q_Ge | Q_Seq | Q_Nseq
     | Q_Eq | Q_Neq -> true
     | _ -> false
@@ -306,7 +310,8 @@ struct
     let rec aux qs (out_f, in_f) =
       match qs with
         | [] -> (out_f, in_f)
-        | q :: qs when (Blocks.is_if q.operator) || 
+        | q :: qs when (Blocks.is_if q.operator) ||
+                       (Blocks.is_match q.operator) ||
                        (Blocks.is_jmp q.operator) ->
           let j_target = match q.arg3 with
             | O_Label i -> i
@@ -318,6 +323,8 @@ struct
               | [] -> (edge_to :: out_f, in_f)
               | q2 :: qss when Blocks.is_if q2.operator -> 
                 aux qs (edge_to :: out_f, in_f)
+              | q2 :: qss when Blocks.is_match q2.operator ->
+                  aux qs (edge_to :: out_f, in_f)
               | q2 :: qss -> (edge_to :: out_f, in_f))
         | q :: qs when (Blocks.is_call q.operator) ->
           let c_target = Quads.entry_of_quadop q.arg3 in

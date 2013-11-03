@@ -110,7 +110,7 @@ let libFunDecl lst_lib lst_auxil =
 
 let instructionToString = function
   | Prelude outer -> 
-    ".model Small\n.stack\n.data\n" ^
+    ".model Small\n.stack 16384\n.data\n" ^
       (let floats = List.fold_left (fun acc (f, id) ->
            (constFloatToString f id) ^ acc) "" (!Final.flt_lst)  in
          (List.fold_left (fun acc (s, id) -> 
@@ -136,6 +136,10 @@ let instructionToString = function
   | Sub (op1, op2) ->
     Printf.sprintf "\t\tsub\t%s, %s\n" (operandToString op1) 
       (operandToString op2)
+  | Inc op ->
+    Printf.sprintf "\t\tinc\t%s\n" (operandToString op)
+  | Dec op ->
+    Printf.sprintf "\t\tdec\t%s\n" (operandToString op)
   | Neg op ->
     Printf.sprintf "\t\tneg\t%s\n" (operandToString op)
   | Imul op ->

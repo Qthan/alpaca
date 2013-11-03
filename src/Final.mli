@@ -32,12 +32,14 @@ type operand =
 (** Instruction operands *)                                            
 
 type instruction =
-    Prelude of SymbTypes.entry
+  | Prelude of SymbTypes.entry
   | Epilogue
   | Mov of operand * operand
   | Lea of operand * operand
   | Add of operand * operand
   | Sub of operand * operand
+  | Inc of operand
+  | Dec of operand
   | Neg of operand
   | Imul of operand
   | Idiv of operand
@@ -64,7 +66,7 @@ type instruction =
   | Fstsw of operand
   | Fstp of operand
   | Fun of string
-  | EndFun of string
+  | EndFun of string 
   | LabelDecl of string
   | Comment of string
   | Interrupt of operand
@@ -107,6 +109,7 @@ val makeLabel : Quads.quad_operands -> string
 val relOpJmp : Quads.quad_operators -> string
 (** A function returning the jump instruction *)
 val relOpJmpF : Quads.quad_operators -> string
+val revertCond : string -> string
 val functionResult : SymbTypes.entry -> Types.typ
 (** A function returning the result type of a function *)
 val getAR : SymbTypes.entry -> instruction list -> instruction list

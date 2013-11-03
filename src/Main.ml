@@ -95,6 +95,12 @@ let main =
             Quads.printQuads (Format.formatter_of_out_channel files.cout) ir
           | false -> 
             let final = CodeGen.codeGen ir outer_entry in
+            let final = match default_config.opt with
+                true ->
+                  Peephole.optimize final
+              | false -> 
+                  final
+            in
             let asm = EmitMasm.emit final library_funs in
               Printf.fprintf files.cout "%s" asm;
         in

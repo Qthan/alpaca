@@ -152,82 +152,126 @@ let def_atom =
 %type <ast_pattom_node> pattom 
 %%
 
-program     : stmt_list T_EOF                                           { List.rev $1 }
+program     : stmt_list T_EOF                                           
+              { List.rev $1 }
             ;
 
 stmt_list: 
-            | /* nothing */                                             { [] }
-            | stmt_list letdef                                          { $2::$1 } 
-            | stmt_list typedef                                         { $2::$1 } 
+            | /* nothing */                                             
+              { [] }
+            | stmt_list letdef                                          
+              { $2::$1 } 
+            | stmt_list typedef                                         
+              { $2::$1 } 
             ;
 
 letdef:
-            | T_LET def anddef                                          { S_Let ($2::(List.rev($3))) }
-            | T_LET T_REC def anddef                                    { S_Rec ($3::(List.rev($4))) }
+            | T_LET def anddef                                          
+              { S_Let ($2::(List.rev($3))) }
+            | T_LET T_REC def anddef                                    
+              { S_Rec ($3::(List.rev($4))) }
             ;
 
 anddef:
-            | /* nothing */                                             { [] }
-            | anddef T_ANDDEF def                                       { $3::$1 }
+            | /* nothing */                                             
+              { [] }
+            | anddef T_ANDDEF def                                       
+              { $3::$1 }
             ;
 
 def:
-            | T_ID parstar  T_SEQ expr                                  { { def = D_Var ((($1.id_name, T_Notype) :: (List.rev($2))), $4); def_pos = $1.id_pos; def_entry = None } }
-            | T_ID parstar T_COLON types T_SEQ expr                     { { def = D_Var ((($1.id_name, $4) :: (List.rev($2))), $6); def_pos = $1.id_pos; def_entry = None } }
-            | T_MUTABLE T_ID                                            { { def = D_Mut ($2.id_name, T_Notype); def_pos = $2.id_pos; def_entry = None } }
-            | T_MUTABLE T_ID T_COLON types                              { { def = D_Mut ($2.id_name, $4); def_pos = $2.id_pos; def_entry = None } }
-            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            { { def = D_Array ($2.id_name, T_Notype, ($4::$5)); def_pos = $2.id_pos; def_entry = None } }
+            | T_ID parstar  T_SEQ expr                                  
+              { { def = D_Var ((($1.id_name, T_Notype) :: (List.rev($2))), $4); 
+                  def_pos = $1.id_pos; def_entry = None } }
+            | T_ID parstar T_COLON types T_SEQ expr                     
+              { { def = D_Var ((($1.id_name, $4) :: (List.rev($2))), $6); 
+                  def_pos = $1.id_pos; def_entry = None } }
+            | T_MUTABLE T_ID                                            
+              { { def = D_Mut ($2.id_name, T_Notype); 
+                  def_pos = $2.id_pos; def_entry = None } }
+            | T_MUTABLE T_ID T_COLON types                              
+              { { def = D_Mut ($2.id_name, $4); 
+                  def_pos = $2.id_pos; def_entry = None } }
+            | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK            
+              { { def = D_Array ($2.id_name, T_Notype, ($4::$5)); 
+                  def_pos = $2.id_pos; def_entry = None } }
             | T_MUTABLE T_ID T_LBRACK expr comaexpr T_RBRACK T_COLON types  
-                                                                        { { def = D_Array ($2.id_name, $8, ($4::$5)); def_pos = $2.id_pos; def_entry = None } }
+              { { def = D_Array ($2.id_name, $8, ($4::$5)); 
+                  def_pos = $2.id_pos; def_entry = None } }
             ;
 
 parstar:
-            | /* nothing */                                             { [] }
-            | parstar T_ID                                              { ($2.id_name, T_Notype)::$1 }
-            | parstar T_LPAR T_ID T_COLON types T_RPAR                  { ($3.id_name, $5)::$1 }
+            | /* nothing */                                             
+              { [] }
+            | parstar T_ID                                              
+              { ($2.id_name, T_Notype)::$1 }
+            | parstar T_LPAR T_ID T_COLON types T_RPAR                  
+              { ($3.id_name, $5)::$1 }
             ;
 
 typedef:
-            | T_TYPE T_ID T_SEQ T_CID  constrbar andtdefstar            { S_Type(($2.id_name, ($4.cid_name, [])::(List.rev($5)))::(List.rev($6))) }
+            | T_TYPE T_ID T_SEQ T_CID  constrbar andtdefstar            
+              { S_Type(($2.id_name, 
+                        ($4.cid_name, [])::(List.rev($5)))::(List.rev($6))) }
             | T_TYPE T_ID T_SEQ T_CID T_OF typeplus constrbar andtdefstar
-                                                                        { S_Type(($2.id_name,($4.cid_name, (List.rev($6)))::(List.rev($7)))::(List.rev($8))) }
+            { S_Type(($2.id_name,($4.cid_name, 
+                      (List.rev($6)))::(List.rev($7)))::(List.rev($8))) }
             ;
 
 andtdefstar:
-            | /* nothing */                                             { [] }
-            | andtdefstar T_ANDDEF T_ID T_SEQ T_CID  constrbar          { ($3.id_name, ($5.cid_name, [])::(List.rev($6)))::$1 }
+            | /* nothing */                                             
+              { [] }
+            | andtdefstar T_ANDDEF T_ID T_SEQ T_CID  constrbar          
+              { ($3.id_name, ($5.cid_name, [])::(List.rev($6)))::$1 }
             | andtdefstar T_ANDDEF T_ID T_SEQ T_CID T_OF typeplus constrbar    
-                                                                        { ($3.id_name, ($5.cid_name, List.rev($7))::(List.rev($8)))::$1 }
+              { ($3.id_name, ($5.cid_name, List.rev($7))::(List.rev($8)))::$1 }
             ;                                                            
 
 constrbar:
-            | /* nothing */                                             { [] }
-            | constrbar T_BAR T_CID                                     { ($3.cid_name, [])::$1 }
-            | constrbar T_BAR T_CID T_OF typeplus                       { ($3.cid_name, List.rev($5))::$1 }
+            | /* nothing */                                             
+              { [] }
+            | constrbar T_BAR T_CID                                     
+              { ($3.cid_name, [])::$1 }
+            | constrbar T_BAR T_CID T_OF typeplus                       
+              { ($3.cid_name, List.rev($5))::$1 }
             ;
 
 typeplus:
-            | types                                                     { [$1] }
-            | typeplus types                                            { $2::$1 }
+            | types                                                     
+              { [$1] }
+            | typeplus types                                            
+              { $2::$1 }
             ;
 
 types:
-            | T_UNIT                                                    { T_Unit }
-            | T_INTST                                                   { T_Int }
-            | T_CHAR                                                    { T_Char }
-            | T_BOOL                                                    { T_Bool }
-            | T_FLOATST                                                 { T_Float }
-            | T_LPAR types T_RPAR                                       { $2 }
-            | types T_GIVES types                                       { T_Arrow ($1, $3) }
-            | types T_REF                                               { T_Ref ($1) }
-            | T_ARRAY T_OF types %prec ARR                              { T_Array ($3, D_Int 0) }
+            | T_UNIT                                                    
+              { T_Unit }
+            | T_INTST                                                   
+              { T_Int }
+            | T_CHAR                                                    
+              { T_Char }
+            | T_BOOL                                    
+              { T_Bool }
+            | T_FLOATST                                                 
+              { T_Float }
+            | T_LPAR types T_RPAR                                       
+              { $2 }
+            | types T_GIVES types                                       
+              { T_Arrow ($1, $3) }
+            | types T_REF                                               
+              { T_Ref ($1) }
+            | T_ARRAY T_OF types %prec ARR                              
+              { T_Array ($3, D_Int 0) }
             | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                    
-                                                                        { T_Array ($7, D_Int ($4+1)) }
-            | T_ID                                                      { T_Id ($1.id_name) }
+              { T_Array ($7, D_Int ($4+1)) }
+            | T_ID                                                      
+              { T_Id ($1.id_name) }
             ;
 comastar:           
-            | /* nothing */                                             { 0 }
-            | comastar T_COMA T_TIMES                                   { $1+1 }
+            | /* nothing */                                             
+              { 0 }
+            | comastar T_COMA T_TIMES                                   
+              { $1+1 }
             ;
 
 expr:
@@ -235,12 +279,24 @@ expr:
               { { def_expr with 
                   expr = E_Binop ($1, Fplus, $3); 
                   expr_pos = $1.expr_pos } } 
-            | expr T_PLUS expr                                          { { def_expr with expr = E_Binop ($1, Plus, $3); expr_pos = $1.expr_pos } } 
-            | expr T_MINUS expr                                         { { def_expr with expr = E_Binop ($1, Minus, $3); expr_pos = $1.expr_pos } } 
-            | expr T_FMINUS expr                                        { { def_expr with expr = E_Binop ($1, Fminus, $3); expr_pos = $1.expr_pos } } 
-            | expr T_TIMES expr                                         { { def_expr with expr = E_Binop ($1, Times, $3); expr_pos = $1.expr_pos } } 
-            | expr T_FTIMES expr                                        { { def_expr with expr = E_Binop ($1, Ftimes, $3); expr_pos = $1.expr_pos } }  
-            | expr T_DIV expr                                           { { def_expr with expr = E_Binop ($1, Div, $3); expr_pos = $1.expr_pos } } 
+            | expr T_PLUS expr                                          
+              { { def_expr with expr = E_Binop ($1, Plus, $3);
+                  expr_pos = $1.expr_pos } } 
+            | expr T_MINUS expr                                         
+              { { def_expr with expr = E_Binop ($1, Minus, $3); 
+                  expr_pos = $1.expr_pos } } 
+            | expr T_FMINUS expr                                        
+              { { def_expr with expr = E_Binop ($1, Fminus, $3); 
+                  expr_pos = $1.expr_pos } } 
+            | expr T_TIMES expr                                         
+              { { def_expr with expr = E_Binop ($1, Times, $3); 
+                  expr_pos = $1.expr_pos } } 
+            | expr T_FTIMES expr                                        
+              { { def_expr with expr = E_Binop ($1, Ftimes, $3); 
+                  expr_pos = $1.expr_pos } }  
+            | expr T_DIV expr                                           
+              { { def_expr with expr = E_Binop ($1, Div, $3); 
+                  expr_pos = $1.expr_pos } } 
             | expr T_FDIV expr                                          { { def_expr with expr = E_Binop ($1, Fdiv, $3); expr_pos = $1.expr_pos } }   
             | expr T_MOD expr                                           { { def_expr with expr = E_Binop ($1, Mod, $3); expr_pos = $1.expr_pos } } 
             | expr T_POWER expr                                         { { def_expr with expr = E_Binop ($1, Power, $3); expr_pos = $1.expr_pos } } 

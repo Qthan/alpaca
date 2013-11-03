@@ -64,6 +64,8 @@ module Blocks :
     (** Checks whether the operator is a jump operator *)
     val is_call : Quads.quad_operators -> bool
     (** Checks if the operator is a call operator *)
+    val is_match : Quads.quad_operators -> bool
+    (** Checks if the operator is a match operator *) 
     val print_blocks : blocks -> unit
     (** Prints the basic blocks as calculated by {!create_blocks}. *)
     val dot_block : block_elt -> string -> string
