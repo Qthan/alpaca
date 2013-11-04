@@ -342,7 +342,8 @@ struct
                 (* Edge to callee Q_Unit*)
                 let edge_to = find_unit vertices c_target in
                   (edge_to :: out_f, edge_from :: in_f)
-              | ENTRY_variable _ | ENTRY_parameter _ ->
+              | ENTRY_variable _ | ENTRY_parameter _ 
+              | ENTRY_temporary _ ->
                 (* high order functions for the now (and ever)
                  * generate an edge towards all functions! *)
                 let (edges_to, edges_from) =
@@ -363,7 +364,7 @@ struct
                             (v1 :: edge_to, v2 :: edge_from)) ([],[]) vertices
                 in
                   (edges_to @ out_f, edges_from @ in_f)
-              | ENTRY_temporary _ | ENTRY_constructor _
+              | ENTRY_constructor _
               | ENTRY_none | ENTRY_udt _ ->
                 internal "These entries cannot hold a function, hopefully"
             )

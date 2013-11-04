@@ -997,6 +997,39 @@ and gen_stmt quads expr_node = match expr_node.expr with
     in
       addLabelTbl condLabel;
       (quads12, setStmtInfo next)
+  | E_Id (id, l) when isTail expr_node ->
+     let callee_entry = match expr_node.expr_entry with
+       | Some e -> e
+       | None -> internal "Callee is not a function"
+     in
+     let params = Symbol.getParamList callee_entry in
+     let quads1 =
+       List.fold_left2
+         (fun quads e p ->
+            if (isUnit e.atom_typ) then 
+              let (quads1, s_info) = gen_atom_stmt quads e in
+              let quads2 = 
+                backpatch quads1 s_info.next_stmt (Label.nextLabel ())
+              in
+                quads2
+            else
+              let (quads1, e_info) = gen_atom quads e in
+              let quads2 = 
+                backpatch quads1 e_info.next_expr (Label.nextLabel ()) 
+              in
+              let quads3 = 
+                genQuad (Q_Assign, e_info.place, O_Empty, O_Entry p) quads2 
+              in
+               quads3
+         ) quads l params
+      in
+      let jmp_target = Symbol.getFunctionLabel callee_entry in
+      let () = addLabelTbl jmp_target in
+      let quads2 = 
+        genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads1
+      in
+      let s_info = setStmtInfo (Labels.newLabelList ()) in
+        (quads2, s_info)
   | E_Id (id, l) -> 
     let quads1 =
       List.fold_left 

@@ -4,4 +4,5 @@ let g x = x + 1
 let main =
   let z = if (4+2 > 5) then f
   else g
-  in z 2
+  in 
+   print_int (z 2); print_string "\n"

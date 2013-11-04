@@ -419,7 +419,7 @@ let loadFunCode r e instr_lst =
             genInstr (Lea (Reg r, LabelPtr (Near, code_ptr))) instr_lst 
           in
             instr_lst1
-        | ENTRY_variable _ | ENTRY_parameter _ ->
+        | ENTRY_variable _ | ENTRY_parameter _ | ENTRY_temporary _ ->
           let offset = getOffset e in
           let c_nest = getNesting (!current_fun) in
           let f_nest = getNesting e in
@@ -436,7 +436,7 @@ let loadFunCode r e instr_lst =
                 genInstr (Mov (Reg r, Pointer (Word, Reg Si, off))) instr_lst2
           in
             instr_lst1
-        | ENTRY_temporary _ | ENTRY_udt _ | ENTRY_none
+        | ENTRY_udt _ | ENTRY_none
         | ENTRY_constructor _ -> internal "Cannot have temp/udt/cons here")
     | O_Deref op ->
       let instr_lst1 = load Di op instr_lst in
