@@ -1,12 +1,9 @@
-
 \documentclass[12pt]{article}
 \usepackage[cm]{fullpage}
-\usepackage[usenames,dvipsnames]{color}
 \usepackage{listings}
 \usepackage{color}
 \usepackage{xcolor}
 \usepackage{textpos}
-\usepackage[small, bf]{caption}
 \usepackage{amssymb,latexsym}
 \usepackage{amsmath}
 \usepackage{xltxtra,xunicode,xgreek}
@@ -15,10 +12,12 @@
 \usepackage{float}
 \usepackage{textcomp}
 \usepackage{url} 
-\usepackage{hyperref}
 \usepackage{turnstile}
+\usepackage{xcolor,colortbl}
 
-\definecolor{lightgray}{gray}{0.95}
+
+\definecolor{gray}{gray}{0.89}
+\definecolor{ablack}{HTML}{25383C}
 \setmainfont[Mapping=tex-text]{CMU Concrete}
 \setmonofont{Courier New}
 \newcommand{\tab}{\hspace*{2em}}
@@ -32,6 +31,8 @@
 \DeclareCaptionFormat{listing}{\colorbox{gray}{\parbox{\textwidth}{#1#2#3}}}
 \captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white}
 %\renewcommand\listingscaption{Κώδικας}
+\renewcommand{\arraystretch}{1.5}
+
 
 \begin{document}
 \begin{titlepage}
@@ -128,7 +129,7 @@ $$\frac{\Gamma  \vdash e_1 : ord \;\;\;\; \Gamma  \vdash e_2 : ord  }{\Gamma  \v
 Αν και η απλοποίηση αυτή θα μπορούσε να είχε γίνει στο στάδιο παραγωγής ενδιάμεσου κώδικα θα έκανε το στάδιο αυτό πιο πολύπλοκο και προτιμήθηκε να υλοποιηθεί σε κάποιο επόμενο στάδιο. Σκοπός είναι να μη χρησιμοποιούνται προσωρινές μεταβλητές για την εκτέλεση των διαφόρων πράξεων αλλά να γίνονται απευθείας πάνω στις μεταβλητές που πρέπει.
 \begin{lstlisting}[label=some-code,caption=Απλοποίηση υπολογισμών στις τετράδες]
 +,a,b,$1
-                                 ->                  +,a,b,c		
+                                 ->                  +,a,b,c		s
 :=,$1,-,c
 \end{lstlisting}
 \subsubsection{Βελτιστοποιήσεις βασισμένες στο γράφο ροής ελέγχου}
@@ -140,4 +141,83 @@ $$\frac{\Gamma  \vdash e_1 : ord \;\;\;\; \Gamma  \vdash e_2 : ord  }{\Gamma  \v
 \paragraph{Απαλοιφή νεκρού κώδικα}
 Όσες προσωρινές μεταβλητές δημιουργήθηκαν παραπάνω αλλά δεν χρησιμοποιούνται είτε επειδή αντικαταστάθηκαν κατά τη διάδοση αντιγράφων είτε επειδή δε χρειάστηκε, μπορούν να σβηστούν. Αυτό γίνεται με ένα πέρασμα κάθε Block ανάποδα, δηλαδή ξεκινώντας από την τελευταία εντολή προς την πρώτη, σημειώνοντας ποιες προσωρινές μεταβλητές χρειάζονται και σβήνοντας όσες κατά τη δήλωση τους δεν έχουν σημειωθεί ως χρήσιμες.
 \paragraph{Απαλοιφή Απροσπέλαστου Κώδικα}
+Από τις παραπάνω βελτιστοποιήσεις (και όχι μόνο) πιθανώς να προκύψουν σημεία του κώδικα που είναι απροσπέλαστα με βάση τη ροή ελέγχου. Ξεκινώντας από το αρχικό Block και εκτελώντας μία αναζήτηση κατά βάθος (DFS) πάνω στο γράφο ροής ελέγχου μπορούμε να συμπεράνουμε ποια blocks είναι απροσπέλαστα και να τα αφαιρέσουμε.
+\subsubsection{Βελτιστοποιήσεις τελικού κώδικα}
+\paragraph{Peephole} Οι βελτιστοποιήσεις που έγιναν στον τελικό κώδικα ακολουθούν τη λογική των λεγόμενων Peephole optimizations. Γίνονται πολλαπλά περάσματα στον τελικό κώδικα ψάχνοντας για γνωστά μοτίβα εντολών (1 έως και 3 εντολές) τα οποία στη συνέχεια μετατρέπονται σε πιο απλές και γρήγορες εντολές. Εκμεταλλευόμενοι το ισχυρό pattern-matching της OCaml η υλοποίηση αυτών των βελτιστοποιήσεων είναι αρκετά εύκολη σε σχέση με αυτές του γράφου ροής ελέγχου. Είναι ωστόσο και αρκετά αποτελεσματικές δεδομένου του απλοϊκού αλγορίθμου παραγωγής τελικού κώδικα που ακολουθήσαμε. Στον παρακάτω πίνακα παρουσιάζουμε πολλές από τις βελτιστοποιήσεις που υλοποιήσαμε. Επειδή γίνονται παραπάνω από ένα περάσματα απλοποιούνται και άλλου συνδυασμοί αυτών.
+
+%\begin{table}[htbp]
+%\begin{center}
+%    \begin{tabular}{|l|r|}
+%    Generated & Optimized \\ \hline
+%    add target, 1 & inc target \\ \hline
+%    sub target, 1 & dec target \\ \hline
+%    add/sub target, 0 & - \\ \hline
+%    mov r1, 0\\sub r1, val & mov r1,val\\neg r1 \\ \hline
+%    mov si, bp\\push si & push bp \\ \hline
+%    mov r1, imm\\mov size ptr [r2], r1 & mov  size ptr [r2], imm \\ \hline
+%    mov mem1, r1\\mov r2, mem1 & mov mem1, r1\\mov r2, r1 \\ \hline
+%    mov mem1, r1\\mov r1, mem1 & mov mem1, r1 \\ \hline
+%    mov r1, val\\op r2, r1 & op r2, val \\ \hline
+%    jcond target1\\jmp target2 & jrevcond target2 \\ \hline
+%    mov r1, imm\\mov r2, size ptr [r3]\\mov size ptr [r2], r1 & mov r2, size ptr [r3]\\mov  size ptr [r2], imm \\
+%    \end{tabular}
+% \end{center}
+%    \caption {Peephole Optimizations}
+%\end{table}
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}
+\hline
+   \rowcolor{ablack}
+    \textcolor{white}{Generated} & \textcolor{white}{Optimized} \\ \hline
+    
+    \rowcolor{gray}
+    add target, 1 & inc target \\ 
+    
+    sub target, 1 & dec target \\ 
+
+	\rowcolor{gray}   
+    add/sub target, 0 & - \\ 
+    
+    mov r1, 0 & mov r1,val\\ 
+    sub r1, val & neg r1 \\  
+       
+    \rowcolor{gray}  
+    mov si, bp & push bp \\ 
+    \rowcolor{gray}    
+    push si & \\
+    
+    mov r1, imm  & mov  size ptr [r2], imm \\ 
+    mov size ptr [r2], r1 & \\  
+    
+    \rowcolor{gray}
+    mov mem1, r1 & mov mem1, r1 \\ 
+    \rowcolor{gray}
+    mov r2, mem1 & mov r2, r1 \\ 
+    
+    mov mem1, r1 & mov mem1, r1 \\ 
+    mov r1, mem1 & \\ 
+
+    \rowcolor{gray}
+    mov r1, val & op r2, val \\
+    \rowcolor{gray} 
+    op r2, r1  & \\ 
+
+    jcond target1  & jrevcond target2 \\ 
+    jmp target2 & \\ 
+
+    \rowcolor{gray}
+    mov r1, imm & mov r2, size ptr [r3] \\
+    \rowcolor{gray}
+    mov r2, size ptr [r3] & mov  size ptr [r2], imm \\
+    \rowcolor{gray}
+    mov size ptr [r2], r1 & \\
+    
+\hline
+\end{tabular}
+\caption{•}
+\end{table}
+
+
 \end{document}
