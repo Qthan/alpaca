@@ -1,6 +1,7 @@
 exception TypeError of string * Types.typ
 exception UnifyError of Types.typ * Types.typ
 exception DimError of Types.dim * Types.dim
+exception UnsolvedTyVar of Types.typ
 val debug_typeinf : bool
 val print_constraints : (Types.typ * Types.typ) list -> unit
 val solved_types : (Types.typ, Types.typ) Hashtbl.t

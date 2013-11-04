@@ -51,7 +51,12 @@ let library_funs =
     [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
   ]
 
+
+
 let function_stack = Stack.create ()
+
+(* This entry in needed to print run time errors *)                       
+let print_string_entry = ref (Symbol.findAuxilEntry "_dummy") 
 
 let rec walk_program ls =
   initSymbolTable 10009;
@@ -72,6 +77,7 @@ and insert_function (id, result_ty, params) =
     walk_par_list params p;
     endFunctionHeader p result_ty;
     closeScope ();
+    if (id = "print_string") then print_string_entry := p;
     fixOffsets p
 
 and walk_stmt_list ls = 
@@ -270,7 +276,7 @@ and walk_typedef_list l = match l with
             constructors_list) l;
       [] (* Check return *)
 
-and walk_expr expr_node = match expr_node.expr with 
+and walk_expr expr_node = match expr_node.expr with
   | E_Binop (expr1, op, expr2) -> 
     begin 
       match op with 
@@ -455,6 +461,7 @@ and walk_expr expr_node = match expr_node.expr with
       expr_node.expr_typ <- a.atom_typ;
       expr_node.expr_entry <- a.atom_entry;
       constraints
+  | E_None -> internal "Dummy expression, must have been removed"
 
 and walk_atom t = match t.atom with 
   | A_Num n -> t.atom_typ <- T_Int; []
@@ -510,6 +517,7 @@ and walk_atom t = match t.atom with
     let constraints = walk_expr expr in
       t.atom_typ <- expr.expr_typ;
       constraints
+  | A_None -> internal "Dummy atom, must have been removed"
 
 
 (*acc = [(tp1,te1,constr1),(tp2,te2,constr2),(tp3,te3,constr3)...]

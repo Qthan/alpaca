@@ -4,6 +4,7 @@ exception ConstrParamArity of string * int * int
 exception NewArray
 val library_funs : (string * Types.typ * (string * Types.typ) list) list
 val function_stack : SymbTypes.entry Stack.t
+val print_string_entry : SymbTypes.entry ref
 val walk_program :
   AstTypes.ast_stmt list ->
   (Types.typ * Types.typ) list * SymbTypes.entry *

@@ -122,7 +122,7 @@ let instructionToString = function
                                                                        main\tendp\n\
                                                                        .286\n"
   | Epilogue ->
-    let externs = libFunDecl !library_funs Quads.auxil_funs in
+    let externs = libFunDecl !library_funs Symbol.auxil_funs in
       externs ^ "\t\tend"
   | Mov (op1, op2) ->
     Printf.sprintf "\t\tmov\t%s, %s\n" (operandToString op1) 

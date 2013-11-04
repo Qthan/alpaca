@@ -9,7 +9,7 @@ open Format
 exception TypeError of string * typ
 exception UnifyError of typ * typ
 exception DimError of dim * dim 
-
+exception UnsolvedTyVar of typ
 (* Function for type inference debugging *)
 
 let debug_typeinf = false
@@ -47,7 +47,7 @@ let rec lookup_solved tvar =
               match (try Some (checkType typ) 
                      with PolymorphicTypes -> None) with
                 | None -> 
-                  warning "Unused polymorphic type"; raise Exit
+                  raise (UnsolvedTyVar tvar) 
                 | Some () -> typ
             end
       end
@@ -154,9 +154,9 @@ let unify c =
   in 
   let rec unifyOrd ord = match ord with
     | [] -> ()
-    | T_Int :: c | T_Float :: c | T_Char :: c 
-    | T_Bool :: c | (T_Alpha _) :: c ->
-      unifyOrd c
+    | T_Int :: c | T_Float :: c | T_Char :: c -> 
+      unifyOrd c 
+    | (T_Alpha a) :: _ -> raise (UnsolvedTyVar (T_Alpha a))
     | typ :: _ -> 
       raise (TypeError ("Type does not support ordering", typ))
   in
@@ -164,6 +164,7 @@ let unify c =
     | [] -> ()
     | (T_Arrow (a, b)) :: c -> 
       raise (TypeError ("Cannot return function type", T_Arrow(a, b)))
+    | (T_Alpha a) :: c -> raise (UnsolvedTyVar (T_Alpha a))
     | _ :: c -> 
       unifyNofun c
   in

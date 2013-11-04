@@ -121,6 +121,9 @@ let main =
         error "Array dimensions error. Cannot match dimension size %a with %a" 
           pretty_dim dim1 pretty_dim dim2; 
         exit 2
+      | Typeinf.UnsolvedTyVar tvar ->
+          error "Unsolved type variable, \
+            possibly arising from an unsed polymphic type"
       | Intermediate.InvalidCompare typ ->
         error "Cannot compare values of type %a" pretty_typ typ;
         exit 2

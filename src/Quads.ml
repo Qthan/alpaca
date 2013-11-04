@@ -248,47 +248,6 @@ let backpatch quads lst patch =
         | Some quad -> quad.arg3 <- O_Label patch) lst;
   quads
 
-let auxil_funs =
-  let makeEntry id size typ = { 
-    entry_id = (id_make id);
-    entry_scope = 
-      {
-        sco_parent = None;
-        sco_nesting = 0;
-        sco_entries = [];
-        sco_negofs  = 0;
-        sco_hidden = false;
-      };
-    entry_info = 
-      ENTRY_function {
-        function_isForward = false;
-        function_paramlist = [];
-        function_varlist = [];
-        function_tmplist = [];
-        function_varsize = ref 0;
-        function_paramsize = size;
-        function_localsize = 0;       
-        function_result = typ;
-        function_pstatus = PARDEF_COMPLETE;
-        function_nesting = 0;
-        function_parent = None;
-        function_index = -1;
-        function_library = true;
-        function_label = -1
-      } } 
-  in
-    [ ("_make_array", makeEntry "_make_array" 4 (T_Array (T_Unit, D_Int 1)));
-      ("_delete_array", makeEntry "_delete_array" 2 T_Unit);
-      ("_new", makeEntry "_new" 2 (T_Ref T_Int));
-      ("_delete", makeEntry "_delete" 2 T_Unit);
-      ("_dummy", makeEntry "_dummy" 0 T_Unit);
-      ("_pow", makeEntry "_pow" 20 T_Float)]
-
-let findAuxilEntry id = List.assoc id auxil_funs
-
-let is_auxil_fun id =
-  List.mem_assoc (Identifier.id_name id) auxil_funs
-
 
 let string_of_operator = function 
   | Q_Unit -> "Unit" 

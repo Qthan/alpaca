@@ -104,9 +104,6 @@ val setExprInfo : quad_operands -> Labels.labelList -> expr_info
 val setCondInfo : Labels.labelList -> Labels.labelList -> cond_info
 val setStmtInfo : Labels.labelList -> stmt_info
 val backpatch : quad list -> Label.t list -> int -> quad list
-val auxil_funs : (string * SymbTypes.entry) list
-val findAuxilEntry : string -> SymbTypes.entry
-val is_auxil_fun : Identifier.id -> bool
 val string_of_operator : quad_operators -> string
 val string_of_indexes : quad_operands list -> string
 val string_of_entry : SymbTypes.entry -> string

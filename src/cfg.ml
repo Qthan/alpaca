@@ -330,7 +330,7 @@ struct
           let c_target = Quads.entry_of_quadop q.arg3 in
             (match c_target.entry_info with
               | ENTRY_function _ when Symbol.isLibraryFunction c_target 
-                                   || Quads.is_auxil_fun c_target.entry_id ->
+                                   || Symbol.isAuxilFun c_target.entry_id ->
                 (* maybe library calls should be a dummy basic block 
                  * or maybe not.*)
                 let next = q.label + 1 in

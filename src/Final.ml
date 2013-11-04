@@ -66,7 +66,7 @@ type instruction =
 let word_size = 2
 
 (** A reference to the current function compiled start with a dummy reference. *)
-let current_fun = ref (Quads.findAuxilEntry "_dummy")
+let current_fun = ref (Symbol.findAuxilEntry "_dummy")
 
 (** An empty instruction list *)
 let newInstrList () = []

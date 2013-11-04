@@ -187,9 +187,6 @@ and quadToFinal quad instr_lst =
         let instr_lst3 = store Ax quad.arg3 instr_lst2 in
           instr_lst3
       | Q_Array -> 
-        (* pairneis ton arithmo twn diastasew n tou pinaka, 
-         * kai gia na vreis to i-osto stoixeio
-         * pas addr+ int_size + i*size *)
         (* (e1 * (d2*d3*...dn) + e2 * (d3*...*dn) + ... en) * 
            type_size + int_size*dims
            mov di, addr

@@ -83,3 +83,6 @@ val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
 val isTemporary : SymbTypes.entry -> bool
 val isOptTemp : SymbTypes.entry -> bool
+val auxil_funs : (string * SymbTypes.entry) list
+val findAuxilEntry : string -> SymbTypes.entry
+val isAuxilFun : Identifier.id -> bool
