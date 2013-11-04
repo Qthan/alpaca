@@ -23,3 +23,9 @@ dosbox.conf
 *.com
 *.dll
 *.exe
+*.aux
+*.log
+*.out
+*.pyg
+*.*.gz
+*.toc
