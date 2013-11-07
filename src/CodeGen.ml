@@ -142,12 +142,12 @@ and quadToFinal quad instr_lst =
           | T_Arrow _ -> internal "Operator = does not support functions"
           | T_Id _ -> 
             internal "Structual equality has been implemented elsewhere"
-          | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun ->
+          | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun | T_Noarr ->
             internal "Internal typed occured!"
         )
       | Q_Eq | Q_Neq as relop ->
         (match (getQuadOpType quad.arg1) with
-          | T_Int | T_Ref _ ->
+          | T_Int | T_Ref _ | T_Id _ ->
             let instr_lst1 = load Ax (quad.arg1) instr_lst in
             let instr_lst2 = load Dx (quad.arg2) instr_lst1 in
             let instr_lst3 = genInstr (Cmp (Reg Ax, Reg Dx)) instr_lst2 in
@@ -165,11 +165,20 @@ and quadToFinal quad instr_lst =
                 instr_lst3 
             in
               instr_lst4
-          | T_Float -> internal "not yet implemented"
-          | T_Array _ -> internal "Operator = does not support type array"
-          | T_Arrow _ -> internal "Operator = does not support functions"
-          | T_Id _ -> internal "Implemented elsewhere"
-          | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun ->
+          | T_Float -> 
+            let instr_lst1 = loadReal (quad.arg1) instr_lst in
+            let instr_lst2 = loadReal (quad.arg2) instr_lst1 in
+            let instr_lst3 = genInstr Fcompp instr_lst2 in
+            let instr_lst4 = genInstr (Fstsw (Reg Ax)) instr_lst3 in
+            let instr_lst5 = genInstr Sahf instr_lst4 in
+            let instr_lst6 = 
+              genInstr (CondJmp (relOpJmpF relop, Label (makeLabel quad.arg3))) 
+                instr_lst5 
+            in
+              instr_lst6
+          | T_Array _ -> internal "Operator ==,!= does not support type array"
+          | T_Arrow _ -> internal "Operator ==,!= does not support functions"
+          | T_Unit | T_Alpha _ | T_Notype | T_Ord| T_Nofun | T_Noarr ->
             internal "Internal typed occured!"
         )
       | Q_Dim -> 
@@ -221,8 +230,8 @@ and quadToFinal quad instr_lst =
             | _ -> internal "wrong arithmetic"
         in
         let (dims, type_size) = match getQuadOpType quad.arg1 with
-          | T_Array (typ, D_Int d) -> (d, sizeToBytes (getTypeSize typ))
-          | T_Array (_, D_Alpha _) -> internal "Not solved dimension type"
+          | T_Array (typ, D_Dim d) -> (d, sizeToBytes (getTypeSize typ))
+          | T_Array (_, D_DimSize _) -> internal "Not solved dimension type"
           | _ -> internal "Only T_Array applicable"
         in
         let entry_lst = match quad.arg2 with 
@@ -350,7 +359,7 @@ and quadToFinal quad instr_lst =
                   let instr_lst2 = genInstr (Push (Reg Ax)) instr_lst1 in
                   let instr_lst3 = genInstr (Push (Reg Bx)) instr_lst2 in
                     instr_lst3
-                | T_Alpha _ | T_Notype | T_Ord | T_Nofun -> 
+                | T_Alpha _ | T_Notype | T_Ord | T_Nofun | T_Noarr -> 
                   internal "Type inference failed"
                 | T_Unit -> internal "Intermediate failed")
           | _ -> internal "Only call by val and return is supported")

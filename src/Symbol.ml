@@ -660,7 +660,7 @@ let auxil_funs =
         function_label = -1
       } } 
   in
-    [ ("_make_array", makeEntry "_make_array" 4 (T_Array (T_Unit, D_Int 1)));
+    [ ("_make_array", makeEntry "_make_array" 4 (T_Array (T_Unit, D_Dim 1)));
       ("_delete_array", makeEntry "_delete_array" 2 T_Unit);
       ("_new", makeEntry "_new" 2 (T_Ref T_Int));
       ("_delete", makeEntry "_delete" 2 T_Unit);

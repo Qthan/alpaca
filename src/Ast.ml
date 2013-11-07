@@ -19,12 +19,12 @@ let library_funs =
    ("print_bool", T_Unit, [("a", T_Bool)]);
    ("print_char", T_Unit, [("a", T_Char)]);
    ("print_float", T_Unit, [("a", T_Float)]);
-   ("print_string", T_Unit, [("a", T_Array (T_Char, D_Int 1))]);
+   ("print_string", T_Unit, [("a", T_Array (T_Char, D_Dim 1))]);
    ("read_int", T_Int, [("a", T_Unit)]);
    ("read_bool", T_Bool, [("a", T_Unit)]);
    ("read_char", T_Char, [("a", T_Unit)]);
    ("read_float", T_Float, [("a", T_Unit)]);
-   ("read_string", T_Unit, [("a",  T_Array (T_Char, D_Int 1))]);
+   ("read_string", T_Unit, [("a",  T_Array (T_Char, D_Dim 1))]);
    ("abs", T_Int, [("a", T_Int)]);
    ("fabs", T_Float, [("a", T_Float)]);    
    ("sqrt", T_Float, [("a", T_Float)]);
@@ -42,13 +42,13 @@ let library_funs =
    ("round", T_Int, [("a", T_Float)]);
    ("int_of_char", T_Int, [("a", T_Char)]);
    ("char_of_int", T_Char, [("a", T_Int)]);
-   ("strlen", T_Int, [("a", T_Array (T_Char, D_Int 1))]);
+   ("strlen", T_Int, [("a", T_Array (T_Char, D_Dim 1))]);
    ("strcmp", T_Int, 
-    [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
+    [("a", T_Array (T_Char, D_Dim 1)); ("b", T_Array (T_Char, D_Dim 1))]);
    ("strcpy", T_Unit,
-    [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))]);
+    [("a", T_Array (T_Char, D_Dim 1)); ("b", T_Array (T_Char, D_Dim 1))]);
    ("strcat", T_Unit, 
-    [("a", T_Array (T_Char, D_Int 1)); ("b", T_Array (T_Char, D_Int 1))])
+    [("a", T_Array (T_Char, D_Dim 1)); ("b", T_Array (T_Char, D_Dim 1))])
   ]
 
 
@@ -162,7 +162,7 @@ and walk_def t = match t.def with
     in
     let new_ty = refresh ty in
     let current_fun = Stack.top function_stack in
-    let array_typ = T_Array (new_ty, D_Int (List.length l)) in
+    let array_typ = T_Array (new_ty, D_Dim (List.length l)) in
     let p = newVariable (id_make id) array_typ current_fun true in
     let () = hideScope !currentScope true in
     let constraints = walk_expr_list l [] in
@@ -296,8 +296,9 @@ and walk_expr expr_node = match expr_node.expr with
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
             expr_node.expr_typ <- T_Bool; 
-            (expr1.expr_typ, expr2.expr_typ ) :: (expr1.expr_typ, T_Nofun) 
-            :: constraints1 @ constraints2 (* TODO Must not be array *)
+            (expr1.expr_typ, expr2.expr_typ) :: (expr1.expr_typ, T_Nofun)
+            :: (expr1.expr_typ, T_Noarr)
+            :: constraints1 @ constraints2 (* TODO Must not be array DONE*)
         | L | Le | G  | Ge -> 
           let constraints1 = walk_expr expr1 in
           let constraints2 = walk_expr expr2 in
@@ -368,12 +369,16 @@ and walk_expr expr_node = match expr_node.expr with
         ( (expr1.expr_typ, T_Int) :: (expr2.expr_typ, T_Int) 
           :: (expr3.expr_typ, T_Unit) :: constraints1 
           @ constraints2 @ constraints3 )
-  | E_Dim (a, id) -> (* XXX Consider check whether a >= (dims a) *)
+  | E_Dim (mbi, id) -> (* XXX Consider check whether a >= (dims a) *)
+    let i = match mbi with
+      | Some i -> i
+      | None -> 1 
+    in
     let id_entry = lookupEntry (id_make id) LOOKUP_ALL_SCOPES true in         
     let typ = getType id_entry in
       expr_node.expr_typ <- T_Int;
       expr_node.expr_entry <- Some id_entry;
-      [(typ, T_Array (fresh (), freshDim ()))]
+      [(typ, T_Array (fresh (), dim_size i))]
   | E_Ifthenelse (expr1, expr2, expr3) ->
     let constraints1 = walk_expr expr1 in
     let () = expr2.expr_tail <- expr_node.expr_tail in 
@@ -467,7 +472,7 @@ and walk_atom t = match t.atom with
   | A_Num n -> t.atom_typ <- T_Int; []
   | A_Dec f -> t.atom_typ <- T_Float; []
   | A_Chr c -> t.atom_typ <- T_Char;  []
-  | A_Str str -> t.atom_typ <- T_Array(T_Char, D_Int 1); []
+  | A_Str str -> t.atom_typ <- T_Array(T_Char, D_Dim 1); []
   | A_Bool b -> t.atom_typ <- T_Bool; []
   | A_Cid cid -> 
     let cid_entry = lookupEntry (id_make cid) LOOKUP_ALL_SCOPES true in
@@ -511,7 +516,7 @@ and walk_atom t = match t.atom with
       t.atom_typ <- T_Ref typ;
       t.atom_entry <- Some array_entry;
       walk_array_expr expr_list 
-        [(typ_arr, T_Array (typ, D_Int (List.length expr_list)))]
+        [(typ_arr, T_Array (typ, D_Dim (List.length expr_list)))]
   | A_Expr expr -> 
     let () = expr.expr_tail <- t.atom_tail in
     let constraints = walk_expr expr in

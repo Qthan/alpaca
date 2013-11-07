@@ -117,9 +117,12 @@ let main =
       | Typeinf.TypeError (err, typ) ->
         error "Type error on type %a:\n %s" pretty_typ typ err;
         exit 2
-      | Typeinf.DimError (dim1, dim2) ->
-        error "Array dimensions error. Cannot match dimension size %a with %a" 
-          pretty_dim dim1 pretty_dim dim2; 
+      | Typeinf.DimAccesError (dim1, dim2) ->
+        error "Array dimensions error. Cannot match dimension size %d with %d" 
+          dim1 dim2;
+      | Typeinf.DimSizeError (dim1, dim2) ->
+        error "You are requasting the size of the #%d dimention in an array \
+               with only %d dimentions" dim1 dim2;
         exit 2
       | Typeinf.UnsolvedTyVar tvar ->
           error "Unsolved type variable, \

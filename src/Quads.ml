@@ -198,7 +198,7 @@ let rec getQuadOpType operand =
     | O_Float _ -> T_Float
     | O_Char _ -> T_Char
     | O_Bool _ -> T_Bool
-    | O_Str _ -> T_Array (T_Char, D_Int 1)
+    | O_Str _ -> T_Array (T_Char, D_Dim 1)
     | O_Backpatch -> internal "Backpatch? Here?"
     | O_Label _ -> internal "But a label? Here?"
     | O_Res -> internal "Res? Here?" (* $$ *)

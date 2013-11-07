@@ -308,8 +308,8 @@ and gen_def quads def_node delete_quads =
         let delete_entry =  Symbol.findAuxilEntry "_delete_array" in
         let dims = (* --- Need to get an int out of Dim type --- *)
           match arrayDims ty with
-            | D_Int d -> d
-            | D_Alpha _ -> internal "Unknown array dimensions\n"
+            | D_Dim d -> d
+            | D_DimSize _ -> internal "Unknown array dimensions\n"
         in
         let quads3 = genQuad (Q_Par, O_Int dims, O_ByVal, O_Empty) quads2 in
         let quads4 = genQuad (Q_Par, O_Entry entry , O_Ret, O_Empty) quads3 in 
@@ -713,7 +713,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           let typ = Typeinf.lookup_solved fresh_typ in
           let () = match typ with
             | T_Arrow _ | T_Array _ ->
-              raise (InvalidCompare typ)
+              internal "this must not occur, it is checked int type inf";
             | _ -> ()
           in
           let (quads1, e1_info) = gen_expr quads expr1 in
@@ -812,9 +812,23 @@ and gen_cond quads expr_node = match expr_node.expr with
             (quads4, t, f)
         ) (quads2, Labels.newLabelList (), Labels.newLabelList ()) l
     in
-    let quads4 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads3 in
+    let curr_fun_id = 
+      let fn = (Stack.top fun_stack) in
+        id_name fn.entry_id 
+    in
+    let err_str = 
+      Printf.sprintf 
+        "Match failure arising from partial matching in function %s\n" 
+        curr_fun_id
+    in 
+    let quads4 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads3 in
+    let quads5 = 
+      genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads4 
+    in 
+
+    let quads6 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads5 in
     let cond_info = setCondInfo t f in
-      (quads4, cond_info)
+      (quads6, cond_info)
   | E_Letin (def, expr) ->
     let delete_quads = ref (newQuadList ()) in
     let (funs, vars) = split_decls def in
@@ -1101,9 +1115,23 @@ and gen_stmt quads expr_node = match expr_node.expr with
             (quads6, last)
         ) (quads2, Labels.newLabelList ()) l
     in
-    let quads4 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads3 in
+    let curr_fun_id = 
+      let fn = (Stack.top fun_stack) in
+        id_name fn.entry_id 
+    in
+    let err_str = 
+      Printf.sprintf 
+        "Match failure arising from partial matching in function %s\n" 
+        curr_fun_id
+    in 
+    let quads4 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads3 in
+    let quads5 = 
+      genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads4 
+    in 
+  
+    let quads6 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads5 in
     let stmt_info = setStmtInfo last in
-      (quads4, stmt_info)
+      (quads6, stmt_info)
   | E_Cid _ ->  internal "Constructors cannot be a statement"
   | E_Block e -> gen_stmt quads e
   | E_Atom a -> gen_atom_stmt quads a

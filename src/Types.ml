@@ -4,8 +4,13 @@ exception PolymorphicTypes
 (** Llama Types **)
 
 type dim =
-  | D_Int of int 
-  | D_Alpha of int
+  | D_Dim of int      (* the number of the array's dimentions *) 
+  | D_DimSize of int  (* the size i of the dimention 
+                       * that is requested in dim i a.
+                       * We must check that i is less 
+                       * or equal from the number of 
+                       * a's dimentions *)
+
 
 type typ = 
   | T_Unit 
@@ -21,6 +26,7 @@ type typ =
   | T_Notype
   | T_Ord
   | T_Nofun
+  | T_Noarr
 
 
 (** Parser Types **)
@@ -81,7 +87,7 @@ let rec sizeOfType t =
     | T_Arrow (_, _)   -> 4  
     | T_Id _           -> 2
     | T_Alpha _ | T_Notype 
-    | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"
+    | T_Noarr | T_Ord | T_Nofun -> internal "Cannot resolve size for these types"
 
 let rec sizeOfElement t =
   match t with
@@ -102,8 +108,10 @@ let arrayDims a =
 (* is this working? *)
 let rec checkType typ =
   match typ with
-    | T_Alpha _ | T_Ord | T_Nofun -> raise PolymorphicTypes
-    | T_Array (_, D_Alpha _) -> raise PolymorphicTypes
+    | T_Alpha _  -> 
+      raise PolymorphicTypes
+    | T_Array (_, D_DimSize _) | T_Ord | T_Nofun | T_Noarr -> 
+      internal "This types must not occur here"
     | T_Array (t, _) -> checkType t 
     | T_Ref t -> checkType t
     | T_Notype -> internal "Invalid type \n"

@@ -1,5 +1,5 @@
 exception PolymorphicTypes
-type dim = D_Int of int | D_Alpha of int
+type dim = D_Dim of int | D_DimSize of int
 type typ =
     T_Unit
   | T_Int
@@ -14,6 +14,7 @@ type typ =
   | T_Notype
   | T_Ord
   | T_Nofun
+  | T_Noarr
 type string_const = { sval : string; spos : int * int; }
 type char_const = { cval : string; cpos : int * int; }
 type int_const = { ival : int; ipos : int * int; }

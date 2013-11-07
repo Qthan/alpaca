@@ -3,8 +3,8 @@ open Types
 
 let rec pretty_dim ppf dim1 =
   match dim1 with 
-    | D_Int n -> fprintf ppf "%d" n
-    | D_Alpha n -> fprintf ppf "d@@%d" n
+    | D_Dim n -> fprintf ppf "%d" n
+    | D_DimSize n -> fprintf ppf "%d <= dim?" n
 
 let rec pretty_typ ppf typ =
   match typ with
