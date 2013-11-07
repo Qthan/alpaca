@@ -45,5 +45,5 @@ to see the list of available options.
 
 Have fun!!
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/KJWLTSOT3Go/0.jpg)](http://www.youtube.com/watch?v=KJWLTSOT3Go)
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/1gZ0x8AVaBI/0.jpg)](http://www.youtube.com/watch?v=1gZ0x8AVaBI)
 
