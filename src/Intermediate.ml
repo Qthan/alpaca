@@ -65,8 +65,8 @@ let isTail expr =
   match expr.expr_entry with
       None -> internal "Function entry not found"
     | Some e ->
-        let cur_fun = Stack.top fun_stack in
-          !Quads.tailRecOpt && expr.expr_tail && (Symbol.entry_eq cur_fun e)
+      let cur_fun = Stack.top fun_stack in
+        !Quads.tailRecOpt && expr.expr_tail && (Symbol.entry_eq cur_fun e)
 
 let rec gen_program ast subst outer_entry =
   let quads = gen_decl_list ast outer_entry in
@@ -320,10 +320,10 @@ and gen_def quads def_node delete_quads =
           genQuad (Q_Call, O_Empty, O_Empty, O_Entry makearr_entry) quads4 
         in
           delete_quads := genQuad (Q_Par, O_Entry entry, O_ByVal, O_Empty) 
-                                  !delete_quads;
+              !delete_quads;
           delete_quads := genQuad 
-                            (Q_Call, O_Empty, O_Empty, O_Entry delete_entry) 
-                            !delete_quads;
+              (Q_Call, O_Empty, O_Empty, O_Entry delete_entry) 
+              !delete_quads;
           delete_quads := [];
           quads5
 
@@ -420,12 +420,12 @@ and gen_expr quads expr_node = match expr_node.expr with
           let e_info = setExprInfo temp (Labels.newLabelList ()) in
             (quads3, e_info)
         | U_Del -> internal "Unreachable point: Delete is not an expression"
-         (* Will create gen_stm and U_Del will go there*)
-         (*let (quads1, e1_info) = gen_expr quads expr1 in
-           let quads2 = genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads1 in
-           let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun "_delete") in
-           let e_info = 
-           (quads3, e_info)*)
+        (* Will create gen_stm and U_Del will go there*)
+        (*let (quads1, e1_info) = gen_expr quads expr1 in
+          let quads2 = genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads1 in
+          let quads3 = genQuad (Q_Call, O_Empty, O_Empty, O_Fun "_delete") in
+          let e_info = 
+          (quads3, e_info)*)
         | U_Not ->
           let (quads1, cond_info) = gen_cond quads expr_node in
           let quads2 = 
@@ -444,38 +444,52 @@ and gen_expr quads expr_node = match expr_node.expr with
             (quads6, e_info)
     end
   | E_Id (id, l) when isTail expr_node ->
-      let callee_entry = match expr_node.expr_entry with
-        | Some e -> e
-        | None -> internal "Callee is not a function"
-      in
-      let params = Symbol.getParamList callee_entry in
-      let quads1 =
-        List.fold_left2
-          (fun quads e p ->
-             if (isUnit e.atom_typ) then 
+    let callee_entry = match expr_node.expr_entry with
+      | Some e -> e
+      | None -> internal "Callee is not a function"
+    in
+    let params = Symbol.getParamList callee_entry in
+    let (quads1, revtemps) = List.fold_left
+        (fun (quads, temps) e ->
+           let unsolvedtyp = e.atom_typ in
+           let typ = Typeinf.lookup_solved unsolvedtyp in
+             if (isUnit typ) then 
                let (quads1, s_info) = gen_atom_stmt quads e in
                let quads2 = 
                  backpatch quads1 s_info.next_stmt (Label.nextLabel ())
                in
-                 quads2
+                 (quads2, O_Empty :: temps)
              else
-                 let (quads1, e_info) = gen_atom quads e in
-                 let quads2 = 
-                   backpatch quads1 e_info.next_expr (Label.nextLabel ()) 
-                 in
-                 let quads3 = 
-                   genQuad (Q_Assign, e_info.place, O_Empty, O_Entry p) quads2 
-                 in
-                   quads3
-          ) quads l params
-      in
-      let jmp_target = Symbol.getFunctionLabel callee_entry in
-      let () = addLabelTbl jmp_target in
-      let quads2 = 
-        genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads1
-      in
-      let e_info = setExprInfo (O_Int 1) (Labels.newLabelList ()) in
-        (quads2, e_info)
+               let (quads1, e_info) = gen_atom quads e in 
+               let quads2 =
+                 backpatch quads1 e_info.next_expr (Label.nextLabel ())
+               in
+               let temp = Quads.newTemp typ (Stack.top fun_stack) false in
+               let quads3 = 
+                 genQuad (Q_Assign, e_info.place, O_Empty, temp) quads2 
+               in 
+                 (quads3, temp :: temps)
+        ) (quads, []) l
+    in
+    let quads2 =
+      List.fold_left2
+        (fun quads temp p ->
+           if (temp = O_Empty) then 
+             quads
+           else
+             let quads1 = 
+               genQuad (Q_Assign, temp, O_Empty, O_Entry p) quads
+             in
+               quads1
+        ) quads1 (List.rev revtemps) params
+    in
+    let jmp_target = Symbol.getFunctionLabel callee_entry in
+    let () = addLabelTbl jmp_target in
+    let quads3 = 
+      genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads2
+    in
+    let e_info = setExprInfo (O_Int 1) (Labels.newLabelList ()) in
+      (quads3, e_info)
   | E_Id (id, l) -> 
     let quads1 =
       List.fold_left 
@@ -629,7 +643,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     let quads4 = genQuad (Q_Constr, temp, O_Int 0, temp2) quads3 in
     let quads5 = 
       genQuad (Q_Assign, O_Int (Symbol.getTag c_entry), O_Empty, O_Deref temp2) 
-              quads4 
+        quads4 
     in
     let (quads6, temps) = 
       List.fold_left 
@@ -730,7 +744,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           let t = Labels.makeLabelList (Label.nextLabel ()) in
           let quads5 = 
             genQuad (getQuadBop oper, e1_info.place, e2_info.place, O_Backpatch) 
-                     quads4
+              quads4
           in
           let f = Labels.makeLabelList (Label.nextLabel ()) in
           let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in
@@ -851,7 +865,7 @@ and gen_cond quads expr_node = match expr_node.expr with
             (match b with
               | true -> (quads1, setCondInfo cond_lst (Labels.newLabelList ()))
               | false -> 
-                  (quads1, setCondInfo (Labels.newLabelList ()) cond_lst))
+                (quads1, setCondInfo (Labels.newLabelList ()) cond_lst))
         | A_Var id -> 
           let true_lst = Labels.makeLabelList (Label.nextLabel ()) in
           let id_entry = match expr_node.expr_entry with
@@ -1015,38 +1029,52 @@ and gen_stmt quads expr_node = match expr_node.expr with
       addLabelTbl condLabel;
       (quads12, setStmtInfo next)
   | E_Id (id, l) when isTail expr_node ->
-     let callee_entry = match expr_node.expr_entry with
-       | Some e -> e
-       | None -> internal "Callee is not a function"
-     in
-     let params = Symbol.getParamList callee_entry in
-     let quads1 =
-       List.fold_left2
-         (fun quads e p ->
-            if (isUnit e.atom_typ) then 
-              let (quads1, s_info) = gen_atom_stmt quads e in
-              let quads2 = 
-                backpatch quads1 s_info.next_stmt (Label.nextLabel ())
-              in
-                quads2
-            else
-              let (quads1, e_info) = gen_atom quads e in
-              let quads2 = 
-                backpatch quads1 e_info.next_expr (Label.nextLabel ()) 
-              in
-              let quads3 = 
-                genQuad (Q_Assign, e_info.place, O_Empty, O_Entry p) quads2 
-              in
-               quads3
-         ) quads l params
-      in
-      let jmp_target = Symbol.getFunctionLabel callee_entry in
-      let () = addLabelTbl jmp_target in
-      let quads2 = 
-        genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads1
-      in
-      let s_info = setStmtInfo (Labels.newLabelList ()) in
-        (quads2, s_info)
+    let callee_entry = match expr_node.expr_entry with
+      | Some e -> e
+      | None -> internal "Callee is not a function"
+    in
+    let params = Symbol.getParamList callee_entry in
+    let (quads1, revtemps) = List.fold_left
+        (fun (quads, temps) e ->
+           let unsolvedtyp = e.atom_typ in
+           let typ = Typeinf.lookup_solved unsolvedtyp in
+             if (isUnit typ) then 
+               let (quads1, s_info) = gen_atom_stmt quads e in
+               let quads2 = 
+                 backpatch quads1 s_info.next_stmt (Label.nextLabel ())
+               in
+                 (quads2, O_Empty :: temps)
+             else
+               let (quads1, e_info) = gen_atom quads e in 
+               let quads2 =
+                 backpatch quads1 e_info.next_expr (Label.nextLabel ())
+               in
+               let temp = Quads.newTemp typ (Stack.top fun_stack) false in
+               let quads3 = 
+                 genQuad (Q_Assign, e_info.place, O_Empty, temp) quads2 
+               in 
+                 (quads3, temp :: temps)
+        ) (quads, []) l
+    in
+    let quads2 =
+      List.fold_left2
+        (fun quads temp p ->
+           if (temp = O_Empty) then 
+             quads
+           else
+             let quads1 = 
+               genQuad (Q_Assign, temp, O_Empty, O_Entry p) quads
+             in
+               quads1
+        ) quads1 (List.rev revtemps) params
+    in
+    let jmp_target = Symbol.getFunctionLabel callee_entry in
+    let () = addLabelTbl jmp_target in
+    let quads3 = 
+      genQuad (Q_Jump, O_Empty, O_Empty, O_Label jmp_target) quads2
+    in
+    let s_info = setStmtInfo (Labels.newLabelList ()) in
+      (quads3, s_info)
   | E_Id (id, l) -> 
     let quads1 =
       List.fold_left 
@@ -1131,7 +1159,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let quads5 = 
       genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads4 
     in 
-  
+
     let quads6 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads5 in
     let stmt_info = setStmtInfo last in
       (quads6, stmt_info)
@@ -1163,7 +1191,7 @@ and gen_atom quads atom_node = match atom_node.atom with
     let quads4 = genQuad (Q_Constr, temp, O_Int 0, temp2) quads3 in
     let quads5 = 
       genQuad (Q_Assign, O_Int (Symbol.getTag c_entry), O_Empty, O_Deref temp2) 
-              quads4 
+        quads4 
     in
       (quads5, setExprInfo temp (Labels.newLabelList ()))
   | A_Var v -> 
@@ -1218,7 +1246,7 @@ and gen_atom quads atom_node = match atom_node.atom with
 and gen_atom_stmt quads atom_node = match atom_node.atom with
   | A_Num _ | A_Dec _ | A_Str _
   | A_Chr _ | A_Bool _ | A_Array _ -> 
-      internal "non unit expressions called from atom_stmt"
+    internal "non unit expressions called from atom_stmt"
   | A_Par | A_Var _ -> (quads, setStmtInfo (Labels.newLabelList ()))
   | A_Expr e -> gen_stmt quads e
   | A_Bang a -> 
@@ -1318,3 +1346,4 @@ and gen_pattom pat scrut quads =
       let cond_info = setCondInfo t f in
         (quads2, cond_info)
     | P_Pattern p -> gen_pattern p scrut quads
+
