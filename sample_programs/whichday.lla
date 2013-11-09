@@ -31,7 +31,7 @@
 
 let duration     = 120    -- duration of the class
 let availability = 25     -- the availability we're looking for
-let worst        = 15     -- looking for better intervals with fewer people?
+let worst        = 1     -- looking for better intervals with fewer people?
 let debug        = false  -- flag for printing debugging information
 
                           -- also set the available days and hours in

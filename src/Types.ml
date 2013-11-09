@@ -4,13 +4,13 @@ exception PolymorphicTypes
 (** Llama Types **)
 
 type dim =
-  | D_Dim of int      (* the number of the array's dimentions *) 
-  | D_DimSize of int  (* the size i of the dimention 
+  | D_Dim of int      (* the number of the array's dimensions *) 
+  | D_DimSize of int  (* the size i of the dimension 
                        * that is requested in dim i a.
                        * We must check that i is less 
                        * or equal from the number of 
-                       * a's dimentions *)
-
+                       * a's dimensions *)
+  | D_Alpha of int    (*  fresh dim type variable *)
 
 type typ = 
   | T_Unit 
@@ -110,10 +110,15 @@ let rec checkType typ =
   match typ with
     | T_Alpha _  -> 
       raise PolymorphicTypes
-    | T_Array (_, D_DimSize _) | T_Ord | T_Nofun | T_Noarr -> 
-      internal "This types must not occur here"
-    | T_Array (t, _) -> checkType t 
     | T_Ref t -> checkType t
-    | T_Notype -> internal "Invalid type \n"
     | T_Arrow (t1, t2) -> checkType t1; checkType t2 
+    | T_Array (t, D_Dim _) -> checkType t 
+    | T_Array (_, D_DimSize _) -> 
+      internal "Dimsize cannot occur here"
+    | T_Array (_, D_Alpha _) -> 
+      internal "A_Alpha cannot occur here"
+    | T_Ord | T_Nofun | T_Noarr -> 
+      internal "This types must not occur here"
+    | T_Notype -> 
+      internal "Invalid type \n"
     | _ -> ()

@@ -5,4 +5,4 @@ let f a = match a with
   | Cons x y -> 1
 end
 
-let main = f Nill
+let main = print_int (f Nill)

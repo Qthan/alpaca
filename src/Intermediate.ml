@@ -7,6 +7,8 @@ open Error
 
 exception InvalidCompare of typ
 
+let debug_quads = false 
+
 (*  Symbol entry option to unsolved type *)
 let lookup_type entry =
   match entry with
@@ -69,7 +71,7 @@ let isTail expr =
 let rec gen_program ast subst outer_entry =
   let quads = gen_decl_list ast outer_entry in
   let finalQuads = normalizeQuads (List.rev quads) in
-    printQuads Format.std_formatter finalQuads;
+    if (debug_quads) then printQuads Format.std_formatter finalQuads;
     finalQuads
 
 and gen_decl_list ast outer_entry = 
@@ -309,7 +311,8 @@ and gen_def quads def_node delete_quads =
         let dims = (* --- Need to get an int out of Dim type --- *)
           match arrayDims ty with
             | D_Dim d -> d
-            | D_DimSize _ -> internal "Unknown array dimensions\n"
+            | D_DimSize _ 
+            | D_Alpha _ -> internal "Unknown array dimensions\n"
         in
         let quads3 = genQuad (Q_Par, O_Int dims, O_ByVal, O_Empty) quads2 in
         let quads4 = genQuad (Q_Par, O_Entry entry , O_Ret, O_Empty) quads3 in 

@@ -80,6 +80,10 @@ let rec peep3 instructions acc =
             let instr1 = (Mov (Pointer (size2, Reg r3, off2), Immediate s)) in
             let instr2 = (Mov (Reg r2, pointer)) in
            peep3 is (instr1 :: instr2 :: acc)
+    | (CondJmp (cond, Label target)) :: (Jmp target2) 
+      :: (LabelDecl l) :: is when target = l ->
+        let reverted = Final.revertCond cond in
+          peep3 is ((LabelDecl l) :: (CondJmp (reverted, target2)) :: acc)
     | instr :: is ->
         peep3 is (instr :: acc)
 
@@ -103,9 +107,6 @@ let rec peep2 instructions acc =
         peep2 is ((Mov (p1, Reg r1)) :: acc)
     | (Mov (p1, Reg r1)) :: (Mov (Reg r2, p2)) :: is when p1 = p2 && r1 <> r2 ->
         peep2 is ((Mov (Reg r2, Reg r1)) :: (Mov (p1, Reg r1)) :: acc)
-    | (CondJmp (cond, target)) :: (Jmp target2) :: is ->
-        let reverted = Final.revertCond cond in
-         peep2 is ((CondJmp (reverted, target2)) :: acc)
     | instr :: is -> peep2 is (instr :: acc)
 
 let rec peep1 instructions acc =

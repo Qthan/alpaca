@@ -121,12 +121,15 @@ let main =
         error "Array dimensions error. Cannot match dimension size %d with %d" 
           dim1 dim2;
       | Typeinf.DimSizeError (dim1, dim2) ->
-        error "You are requasting the size of the #%d dimention in an array \
-               with only %d dimentions" dim1 dim2;
+        error "You are requesting the size of the #%d dimension in an array \
+               with only %d dimensions" dim1 dim2;
         exit 2
       | Typeinf.UnsolvedTyVar tvar ->
           error "Unsolved type variable, \
             possibly arising from an unsed polymphic type"
+      | Typeinf.UnsolvedDimVar tvar ->
+          error "Unsolved dimension variable, possibly arising from \
+            the use of an array with unspecified dimensions"
       | Intermediate.InvalidCompare typ ->
         error "Cannot compare values of type %a" pretty_typ typ;
         exit 2

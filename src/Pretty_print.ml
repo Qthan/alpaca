@@ -5,6 +5,7 @@ let rec pretty_dim ppf dim1 =
   match dim1 with 
     | D_Dim n -> fprintf ppf "%d" n
     | D_DimSize n -> fprintf ppf "%d <= dim?" n
+    | D_Alpha a -> fprintf ppf "d@%d" a
 
 let rec pretty_typ ppf typ =
   match typ with
@@ -22,6 +23,8 @@ let rec pretty_typ ppf typ =
       fprintf ppf "undefined"
     | T_Ord -> 
       fprintf ppf "ord"
+    | T_Noarr ->
+      fprintf ppf "noarr"
     | T_Nofun ->
       fprintf ppf "nofun"
     | T_Arrow (a,b) ->

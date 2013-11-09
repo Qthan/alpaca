@@ -14,4 +14,5 @@
 let main =
   let a = 1.4 in
   let b = a +. 3.8 in
-    b
+    print_float b
+

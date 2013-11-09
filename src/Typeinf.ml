@@ -11,6 +11,7 @@ exception UnifyError of typ * typ
 exception DimSizeError of int * int 
 exception DimAccesError of int * int 
 exception UnsolvedTyVar of typ
+exception UnsolvedDimVar of dim
 (* Function for type inference debugging *)
 
 let debug_typeinf = false
@@ -39,7 +40,7 @@ let add_solved_table solved =
 let rec lookup_solved tvar = 
   match tvar with
     | T_Alpha _ ->
-      begin 
+      begin
         match (try Some (Hashtbl.find solved_types tvar) 
                with Not_found -> None) with
           | None -> internal "Failed to locate inferred type\n"
@@ -67,6 +68,44 @@ let fresh =
     fun () -> incr k; T_Alpha !k
 
 let dim_size i = D_DimSize i
+
+let freshDim = 
+  let k = ref 0 in 
+    fun () -> incr k; D_Alpha !k
+
+
+(* List for collecting constrains arising from dim i a *)
+let dimConstraints = ref []
+
+(* Add a constraint to the above list *)
+let dimsGeq dims i = 
+  dimConstraints := (dims, D_DimSize i) :: !dimConstraints
+
+(* Sumbstitute dimension variable alpha with d in the dimension type dim1 *)                
+let rec singleSubDim alpha d dim1 = match alpha, dim1 with 
+  | D_Alpha a, D_Alpha b when a = b -> d
+  | D_Alpha _, D_Alpha b -> D_Alpha b
+  | D_Alpha _, _ -> dim1
+  | _, _ -> internal "Cannot substitute non fresh dimension type"
+
+(* Sumbstitute dimension variable alpha with d in the dimensions list lst *)                
+let subDim alpha d lst =
+  let walk (dim1, dim2) = 
+    (singleSubDim alpha d dim1, singleSubDim alpha d dim2) 
+  in
+    List.map walk lst
+
+(* Sumbstitute dimension variable alpha with d in the type tau *)                
+let rec singleSubArray alpha d tau = match alpha, tau with
+  | alpha, T_Array (tau, dim1) -> T_Array (tau, singleSubDim alpha d dim1)
+  | _, tau -> tau
+
+(* Sumbstitute dimension variable alpha with d in the types list lst *)                
+let subArray alpha d lst =
+  let walk (dim1, dim2) = 
+    (singleSubArray alpha d dim1, singleSubArray alpha d dim2) 
+  in
+    List.map walk lst
 
 (* Return a fresh type variable for undefined types *) 
 let refresh ty =     
@@ -106,21 +145,47 @@ let subc alpha tau c =
 let subl alpha tau l =  
   List.map (singleSub alpha tau) l
 
-
+(* unify the list of constraints c *)
 let unify c =
-  let rec unifyDims dims = match dims with
-    | [] -> ()
-    | (D_Dim a, D_Dim b) :: lst when a = b -> unifyDims lst 
-    | (D_Dim a, D_Dim b) :: lst -> raise (DimAccesError (a,b)) 
-    | (D_DimSize i, D_Dim a) :: lst when i <= a && 0 < i -> 
-      unifyDims lst
-    | (D_Dim a, D_DimSize i) :: lst when i <= a && 0 < i -> 
-      unifyDims lst 
+  let rec checkDims dims = match dims with 
+    | [] -> () 
+    | (D_DimSize i, D_Dim a) :: lst 
+    | (D_Dim a, D_DimSize i) :: lst when i <= a -> 
+        checkDims lst
     | (D_DimSize i, D_Dim a) :: lst 
     | (D_Dim a, D_DimSize i) :: lst ->
-      raise (DimSizeError (i,a)) 
-    | (D_DimSize _, D_DimSize _) :: _ -> internal "This must not happen"
-  in 
+        raise (DimSizeError (i,a))
+    | (D_DimSize i, D_Alpha a) :: lst
+    | (D_Alpha a, D_DimSize i) :: lst -> 
+        raise (UnsolvedDimVar (D_Alpha a))
+    | (D_DimSize _, D_DimSize _) :: _ 
+    | (D_Alpha _, D_Alpha _) :: _ 
+    | (D_Dim _, _) :: _ | (_, D_Dim _) :: _ ->
+        internal "This must not happen"
+  in
+  let rec unifyDims dims dimsacc acc = match dims with
+    | [] -> checkDims dimsacc; acc
+    | (D_Dim a, D_Dim b) :: lst when a = b -> 
+        unifyDims lst dimsacc acc 
+    | (D_Dim a, D_Dim b) :: lst -> 
+        raise (DimAccesError (a,b)) 
+    | (D_DimSize i, D_Dim a) :: lst 
+    | (D_Dim a, D_DimSize i) :: lst when i <= a -> 
+        unifyDims lst dimsacc acc
+    | (D_DimSize i, D_Dim a) :: lst 
+    | (D_Dim a, D_DimSize i) :: lst ->
+        raise (DimSizeError (i,a))
+    | (D_DimSize s, D_Alpha a) :: lst 
+    | (D_Alpha a, D_DimSize s) :: lst -> 
+        unifyDims lst ((D_DimSize s, D_Alpha a) :: dimsacc) acc
+    | (dim1, D_Alpha a) :: lst
+    | (D_Alpha a, dim1) :: lst -> 
+        unifyDims (subDim (D_Alpha a) dim1 lst)
+                  (subDim (D_Alpha a) dim1 dimsacc)
+                  (subArray (D_Alpha a) dim1 acc)  
+    | (D_DimSize _, D_DimSize _) :: _ -> 
+        internal "This must not happen"
+  in         
   let rec unifyOrd ord = match ord with
     | [] -> ()
     | T_Int :: c | T_Float :: c | T_Char :: c -> 
@@ -152,8 +217,7 @@ let unify c =
       unifyOrd ord;
       unifyNofun nofun;
       unifyNoarr noarr;
-      unifyDims dims;
-      acc
+      unifyDims (dims @ !dimConstraints) [] acc;
     | (tau1, tau2) :: c when tau1 = tau2 -> 
       unifyAux c ord dims nofun noarr acc
     | (T_Nofun, tau1) :: c | (tau1, T_Nofun) :: c ->

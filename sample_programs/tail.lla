@@ -3,4 +3,4 @@ let rec f x =
         else if x > 10 then f (x-2)
 	else 1 + f (x-2)
 
-let main = f 20
+let main = print_int  (f 20)
