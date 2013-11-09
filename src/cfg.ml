@@ -239,26 +239,33 @@ struct
 
   let persistent_vmap f cfg =
     let tbl = Hashtbl.create 64 in
-      fold_edges (fun v1 v2 acc ->
-          let v1 = 
-            if (Hashtbl.mem tbl v1) then Hashtbl.find tbl v1
-            else
-              begin
-                let v1_new = f v1 in
-                  Hashtbl.add tbl v1 v1_new;
-                  v1_new
-              end
-          in
-          let v2 =
-            if (Hashtbl.mem tbl v2) then Hashtbl.find tbl v2
-            else 
-              begin
-                let v2_new = f v2 in
-                  Hashtbl.add tbl v2 v2_new;
-                  v2_new
-              end
-          in
-            add_edge acc v1 v2) cfg empty 
+    (* Add the rest of vertices *)
+    let cfg_unreachable = fold_vertex (fun v acc ->
+        if (out_degree cfg v = 0) && (in_degree cfg v = 0) 
+        then add_vertex acc (f v)
+        else acc) cfg empty
+    in
+    let cfg = fold_edges (fun v1 v2 acc ->
+        let v1 = 
+          if (Hashtbl.mem tbl v1) then Hashtbl.find tbl v1
+          else
+            begin
+              let v1_new = f v1 in
+                Hashtbl.add tbl v1 v1_new;
+                v1_new
+            end
+        in
+        let v2 =
+          if (Hashtbl.mem tbl v2) then Hashtbl.find tbl v2
+          else 
+            begin
+              let v2_new = f v2 in
+                Hashtbl.add tbl v2 v2_new;
+                v2_new
+            end
+        in
+          add_edge acc v1 v2) cfg cfg_unreachable in
+      cfg
 
 
 
@@ -324,7 +331,7 @@ struct
               | q2 :: qss when Blocks.is_if q2.operator -> 
                 aux qs (edge_to :: out_f, in_f)
               | q2 :: qss when Blocks.is_match q2.operator ->
-                  aux qs (edge_to :: out_f, in_f)
+                aux qs (edge_to :: out_f, in_f)
               | q2 :: qss -> (edge_to :: out_f, in_f))
         | q :: qs when (Blocks.is_call q.operator) ->
           let c_target = Quads.entry_of_quadop q.arg3 in
@@ -426,7 +433,7 @@ struct
     let nb_v = nb_vertex cfg in
     let table = Hashtbl.create nb_v in
     let () = iter_vertex (fun (i, s, b) as v ->
-                            Hashtbl.add table (Blocks.(i.block_index)) v) cfg 
+        Hashtbl.add table (Blocks.(i.block_index)) v) cfg 
     in
     let rec aux i acc =
       if (Hashtbl.length table) = 0 then

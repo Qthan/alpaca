@@ -379,8 +379,8 @@ and walk_expr expr_node = match expr_node.expr with
       expr_node.expr_typ <- T_Int;
       expr_node.expr_entry <- Some id_entry;
       let dims = freshDim () in
-      dimsGeq dims i;
-      [(typ, T_Array (fresh (), dims))]
+        dimsGeq dims i;
+        [(typ, T_Array (fresh (), dims))]
   | E_Ifthenelse (expr1, expr2, expr3) ->
     let constraints1 = walk_expr expr1 in
     let () = expr2.expr_tail <- expr_node.expr_tail in 

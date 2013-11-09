@@ -151,40 +151,40 @@ let unify c =
     | [] -> () 
     | (D_DimSize i, D_Dim a) :: lst 
     | (D_Dim a, D_DimSize i) :: lst when i <= a -> 
-        checkDims lst
+      checkDims lst
     | (D_DimSize i, D_Dim a) :: lst 
     | (D_Dim a, D_DimSize i) :: lst ->
-        raise (DimSizeError (i,a))
+      raise (DimSizeError (i,a))
     | (D_DimSize i, D_Alpha a) :: lst
     | (D_Alpha a, D_DimSize i) :: lst -> 
-        raise (UnsolvedDimVar (D_Alpha a))
+      raise (UnsolvedDimVar (D_Alpha a))
     | (D_DimSize _, D_DimSize _) :: _ 
     | (D_Alpha _, D_Alpha _) :: _ 
     | (D_Dim _, _) :: _ | (_, D_Dim _) :: _ ->
-        internal "This must not happen"
+      internal "This must not happen"
   in
   let rec unifyDims dims dimsacc acc = match dims with
     | [] -> checkDims dimsacc; acc
     | (D_Dim a, D_Dim b) :: lst when a = b -> 
-        unifyDims lst dimsacc acc 
+      unifyDims lst dimsacc acc 
     | (D_Dim a, D_Dim b) :: lst -> 
-        raise (DimAccesError (a,b)) 
+      raise (DimAccesError (a,b)) 
     | (D_DimSize i, D_Dim a) :: lst 
     | (D_Dim a, D_DimSize i) :: lst when i <= a -> 
-        unifyDims lst dimsacc acc
+      unifyDims lst dimsacc acc
     | (D_DimSize i, D_Dim a) :: lst 
     | (D_Dim a, D_DimSize i) :: lst ->
-        raise (DimSizeError (i,a))
+      raise (DimSizeError (i,a))
     | (D_DimSize s, D_Alpha a) :: lst 
     | (D_Alpha a, D_DimSize s) :: lst -> 
-        unifyDims lst ((D_DimSize s, D_Alpha a) :: dimsacc) acc
+      unifyDims lst ((D_DimSize s, D_Alpha a) :: dimsacc) acc
     | (dim1, D_Alpha a) :: lst
     | (D_Alpha a, dim1) :: lst -> 
-        unifyDims (subDim (D_Alpha a) dim1 lst)
-                  (subDim (D_Alpha a) dim1 dimsacc)
-                  (subArray (D_Alpha a) dim1 acc)  
+      unifyDims (subDim (D_Alpha a) dim1 lst)
+        (subDim (D_Alpha a) dim1 dimsacc)
+        (subArray (D_Alpha a) dim1 acc)  
     | (D_DimSize _, D_DimSize _) :: _ -> 
-        internal "This must not happen"
+      internal "This must not happen"
   in         
   let rec unifyOrd ord = match ord with
     | [] -> ()
@@ -199,7 +199,7 @@ let unify c =
     | (T_Arrow (a, b)) :: c -> 
       raise (TypeError 
                ("Cannot return or compare function type", T_Arrow(a, b))
-      )
+            )
     | (T_Alpha a) :: c -> raise (UnsolvedTyVar (T_Alpha a))
     | _ :: c -> 
       unifyNofun c

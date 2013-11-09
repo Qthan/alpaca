@@ -64,7 +64,7 @@ let read_args () =
     [("-i", Arg.Unit (fun () -> default_config.quads <- true), 
       "Emit intermediate code");
      ("-O", Arg.Unit (fun () -> default_config.opt <- true; 
-                                Quads.tailRecOpt := true),
+                       Quads.tailRecOpt := true),
       "Perform optimizations");
      ("-g", Arg.Unit (fun () -> default_config.cfg <- true),
       "Output a cfg in .dot format")]
@@ -97,9 +97,9 @@ let main =
             let final = CodeGen.codeGen ir outer_entry in
             let final = match default_config.opt with
                 true ->
-                  Peephole.optimize final
+                Peephole.optimize final
               | false -> 
-                  final
+                final
             in
             let asm = EmitMasm.emit final library_funs in
               Printf.fprintf files.cout "%s" asm;
@@ -125,11 +125,11 @@ let main =
                with only %d dimensions" dim1 dim2;
         exit 2
       | Typeinf.UnsolvedTyVar tvar ->
-          error "Unsolved type variable, \
-            possibly arising from an unsed polymphic type"
+        error "Unsolved type variable, \
+               possibly arising from an unsed polymphic type"
       | Typeinf.UnsolvedDimVar tvar ->
-          error "Unsolved dimension variable, possibly arising from \
-            the use of an array with unspecified dimensions"
+        error "Unsolved dimension variable, possibly arising from \
+               the use of an array with unspecified dimensions"
       | Intermediate.InvalidCompare typ ->
         error "Cannot compare values of type %a" pretty_typ typ;
         exit 2

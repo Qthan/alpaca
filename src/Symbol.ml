@@ -671,6 +671,6 @@ let findAuxilEntry id = List.assoc id auxil_funs
 
 let isAuxilFun id =
   List.mem_assoc (Identifier.id_name id) auxil_funs
-             
+
 
 
