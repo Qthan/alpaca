@@ -273,9 +273,9 @@ types:
             | types T_REF                                               
               { T_Ref ($1) }
             | T_ARRAY T_OF types %prec ARR                              
-              { T_Array ($3, D_Int 0) }
+              { T_Array ($3, D_Dim 1) }
             | T_ARRAY T_LBRACK T_TIMES comastar T_RBRACK T_OF types %prec ARR                    
-              { T_Array ($7, D_Int ($4+1)) }
+              { T_Array ($7, D_Dim ($4+1)) }
             | T_ID                                                      
               { T_Id ($1.id_name) }
             ;

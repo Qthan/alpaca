@@ -102,7 +102,6 @@ module TS :
     val max_elt : t -> elt
     val choose : t -> elt
     val split : elt -> t -> t * bool * t
-    val find : elt -> t -> elt
   end
 val deletable : Quads.quad_operands -> bool
 val add_tmp : TS.elt -> TS.t -> TS.t
