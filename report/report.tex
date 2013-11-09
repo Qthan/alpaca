@@ -82,6 +82,107 @@ Kωνσταντίνος Αθανασίου & 03108132\\
 
 \section{Εισαγωγή}
 H \Llama είναι μια γλώσσα η οποία συνδυάζει στοιχεία συναρτησιακού και προστακτικού προγραμματισμού και συντακτικά μοιάζει αρκετά με τη γλώσσα Caml. Η εργασία έχει υλοποιηθεί στη γλώσσα OCaml. Αναλυτικά οι προδιαγραφές τις γλώσσας βρίσκονται \href{http://courses.softlab.ntua.gr/compilers/2012a/llama2012.pdf}{εδώ}
+\section{Χρήση}
+Για τη μεταγλώττιση του μεταγλωττιστή χρειάζονται τα παρακάτω:
+\begin{itemize}
+\item \href{http://ocaml.org/install.html}{OCaml 4.0.0} ή νεότερη έκδοση
+\item \href{http://ocamlgraph.lri.fr}{Ocamlgraph} ή μέσω \href{http://opam.ocaml.org/pkg/ocamlgraph/}{OPAM}
+\item \href{http://pauillac.inria.fr/~ddr/camlp5/}{CamlP5} ή μέσω \href{http://opam.ocaml.org/pkg/camlp5}{CamlP5}
+\end{itemize}
+
+Η διαδικασία μεταγλώττισης είναι η παρακάτω:
+\begin{itemize}
+\item[\$] make depend
+\item[\$] make
+\end{itemize}
+Προαιρετικά, μπορεί να εξαχθεί το API του compiler σε αρχεία html μέσω της εντολής:
+\begin{itemize}
+\item[\$] make doc
+\end{itemize}
+Για την μεταγλώττιση ενός αρχείου πηγαίου κώδικα \Llama απαιτούνται τα παρακάτω βήματα:
+\begin{itemize}
+\item[\$] ./Llama file.lla
+\end{itemize}
+Επιπλέον παρέχονται οι εξής επιλογές:
+
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+   \rowcolor{ablack}
+    \textcolor{white}{Option} & \textcolor{white}{Description} \\ \hline
+    
+    \rowcolor{gray}
+    -O & Εκτέλεση βελτιστοποιήσεων \\ 
+    
+    -i & Παραγωγή ενδιάμεσου κώδικα \\ 
+    
+     \rowcolor{gray}
+    -g & Παραγωγή γράφου ελέγχου ροής σε .dot αρχείο \\
+    
+    -help & Προβολή διαθέσιμων επιλογών \\ 
+    
+\hline
+\end{tabular}
+\caption{Command-line options}
+\end{table}
+
+Για την εκτέλεση του μεταγλωττισμένου αρχείου $file.asm$ χρειάζονται τα παρακάτω:
+\begin{itemize}
+\item \href{http://www.dosbox.com/}{dosbox}
+\item masm
+\item Η βιβλιοθήκη χρόνου εκτέλεσης llama.lib που περιέχεται στην υλοποίηση μας
+\end{itemize}
+
+Η συμβολομετάφραση μπορεί να γίνει εκτελώντας την παρακάτω εντολή στο περιβάλλον του dosbox:
+\begin{itemize}
+\item[>] ml.exe file.asm, llama.lib
+\end{itemize} 
+Οπότε παράγεται το εκτελέσιμο αρχείο $file.exe$.
+Το εκτελέσιμο που παράγεται έχει μέγεθος stack $16KB$ το οποίο μπορεί να τροποποιηθεί μέσω κατάλληλου ορίσματος στον Microsoft Linker.
+%
+%Compiler project for NTUA compilers course. 
+%
+%The language scpecification can be found [here](http://courses.softlab.ntua.gr/compilers/2012a/llama2012.pdf) in greek.
+%
+%
+%Llama is a functional programing language, inspired from Caml, featuring:
+%
+%* Type Inference 
+%* High order functions
+%* User defined data types
+%* Imperative features: destructive arrays, mutable variables, while and for loops
+%
+%
+%**Dependencies:**
+%
+%* [*OCaml*](http://ocaml.org/install.html) version 4.0.0 or newer
+%* [*OCamlgraph*](http://ocamlgraph.lri.fr) or via OPAM [here](http://opam.ocaml.org/pkg/ocamlgraph/1.8.3/)
+%* [*CamlP5*](http://pauillac.inria.fr/~ddr/camlp5/) or via OPAM [here](http://opam.ocaml.org/pkg/camlp5/6.11/)
+%
+%**To compile:**
+%
+%    $ make .depend
+%    $ make
+%    
+%Optionaly, you can create the documentation files: 
+%    
+%    $ make doc
+%
+%
+%**To run:**
+%
+%    $ ./Llama file.lla
+%    $ dosbox
+%    $ ml.exe file.asm llama.lib
+%
+%
+%You can type 
+%	
+%	./llama --help
+
+
 \section{Υλοποίση}
 Στην ενότητα αυτή θα παρουσιάσουμε συνοπτικά κάποια βασικά στοιχεία της υλοποίησης.
 \subsection{Συντακτικός και Γραμματικός Αναλυτής}
@@ -218,26 +319,6 @@ $$ Match, e, c, l$$
 Για να γίνει κλήση ουράς αντί για κανονική κλήση αρκεί στις κλήσεις συνάρτησης που έχουν σημειωθεί ως $tail$ και επίσης αναφέρονται στην ίδια συνάρτηση με αυτή που εκτελείται, να αντικαταστήσουμε τις τιμές των παραμέτρων με τις νέες τιμές μέσω ανάθεσης και να κάνουμε $jump$ στην αρχή της συνάρτησης. Η διαδικασία αυτή υλοποιείται στον ενδιάμεσο κώδικα τετράδων και στη συνέχεια μεταφράζεται σε τελικό κώδικα χωρίς κάποια αλλαγή στην παραγωγή τελικού κώδικα.
 \subsubsection{Βελτιστοποιήσεις τελικού κώδικα}
 \paragraph{Peephole} Οι βελτιστοποιήσεις που έγιναν στον τελικό κώδικα ακολουθούν τη λογική των λεγόμενων Peephole optimizations. Γίνονται πολλαπλά περάσματα στον τελικό κώδικα ψάχνοντας για γνωστά μοτίβα εντολών (1 έως και 3 εντολές) τα οποία στη συνέχεια μετατρέπονται σε πιο απλές και γρήγορες εντολές. Εκμεταλλευόμενοι το ισχυρό pattern-matching της OCaml η υλοποίηση αυτών των βελτιστοποιήσεων είναι αρκετά εύκολη σε σχέση με αυτές του γράφου ροής ελέγχου. Είναι ωστόσο και αρκετά αποτελεσματικές δεδομένου του απλοϊκού αλγορίθμου παραγωγής τελικού κώδικα που ακολουθήσαμε. Στον παρακάτω πίνακα παρουσιάζουμε πολλές από τις βελτιστοποιήσεις που υλοποιήσαμε. Επειδή γίνονται παραπάνω από ένα περάσματα απλοποιούνται και άλλοι συνδυασμοί αυτών.
-
-%\begin{table}[htbp]
-%\begin{center}
-%    \begin{tabular}{|l|r|}
-%    Generated & Optimized \\ \hline
-%    add target, 1 & inc target \\ \hline
-%    sub target, 1 & dec target \\ \hline
-%    add/sub target, 0 & - \\ \hline
-%    mov r1, 0\\sub r1, val & mov r1,val\\neg r1 \\ \hline
-%    mov si, bp\\push si & push bp \\ \hline
-%    mov r1, imm\\mov size ptr [r2], r1 & mov  size ptr [r2], imm \\ \hline
-%    mov mem1, r1\\mov r2, mem1 & mov mem1, r1\\mov r2, r1 \\ \hline
-%    mov mem1, r1\\mov r1, mem1 & mov mem1, r1 \\ \hline
-%    mov r1, val\\op r2, r1 & op r2, val \\ \hline
-%    jcond target1\\jmp target2 & jrevcond target2 \\ \hline
-%    mov r1, imm\\mov r2, size ptr [r3]\\mov size ptr [r2], r1 & mov r2, size ptr [r3]\\mov  size ptr [r2], imm \\
-%    \end{tabular}
-% \end{center}
-%    \caption {Peephole Optimizations}
-%\end{table}
 
 \begin{table}
 \centering
