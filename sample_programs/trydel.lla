@@ -1,6 +1,7 @@
 let f (x : int ref) = delete x
 
 let main =
-	let mutable a in
+	let a = new int in
 		a := 1;
-		f a
+		f a;
+		print_int !a

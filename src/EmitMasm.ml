@@ -94,8 +94,7 @@ let libFunDecl lst_lib lst_auxil =
     match lst with
       | [] -> acc
       | ("_dummy", _) :: tl -> aux tl acc
-      | ("_delete", _) :: tl -> aux tl acc   (*until someone implements them*)
-      | ("_delete_array", _) :: tl -> aux tl acc
+      | ("_delete_array", _) :: tl -> aux tl acc (* not implemented *)
       | (name, _) :: tl ->
         aux tl ((Printf.sprintf "\textrn\t %s : proc\n" ("_" ^ name)) ^ acc)
   in

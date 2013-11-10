@@ -51,12 +51,13 @@ let library_funs =
     [("a", T_Array (T_Char, D_Dim 1)); ("b", T_Array (T_Char, D_Dim 1))])
   ]
 
-
-
 let function_stack = Stack.create ()
 
-(* This entry in needed to print run time errors *)                       
-let print_string_entry = ref (Symbol.findAuxilEntry "_dummy") 
+
+
+let library_fun_entries = ref []
+
+let find_lib_fun id = List.assoc id !library_fun_entries                       
 
 let rec walk_program ls =
   initSymbolTable 10009;
@@ -64,7 +65,7 @@ let rec walk_program ls =
   let f = newFunction (id_make "_outer") None true in 
   let () = endFunctionHeader f (T_Unit) in
   let () = Stack.push f function_stack in
-  let () = List.iter insert_function library_funs in
+  let () = library_fun_entries := List.map insert_function library_funs in
   let constraints = walk_stmt_list ls in
   let () = closeScope() in
   let solved = unify constraints in
@@ -77,8 +78,8 @@ and insert_function (id, result_ty, params) =
     walk_par_list params p;
     endFunctionHeader p result_ty;
     closeScope ();
-    if (id = "print_string") then print_string_entry := p;
-    fixOffsets p
+    fixOffsets p;
+    (id, p)
 
 and walk_stmt_list ls = 
   let constraints = ref [] in 
@@ -624,4 +625,3 @@ and walk_pattom t = match t.pattom with
     let constraints = walk_pattern p in
       t.pattom_typ <- p.pattern_typ;
       constraints
-

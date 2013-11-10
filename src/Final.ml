@@ -174,8 +174,8 @@ let relOpJmp = function
   | Q_Le -> "jle" 
   | Q_G -> "jg"
   | Q_Ge -> "jge"
-  | Q_Seq -> "je"
-  | Q_Nseq -> "jne"
+  | Q_Seq | Q_Eq -> "je"
+  | Q_Nseq | Q_Neq -> "jne"
   | _ -> internal "Not a relative operator"
 
 let revertCond = function
@@ -200,8 +200,8 @@ let relOpJmpF = function
   | Q_Ge -> "jbe"
   | Q_L -> "ja"
   | Q_Le -> "jae"
-  | Q_Seq -> "je"
-  | Q_Nseq -> "jne"
+  | Q_Seq | Q_Eq -> "je"
+  | Q_Nseq | Q_Neq -> "jne"
   | _ -> internal "unconverted relop or bug"
 
 (* A function returning the result type of a function *)

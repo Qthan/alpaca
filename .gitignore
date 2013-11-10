@@ -29,3 +29,7 @@ dosbox.conf
 *.pyg
 *.*.gz
 *.toc
+/run/*
+!/run/llama.lib
+!/run/run.bat
+!/run/run.sh

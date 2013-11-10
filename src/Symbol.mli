@@ -1,3 +1,4 @@
+exception DuplicateTypeDef of string
 module H :
   sig
     type key = Identifier.id

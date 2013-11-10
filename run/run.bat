@@ -1,13 +1,13 @@
 @echo off
 
-masm /Mx /t %1.asm;
+masm /Mx %1.asm;
 if errorlevel 1 goto quit
 
-link /tiny /noignorecase %1.obj,%1.com,nul,llama.lib;
+link /noignorecase %1.obj,%1.exe,nul,llama.lib;
 if errorlevel 1 goto quitwobj
 
-call %1.com
-del %1.com
+call %1.exe
+del %1.exe
 
 :quitwobj
 del %1.obj

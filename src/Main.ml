@@ -110,6 +110,9 @@ let main =
         Printf.eprintf "Line %d: syntax error\n"
           (lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum);
         exit 1
+      | Symbol.DuplicateTypeDef ty -> 
+        error "Type %s is declared more than once" ty;
+        exit 2
       | Typeinf.UnifyError (typ1, typ2) ->
         error "Cannot match type %a with type %a" 
           pretty_typ typ1 pretty_typ typ2;

@@ -1,5 +1,0 @@
-
- Start  Stop   Length Name                   Class
- 00000H 01913H 01914H XSEG                   CODE
-
-Program entry point at 0000:0100

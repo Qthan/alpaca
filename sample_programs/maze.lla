@@ -20,12 +20,12 @@ let print_maze maze =
             print_char ' ';
 		for j = 0 to dim 2 maze -1 do
    			match !maze[i,j] with
-   			  Wall    	             -> print_char (char_of_int 178)
-   			| Empty			 -> print_char ' '
-                  | Thread                 -> print_char ' '
-                  | Path                   -> print_char '*'
-   			| Minotaurus  	       -> print_char 'M'
-		      | Theseas_InitialPos	 -> print_char 'T' 
+   			        Wall    	             -> print_char (char_of_int 178)
+   			      | Empty       			 -> print_char ' '
+                  | Thread                   -> print_char ' '
+                  | Path                     -> print_char '*'
+   			      | Minotaurus  	         -> print_char 'M'
+		          | Theseas_InitialPos  	 -> print_char 'T' 
    			end 
 		done ; 
 		print_string "\n\t " 

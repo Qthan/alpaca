@@ -59,6 +59,16 @@ let isUnit fresh_typ =
     | T_Unit -> true
     | _ -> false
 
+let failAtRuntime err_str quads = 
+  let quads1 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads in
+  let print_string_entry = Ast.find_lib_fun "print_string" in
+  let quads2 = 
+    genQuad (Q_Call, O_Empty, O_Empty, O_Entry print_string_entry) quads1 
+  in 
+  let quads3 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads2 in
+    quads3
+  
+
 let fun_stack = Stack.create ()
 
 let isTail expr = 
@@ -196,22 +206,18 @@ and gen_type_eq ty_name quads =
   let err_str = 
     "Reached unreachable point in data type equality. Internal error\n"
   in 
-  let quads8 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads7 in
-  let quads9 = 
-    genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads8 
-  in 
-  let quads10 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads9 in
-  let quads11 = backpatch quads10  (cond_info.true_lst) (Label.nextLabel ()) in
-  let quads12 = genQuad (Q_Assign, O_Bool true, O_Empty, O_Res) quads11 in
+  let quads8 = failAtRuntime err_str quads7 in
+  let quads9 = backpatch quads8  (cond_info.true_lst) (Label.nextLabel ()) in
+  let quads10 = genQuad (Q_Assign, O_Bool true, O_Empty, O_Res) quads9 in
   let the_end = Labels.makeLabelList (Label.nextLabel ()) in
-  let quads13 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads12 in
-  let quads14 = backpatch quads13 cond_info.false_lst (Label.nextLabel ()) in
-  let quads15 = genQuad (Q_Assign, O_Bool false, O_Empty, O_Res) quads14 in
-  let quads16 = backpatch quads15 the_end (Label.nextLabel ()) in
-  let quads17 =
-    genQuad (Q_Endu, O_Entry eqfun_entry, O_Empty, O_Empty) quads16 in
+  let quads11 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads10 in
+  let quads12 = backpatch quads11 cond_info.false_lst (Label.nextLabel ()) in
+  let quads13 = genQuad (Q_Assign, O_Bool false, O_Empty, O_Res) quads12 in
+  let quads14 = backpatch quads13 the_end (Label.nextLabel ()) in
+  let quads15 =
+    genQuad (Q_Endu, O_Entry eqfun_entry, O_Empty, O_Empty) quads14 in
   let _ = Stack.pop fun_stack in
-    quads17
+    quads15
 
 and gen_def_list outer lst delete_quads =
   List.fold_left (fun o l -> gen_def o l delete_quads ) outer lst
@@ -358,20 +364,63 @@ and gen_expr quads expr_node = match expr_node.expr with
           let quads4 = 
             backpatch quads3 (e2_info.next_expr) (Label.nextLabel ()) 
           in
-          let quads5 = 
-            genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads4 
+          (* check if base is negative and exponent has real part and fail if so *)
+          let baseneg = Labels.makeLabelList (Label.nextLabel ()) in
+          let quads5 =
+            genQuad (Q_L, e1_info.place, O_Float 0., O_Backpatch) quads4 
           in
-          let quads6 = 
-            genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads5 
+          let ok = Labels.makeLabelList (Label.nextLabel ()) in
+          let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in 
+          let quads7 = backpatch quads6 baseneg (Label.nextLabel ()) in
+          let tempint = newTemp T_Int (Stack.top fun_stack) false in
+          let tempfloat = newTemp T_Float (Stack.top fun_stack) false in
+          let quads8 = 
+            genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads7 
+          in
+          let quads9 = 
+            genQuad (Q_Par, tempint, O_Ret, O_Empty) quads8 
+          in
+          let intOfFloat = Ast.find_lib_fun "int_of_float" in
+          let floatOfInt = Ast.find_lib_fun "float_of_int" in
+          let quads10 = 
+            genQuad (Q_Call, O_Empty, O_Empty, O_Entry intOfFloat) quads9 
+          in
+          let quads11 = 
+            genQuad (Q_Par, tempint, O_ByVal, O_Empty) quads10
+          in
+          let quads12 =
+            genQuad (Q_Par, tempfloat, O_Ret, O_Empty) quads11 
+          in
+          let quads13 = 
+            genQuad (Q_Call, O_Empty, O_Empty, O_Entry floatOfInt) quads12 
+          in  
+          let expdec = Labels.makeLabelList (Label.nextLabel ()) in
+          let quads14 = 
+            genQuad (Q_Neq, tempfloat, e2_info.place, O_Backpatch) quads13
+          in
+          let ok = Labels.addLabel (Label.nextLabel ()) ok in
+          let quads15 = 
+            genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads14
+          in
+          let quads16 = backpatch quads15 expdec (Label.nextLabel ()) in
+          let err_str = "Complex number arised from power operation\n" in
+          let quads17 = failAtRuntime err_str quads16 in
+          let quads18 = backpatch quads17 ok (Label.nextLabel ()) in
+          
+          let quads19 = 
+            genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads18
+          in
+          let quads20 = 
+            genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads19
           in
           let temp = newTemp T_Float (Stack.top fun_stack) false in
-          let quads7 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads6 in
+          let quads21 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads20 in
           let pow_entry = Symbol.findAuxilEntry "_pow" in
-          let quads8 = 
-            genQuad (Q_Call, O_Empty, O_Empty, O_Entry pow_entry) quads7 
+          let quads22= 
+            genQuad (Q_Call, O_Empty, O_Empty, O_Entry pow_entry) quads21
           in
           let e_info = setExprInfo temp (Labels.newLabelList ()) in
-            (quads8, e_info)
+            (quads22, e_info)
         | Seq | Nseq | Eq | Neq
         | L | Le | G | Ge 
         | And | Or ->
@@ -611,14 +660,10 @@ and gen_expr quads expr_node = match expr_node.expr with
       Printf.sprintf 
         "Match failure arising from partial matching in function %s\n" 
         curr_fun_id
-    in 
-    let quads4 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads3 in
-    let quads5 = 
-      genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads4 
-    in 
-    let quads6 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads5 in
+    in
+    let quads4 = failAtRuntime err_str quads3 in 
     let expr_info = setExprInfo temp last in
-      (quads6, expr_info)
+      (quads4, expr_info)
   | E_Cid (id, l) -> 
     let constructor_size e = match e.entry_info with 
       | ENTRY_constructor c ->
@@ -838,14 +883,9 @@ and gen_cond quads expr_node = match expr_node.expr with
         "Match failure arising from partial matching in function %s\n" 
         curr_fun_id
     in 
-    let quads4 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads3 in
-    let quads5 = 
-      genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads4 
-    in 
-
-    let quads6 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads5 in
+    let quads4 = failAtRuntime err_str quads3 in
     let cond_info = setCondInfo t f in
-      (quads6, cond_info)
+      (quads4, cond_info)
   | E_Letin (def, expr) ->
     let delete_quads = ref (newQuadList ()) in
     let (funs, vars) = split_decls def in
@@ -953,7 +993,7 @@ and gen_stmt quads expr_node = match expr_node.expr with
             (quads1, setStmtInfo e_info.next_expr)
         | U_Del -> 
           let (quads1, e1_info) = gen_expr quads expr1 in
-          let delete_entry = Symbol.findAuxilEntry "_delete" in
+          let delete_entry = Symbol.findAuxilEntry "_dispose" in
           let quads2 = 
             backpatch quads1 e1_info.next_expr (Label.nextLabel ()) 
           in
@@ -1155,14 +1195,9 @@ and gen_stmt quads expr_node = match expr_node.expr with
         "Match failure arising from partial matching in function %s\n" 
         curr_fun_id
     in 
-    let quads4 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads3 in
-    let quads5 = 
-      genQuad (Q_Call, O_Empty, O_Empty, O_Entry !Ast.print_string_entry) quads4 
-    in 
-
-    let quads6 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads5 in
+    let quads4 = failAtRuntime err_str quads3 in 
     let stmt_info = setStmtInfo last in
-      (quads6, stmt_info)
+      (quads4, stmt_info)
   | E_Cid _ ->  internal "Constructors cannot be a statement"
   | E_Block e -> gen_stmt quads e
   | E_Atom a -> gen_atom_stmt quads a
@@ -1346,4 +1381,3 @@ and gen_pattom pat scrut quads =
       let cond_info = setCondInfo t f in
         (quads2, cond_info)
     | P_Pattern p -> gen_pattern p scrut quads
-

@@ -1,7 +1,11 @@
 let main = 
 	print_float ((-.2.0)**4.0);
 	print_string "\n";
-	print_float (10.0**(-.3.0));
+	print_float (2.0**4.0);
 	print_string "\n";
-	print_float (3.3**(-.1.5));
+	print_float (5.0**(3.0));
+	print_string "\n";
+	print_float ((-.10.0)**(-.3.0));
+	print_string "\n";
+	print_float (10.0**(-.3.0));
 	print_string "\n"
