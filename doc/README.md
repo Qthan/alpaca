@@ -1,5 +1,5 @@
-You can create doxumentation files for the compiler by running
+You can create documentation files for the compiler by running
 		
-		$ make doc
+	$ make doc
 
 in the src directory.
