@@ -60,6 +60,7 @@ let isUnit fresh_typ =
     | _ -> false
 
 let failAtRuntime err_str quads = 
+  let err_str = "Fatal error: " ^ err_str in
   let quads1 = genQuad (Q_Par, O_Str err_str, O_ByVal, O_Empty) quads in
   let print_string_entry = Ast.find_lib_fun "print_string" in
   let quads2 = 
@@ -149,8 +150,15 @@ and gen_type_eq ty_name quads =
           List.fold_left (fun (quads, offset, false_lst) arg_typ ->
               match arg_typ with
                 (*ignore unit, array and function equality*)
-                | T_Unit | T_Arrow _ 
                 | T_Array _ ->
+                  let err_str = "Array comparison not supported" in
+                  let quads1 = failAtRuntime err_str quads in 
+                  (quads1, offset, false_lst)
+                | T_Arrow _ ->
+                  let err_str = "Function comparison not supported" in 
+                  let quads1 = failAtRuntime err_str quads in
+                  (quads1, offset, false_lst)
+                | T_Unit ->
                   (quads, offset + (Types.sizeOfType arg_typ), false_lst)
                 | T_Id id ->
                   let arg_a = 

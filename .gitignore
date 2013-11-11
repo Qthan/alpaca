@@ -33,3 +33,6 @@ dosbox.conf
 !/run/llama.lib
 !/run/run.bat
 !/run/run.sh
+/doc/*.html
+/doc/*.css
+report/report.tex.old
