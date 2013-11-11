@@ -1,0 +1,24 @@
+type a = A of int unit (int -> int) | B of b
+and b = C of int unit int a | D of a a 
+
+
+let add1 x = x+1
+
+let add2 x = x+2
+
+let main =
+	if (A 1 (print_string "right!\n") add1) = (A 1 () add2) 
+	then 
+		print_string "correct!\n" (* here functions are not tested for equality *)
+	else 
+		print_string "incorrect!\n";
+	if (B (C 1 () 4 (A 4 () add1))) <> (B (C 1 () 4 (A 4 () add2))) 
+	then
+		print_string "incorrect!\n"
+	else
+		 print_string "correct!\n";
+	if (D (A 1 () add1) (A 2 () add1)) = (D (A 1 () add1) (B (D (A 1 () add1) (A 1 () add2))))
+	then
+		print_string "incorrect!\n"
+	else
+		 print_string "correct!\n"
