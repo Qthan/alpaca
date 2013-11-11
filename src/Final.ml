@@ -403,7 +403,7 @@ let loadFunEnv r e instr_lst =
     | O_Deref op ->
       let instr_lst1 = load Di op instr_lst in
       let instr_lst2 = 
-        genInstr (Mov (Reg r, Pointer (Word, Reg Di, 0))) instr_lst1 
+        genInstr (Mov (Reg r, Pointer (Word, Reg Di, word_size))) instr_lst1 
       in
         instr_lst2
     | _ -> internal "Only entry or deref can be fun"
@@ -441,7 +441,7 @@ let loadFunCode r e instr_lst =
     | O_Deref op ->
       let instr_lst1 = load Di op instr_lst in
       let instr_lst2 = 
-        genInstr (Mov (Reg r, Pointer (Word, Reg Di, word_size))) instr_lst1 
+        genInstr (Mov (Reg r, Pointer (Word, Reg Di, 0))) instr_lst1 
       in
         instr_lst2
     | _ -> internal "Only entry or deref can be fun"    

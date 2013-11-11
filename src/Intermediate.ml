@@ -67,7 +67,7 @@ let failAtRuntime err_str quads =
   in 
   let quads3 = genQuad (Q_Fail, O_Empty, O_Empty, O_Empty) quads2 in
     quads3
-  
+
 
 let fun_stack = Stack.create ()
 
@@ -147,51 +147,65 @@ and gen_type_eq ty_name quads =
         let (quads4, _, res_f) =
           (* Argument iteration *)
           List.fold_left (fun (quads, offset, false_lst) arg_typ ->
-              let arg_a = newTemp (T_Ref arg_typ) (Stack.top fun_stack) false in
-              let arg_b = newTemp (T_Ref arg_typ) (Stack.top fun_stack) false in
-              let quads1 =
-                genQuad (Q_Constr, O_Entry a, O_Int offset, arg_a) quads in
-              let quads2 =
-                genQuad (Q_Constr, O_Entry b, O_Int offset, arg_b) quads1 in
-                match arg_typ with
-                  | T_Id id ->
-                    let result = newTemp (T_Bool) (Stack.top fun_stack) false in
-                    let argtyp_entry = Symbol.lookupUdt (id_make id) in
-                    let eqfun_entry = Symbol.getEqFun argtyp_entry in
-                    (* Recursive equality check for arguments *)
-                    let quads3 = 
-                      genQuad (Q_Par, O_Deref arg_a, O_ByVal, O_Empty) quads2 in
-                    let quads4 = 
-                      genQuad (Q_Par, O_Deref arg_b, O_ByVal, O_Empty) quads3 in
-                    let quads5 =
-                      genQuad (Q_Par, result, O_Ret, O_Empty) quads4 in
-                    let quads6 =
-                      genQuad (Q_Call, O_Empty, O_Empty, O_Entry eqfun_entry)
-                        quads5 in
-                    let argeq_t = Labels.makeLabelList (Label.nextLabel ()) in
-                    let quads7 =
-                      genQuad (Q_Ifb, result, O_Empty, O_Backpatch) quads6 in
-                    let argeq_f = Labels.makeLabelList (Label.nextLabel ()) in
-                    let quads8 =
-                      genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads7 in
-                    let quads9 = 
-                      backpatch quads8 argeq_t (Label.nextLabel ()) 
-                    in
-                    let false_lst = Labels.mergeLabels false_lst argeq_f in
-                      (quads9, offset + (Types.sizeOfType arg_typ), false_lst)
-                  | typ ->
-                    let argeq_t = Labels.makeLabelList (Label.nextLabel ()) in
-                    let quads3 =
-                      genQuad (Q_Seq, O_Deref arg_a, O_Deref arg_b, O_Backpatch)
-                        quads2 in
-                    let argeq_f = Labels.makeLabelList (Label.nextLabel ()) in
-                    let quads4 =
-                      genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads3 in
-                    let quads5 = 
-                      backpatch quads4 argeq_t (Label.nextLabel ()) 
-                    in
-                    let false_lst = Labels.mergeLabels false_lst argeq_f in
-                      (quads5, offset + (Types.sizeOfType arg_typ), false_lst)
+              match arg_typ with
+                (*ignore unit, array and function equality*)
+                | T_Unit | T_Arrow _ 
+                | T_Array _ ->
+                  (quads, offset + (Types.sizeOfType arg_typ), false_lst)
+                | T_Id id ->
+                  let arg_a = 
+                    newTemp (T_Ref arg_typ) (Stack.top fun_stack) false in
+                  let arg_b 
+                    = newTemp (T_Ref arg_typ) (Stack.top fun_stack) false in
+                  let quads1 =
+                    genQuad (Q_Constr, O_Entry a, O_Int offset, arg_a) quads in
+                  let quads2 =
+                    genQuad (Q_Constr, O_Entry b, O_Int offset, arg_b) quads1 in
+                  let result = newTemp (T_Bool) (Stack.top fun_stack) false in
+                  let argtyp_entry = Symbol.lookupUdt (id_make id) in
+                  let eqfun_entry = Symbol.getEqFun argtyp_entry in
+                  (* Recursive equality check for arguments *)
+                  let quads3 = 
+                    genQuad (Q_Par, O_Deref arg_a, O_ByVal, O_Empty) quads2 in
+                  let quads4 = 
+                    genQuad (Q_Par, O_Deref arg_b, O_ByVal, O_Empty) quads3 in
+                  let quads5 =
+                    genQuad (Q_Par, result, O_Ret, O_Empty) quads4 in
+                  let quads6 =
+                    genQuad (Q_Call, O_Empty, O_Empty, O_Entry eqfun_entry)
+                      quads5 in
+                  let argeq_t = Labels.makeLabelList (Label.nextLabel ()) in
+                  let quads7 =
+                    genQuad (Q_Ifb, result, O_Empty, O_Backpatch) quads6 in
+                  let argeq_f = Labels.makeLabelList (Label.nextLabel ()) in
+                  let quads8 =
+                    genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads7 in
+                  let quads9 = 
+                    backpatch quads8 argeq_t (Label.nextLabel ()) 
+                  in
+                  let false_lst = Labels.mergeLabels false_lst argeq_f in
+                    (quads9, offset + (Types.sizeOfType arg_typ), false_lst)
+                | typ ->
+                  let arg_a = 
+                    newTemp (T_Ref arg_typ) (Stack.top fun_stack) false in
+                  let arg_b = 
+                    newTemp (T_Ref arg_typ) (Stack.top fun_stack) false in
+                  let quads1 =
+                    genQuad (Q_Constr, O_Entry a, O_Int offset, arg_a) quads in
+                  let quads2 =
+                    genQuad (Q_Constr, O_Entry b, O_Int offset, arg_b) quads1 in
+                  let argeq_t = Labels.makeLabelList (Label.nextLabel ()) in
+                  let quads3 =
+                    genQuad (Q_Seq, O_Deref arg_a, O_Deref arg_b, O_Backpatch)
+                      quads2 in
+                  let argeq_f = Labels.makeLabelList (Label.nextLabel ()) in
+                  let quads4 =
+                    genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads3 in
+                  let quads5 = 
+                    backpatch quads4 argeq_t (Label.nextLabel ()) 
+                  in
+                  let false_lst = Labels.mergeLabels false_lst argeq_f in
+                    (quads5, offset + (Types.sizeOfType arg_typ), false_lst)
             ) (quads3, Types.tag_size, Labels.newLabelList ()) c_args
         in
         let res_t = Labels.makeLabelList (Label.nextLabel ()) in
@@ -288,15 +302,22 @@ and gen_def quads def_node delete_quads =
       | D_Mut (id, _) -> 
         let typ = lookup_res_type (Some entry) in
         let size = sizeOfElement typ in
-        let new_entry = Symbol.findAuxilEntry "_new" in
-        let temp = newTemp (T_Ref typ) (Stack.top fun_stack) false in
-        let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
-        let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
-        let quads3 = 
-          genQuad (Q_Call, O_Empty, O_Empty, O_Entry new_entry) quads2 
-        in
-        let quads4 = genQuad (Q_Assign, temp, O_Empty , O_Entry entry) quads3 in
-          quads4
+        if typ = (T_Ref T_Unit) then (* if is unit do nothing! *)
+          quads
+        else
+          begin
+            let new_entry = Symbol.findAuxilEntry "_new" in
+            let temp = newTemp typ (Stack.top fun_stack) false in
+            let quads1 = genQuad (Q_Par, O_Int size, O_ByVal, O_Empty) quads in
+            let quads2 = genQuad (Q_Par, temp, O_Ret, O_Empty) quads1 in
+            let quads3 = 
+              genQuad (Q_Call, O_Empty, O_Empty, O_Entry new_entry) quads2 
+            in
+            let quads4 = 
+              genQuad (Q_Assign, temp, O_Empty , O_Entry entry) quads3 
+            in
+              quads4
+          end
       | D_Array (id, _, lst)  -> 
         let rec gen_array_dims lst quads =
           match lst with
@@ -406,7 +427,7 @@ and gen_expr quads expr_node = match expr_node.expr with
           let err_str = "Complex number arised from power operation\n" in
           let quads17 = failAtRuntime err_str quads16 in
           let quads18 = backpatch quads17 ok (Label.nextLabel ()) in
-          
+
           let quads19 = 
             genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads18
           in
@@ -591,7 +612,7 @@ and gen_expr quads expr_node = match expr_node.expr with
     let (quads8, expr3_info) = gen_expr quads7 expr3 in
     let quads9 = backpatch quads8 expr3_info.next_expr (Label.nextLabel ()) in
     let quads10 = genQuad(Q_Assign, expr3_info.place, O_Empty, temp) quads9 in
-      (quads10, setExprInfo temp next)
+      (quads10, setExprInfo temp next )
   | E_Letin (def, expr) ->
     let delete_quads = ref (newQuadList ()) in
     let (funs, vars) = split_decls def in
@@ -693,22 +714,33 @@ and gen_expr quads expr_node = match expr_node.expr with
     let (quads6, temps) = 
       List.fold_left 
         (fun (quads, offset) a ->
-           let (quads1, a_info) = gen_atom quads a in
-           let quads2 = 
-             backpatch quads1 a_info.next_expr (Label.nextLabel ()) 
-           in
            let fresh_ty = a.atom_typ in
            let atom_ty = Typeinf.lookup_solved fresh_ty in
-           let atom_temp = 
-             newTemp (T_Ref atom_ty) (Stack.top fun_stack) false 
-           in
-           let quads3 = 
-             genQuad (Q_Constr, temp, O_Int offset, atom_temp) quads2 
-           in
-           let quads4 = 
-             genQuad (Q_Assign, a_info.place, O_Empty, O_Deref atom_temp) quads3 
-           in
-             (quads4, offset + (sizeOfType atom_ty))
+             if (isUnit atom_ty) then 
+               begin
+                 let (quads1, a_info) = gen_atom_stmt quads a in
+                 let quads2 = 
+                   backpatch quads1 a_info.next_stmt (Label.nextLabel ()) 
+                 in
+                   (quads2, offset + (sizeOfType atom_ty))
+               end 
+             else
+               begin
+                 let (quads1, a_info) = gen_atom quads a in
+                 let quads2 = 
+                   backpatch quads1 a_info.next_expr (Label.nextLabel ()) 
+                 in
+                 let atom_temp = 
+                   newTemp (T_Ref atom_ty) (Stack.top fun_stack) false 
+                 in
+                 let quads3 = 
+                   genQuad (Q_Constr, temp, O_Int offset, atom_temp) quads2 
+                 in
+                 let quads4 = 
+                   genQuad (Q_Assign, a_info.place, O_Empty, O_Deref atom_temp) quads3 
+                 in
+                   (quads4, offset + (sizeOfType atom_ty))
+               end
         )
         (quads5, Types.tag_size) l
     in
@@ -725,76 +757,120 @@ and gen_cond quads expr_node = match expr_node.expr with
         | Seq | Nseq as oper ->
           let fresh_typ = expr1.expr_typ in
           let typ = Typeinf.lookup_solved fresh_typ in
-          let (quads1, e1_info) = gen_expr quads expr1 in
-          let quads2 = 
-            backpatch quads1 e1_info.next_expr (Label.nextLabel ()) in
-          let (quads3, e2_info) = gen_expr quads2 expr2 in
-          let quads4 = 
-            backpatch quads3 e2_info.next_expr (Label.nextLabel ()) in
-            (match typ with 
-              | T_Id id ->
-                let u_entry = Symbol.lookupUdt (id_make id) in
-                let eq_fun = Symbol.getEqFun u_entry in
-                let res = newTemp T_Bool (Stack.top fun_stack) false in
-                let quads5 =
-                  genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads4 in
-                let quads6 =
-                  genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads5 in
-                let quads7 =
-                  genQuad (Q_Par, res, O_Ret, O_Empty) quads6 in
-                let quads8 =
-                  genQuad (Q_Call, O_Empty, O_Empty, O_Entry eq_fun) quads7 in
-                let t = Labels.makeLabelList (Label.nextLabel ()) in
-                let quads9 =
-                  genQuad (Q_Ifb, res, O_Empty, O_Backpatch) quads8 in
-                let f = Labels.makeLabelList (Label.nextLabel ()) in
-                let quads10 =
-                  genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads9 in
-                let cond_info = match oper with
-                  | Seq -> setCondInfo t f
-                  | Nseq -> setCondInfo f t
+          if (isUnit typ) then
+            begin
+              let (quads1, s1_info) = gen_stmt quads expr1 in
+              let quads2 = 
+                backpatch quads1 s1_info.next_stmt (Label.nextLabel ()) 
+              in
+              let (quads3, s2_info) = gen_stmt quads2 expr2 in
+              let quads4 = 
+                backpatch quads3 s2_info.next_stmt (Label.nextLabel ()) 
+              in
+              let cond_lst = Labels.makeLabelList (Label.nextLabel ()) in
+              let quads5 = 
+                genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 
+              in
+                match oper with
+                  | Seq -> 
+                    (quads5, setCondInfo cond_lst (Labels.newLabelList ()))
+                  | Nseq -> 
+                    (quads5, setCondInfo (Labels.newLabelList ()) cond_lst)
                   | _ -> internal "Only structural eq/neq is supported"
-                in
-                  (quads10, cond_info)
-              | typ ->
-                let t = Labels.makeLabelList (Label.nextLabel ()) in
-                let quads5 =
-                  genQuad 
-                    (getQuadBop oper, e1_info.place, e2_info.place, O_Backpatch) 
-                    quads4
-                in
-                let f = Labels.makeLabelList (Label.nextLabel ()) in
-                let quads6 = 
-                  genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 
-                in
-                let cond_info = setCondInfo t f in
-                  (quads6, cond_info) )
+            end
+          else
+            begin
+              let (quads1, e1_info) = gen_expr quads expr1 in
+              let quads2 = 
+                backpatch quads1 e1_info.next_expr (Label.nextLabel ()) in
+              let (quads3, e2_info) = gen_expr quads2 expr2 in
+              let quads4 =
+                backpatch quads3 e2_info.next_expr (Label.nextLabel ()) in
+                (match typ with 
+                  | T_Id id ->
+                    let u_entry = Symbol.lookupUdt (id_make id) in
+                    let eq_fun = Symbol.getEqFun u_entry in
+                    let res = newTemp T_Bool (Stack.top fun_stack) false in
+                    let quads5 =
+                      genQuad (Q_Par, e1_info.place, O_ByVal, O_Empty) quads4 in
+                    let quads6 =
+                      genQuad (Q_Par, e2_info.place, O_ByVal, O_Empty) quads5 in
+                    let quads7 =
+                      genQuad (Q_Par, res, O_Ret, O_Empty) quads6 in
+                    let quads8 =
+                      genQuad (Q_Call, O_Empty, O_Empty, O_Entry eq_fun) quads7 
+                    in
+                    let t = Labels.makeLabelList (Label.nextLabel ()) in
+                    let quads9 =
+                      genQuad (Q_Ifb, res, O_Empty, O_Backpatch) quads8 in
+                    let f = Labels.makeLabelList (Label.nextLabel ()) in
+                    let quads10 =
+                      genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads9 in
+                    let cond_info = match oper with
+                      | Seq -> setCondInfo t f
+                      | Nseq -> setCondInfo f t
+                      | _ -> internal "Only structural eq/neq is supported"
+                    in
+                      (quads10, cond_info)
+                  | typ ->
+                    let t = Labels.makeLabelList (Label.nextLabel ()) in
+                    let quads5 =
+                      genQuad 
+                        (getQuadBop oper, e1_info.place, 
+                         e2_info.place, O_Backpatch) quads4
+                    in
+                    let f = Labels.makeLabelList (Label.nextLabel ()) in
+                    let quads6 = 
+                      genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 
+                    in
+                    let cond_info = setCondInfo t f in
+                      (quads6, cond_info) )
+            end
         | Eq | Neq | L 
         | Le | G | Ge as oper ->
           let fresh_typ = expr1.expr_typ in
           let typ = Typeinf.lookup_solved fresh_typ in
-          let () = match typ with
-            | T_Arrow _ | T_Array _ ->
-              internal "this must not occur, it is checked int type inf";
-            | _ -> ()
-          in
-          let (quads1, e1_info) = gen_expr quads expr1 in
-          let quads2 = 
-            backpatch quads1 e1_info.next_expr (Label.nextLabel ()) 
-          in
-          let (quads3, e2_info) = gen_expr quads2 expr2 in
-          let quads4 = 
-            backpatch quads3 e2_info.next_expr (Label.nextLabel ()) 
-          in
-          let t = Labels.makeLabelList (Label.nextLabel ()) in
-          let quads5 = 
-            genQuad (getQuadBop oper, e1_info.place, e2_info.place, O_Backpatch) 
-              quads4
-          in
-          let f = Labels.makeLabelList (Label.nextLabel ()) in
-          let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in
-          let cond_info = setCondInfo t f in
-            (quads6, cond_info)
+          if (isUnit typ) then 
+            begin
+              let (quads1, s1_info) = gen_stmt quads expr1 in
+              let quads2 = 
+                backpatch quads1 s1_info.next_stmt (Label.nextLabel ()) 
+              in
+              let (quads3, s2_info) = gen_stmt quads2 expr2 in
+              let quads4 = 
+                backpatch quads3 s2_info.next_stmt (Label.nextLabel ()) 
+              in
+              let cond_lst = Labels.makeLabelList (Label.nextLabel ()) in
+              let quads5 = 
+                genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads4 
+              in
+                match oper with
+                  | Eq -> 
+                    (quads5, setCondInfo cond_lst (Labels.newLabelList ()))
+                  | Neq -> 
+                    (quads5, setCondInfo (Labels.newLabelList ()) cond_lst)
+                  | _ -> internal "Only physical eq/neq is supported"
+            end
+          else
+            begin
+              let (quads1, e1_info) = gen_expr quads expr1 in
+              let quads2 = 
+                backpatch quads1 e1_info.next_expr (Label.nextLabel ()) 
+              in
+              let (quads3, e2_info) = gen_expr quads2 expr2 in
+              let quads4 = 
+                backpatch quads3 e2_info.next_expr (Label.nextLabel ()) 
+              in
+              let t = Labels.makeLabelList (Label.nextLabel ()) in
+              let quads5 = 
+                genQuad (getQuadBop oper, e1_info.place, e2_info.place, O_Backpatch) 
+                  quads4
+              in
+              let f = Labels.makeLabelList (Label.nextLabel ()) in
+              let quads6 = genQuad (Q_Jump, O_Empty, O_Empty, O_Backpatch) quads5 in
+              let cond_info = setCondInfo t f in
+                (quads6, cond_info)
+            end
         | And -> 
           let (quads1, c1_info) = gen_cond quads expr1 in
           let quads2 = backpatch quads1 c1_info.true_lst (Label.nextLabel ()) in
@@ -920,6 +996,7 @@ and gen_cond quads expr_node = match expr_node.expr with
           let cond_info = setCondInfo true_lst false_lst in
             (quads2, cond_info)
         | A_Bang banged -> 
+          (* No need to check for unit because it is condition *)
           let (quads1, expr_info) = gen_atom quads a in   
           let quads2 = 
             backpatch quads1 (expr_info.next_expr) (Label.nextLabel ()) 
@@ -963,16 +1040,20 @@ and gen_stmt quads expr_node = match expr_node.expr with
           let (quads3, stmt2_info) = gen_stmt quads2 expr2 in
             (quads3, stmt2_info)
         | Assign        -> 
-          let (quads1, expr1_info) = gen_expr quads expr1 in
-          let quads2 = 
-            backpatch quads1 expr1_info.next_expr (Label.nextLabel ()) 
-          in
             if (isUnit expr2.expr_typ) 
             then
+              let (quads1, stmt1_info) = gen_stmt quads expr1 in
+              let quads2 = 
+                backpatch quads1 stmt1_info.next_stmt (Label.nextLabel ()) 
+              in
               let (quads3, s_info) = gen_stmt quads2 expr2 in
               let n = s_info.next_stmt in
-                (quads2, setStmtInfo n)
+                (quads3, setStmtInfo n)
             else
+              let (quads1, expr1_info) = gen_expr quads expr1 in
+              let quads2 = 
+                backpatch quads1 expr1_info.next_expr (Label.nextLabel ()) 
+              in
               let (quads3, expr2_info) = gen_expr quads2 expr2 in
               let quads4 = 
                 backpatch quads3 expr2_info.next_expr (Label.nextLabel ()) 
@@ -1198,7 +1279,10 @@ and gen_stmt quads expr_node = match expr_node.expr with
     let quads4 = failAtRuntime err_str quads3 in 
     let stmt_info = setStmtInfo last in
       (quads4, stmt_info)
-  | E_Cid _ ->  internal "Constructors cannot be a statement"
+  | E_Cid _ ->  
+    let (quads1, e1_info) = gen_expr quads expr_node in
+    let s_info = setStmtInfo (e1_info.next_expr) in 
+      (quads1, s_info)
   | E_Block e -> gen_stmt quads e
   | E_Atom a -> gen_atom_stmt quads a
   | E_None -> internal "Dummy expression, must have been removed"
@@ -1238,6 +1322,7 @@ and gen_atom quads atom_node = match atom_node.atom with
       (quads, setExprInfo place (Labels.newLabelList ()))
   | A_Par -> internal "Reached unreachable point. Unit in gen_atom.\n"
   | A_Bang a -> 
+    (* No need to check for unit because it is expression *)
     let (quads1, expr_info) = gen_atom quads a in   
     let fresh_typ = a.atom_typ in
     let typ = Typeinf.lookup_solved fresh_typ  in
@@ -1280,15 +1365,35 @@ and gen_atom quads atom_node = match atom_node.atom with
 
 and gen_atom_stmt quads atom_node = match atom_node.atom with
   | A_Num _ | A_Dec _ | A_Str _
-  | A_Chr _ | A_Bool _ | A_Array _ -> 
-    internal "non unit expressions called from atom_stmt"
+  | A_Chr _ | A_Bool _ ->
+    (quads, setStmtInfo (Labels.newLabelList ()))
+  | A_Array (id, expr_list) -> 
+    let fresh_typ = atom_node.atom_typ in
+    let typ = Typeinf.lookup_solved fresh_typ  in
+    if typ = (T_Ref T_Unit) then 
+      begin
+        let quads1 = 
+          List.fold_left 
+            (fun quads e ->
+               let (quads1, e_info1) = gen_stmt quads e in
+               let quads2 = 
+                 backpatch quads1 e_info1.next_stmt (Label.nextLabel ()) 
+               in
+                 quads2
+            )
+            quads expr_list
+        in
+          (quads1, setStmtInfo (Labels.newLabelList ()))
+      end
+    else
+      let (quads1, atom_info) = gen_atom quads atom_node in
+        (quads1, setStmtInfo (atom_info.next_expr))
   | A_Par | A_Var _ -> (quads, setStmtInfo (Labels.newLabelList ()))
   | A_Expr e -> gen_stmt quads e
   | A_Bang a -> 
-    let (quads1, expr_info) = gen_atom quads a in   
-    let n = expr_info.next_expr in
-      (quads1, setStmtInfo n)
-  | A_Cid _ -> internal "Constructors cannot be a statement"
+    gen_atom_stmt quads a
+  | A_Cid _ -> 
+    (quads, setStmtInfo (Labels.newLabelList ()))
   | A_None -> internal "Dummy atom, must have been removed"
 
 and gen_pattern pat scrut quads =
@@ -1309,18 +1414,23 @@ and gen_pattern pat scrut quads =
         List.fold_left (fun (quads, offset, t, f) patt ->
             let fresh_ty = patt.pattom_typ in
             let ty = Typeinf.lookup_solved fresh_ty in
-            let reftemp = newTemp (T_Ref ty) (Stack.top fun_stack) false in
-            let temp = newTemp ty (Stack.top fun_stack) false in
-            let quads1 = backpatch quads t (Label.nextLabel ()) in
-            let quads2 = 
-              genQuad (Q_Constr, scrut, O_Int offset, reftemp) quads1 
-            in
-            let quads3 = 
-              genQuad (Q_Assign, O_Deref reftemp, O_Empty, temp) quads2 
-            in
-            let (quads4, cond_info) = gen_pattom patt temp quads3 in
-            let f = Labels.mergeLabels f cond_info.false_lst in
-              (quads4, offset + (sizeOfType ty), cond_info.true_lst, f) 
+              if (isUnit ty) then
+                (quads, offset + (sizeOfType ty), t, f)
+              else
+                begin
+                  let reftemp = newTemp (T_Ref ty) (Stack.top fun_stack) false in
+                  let temp = newTemp ty (Stack.top fun_stack) false in
+                  let quads1 = backpatch quads t (Label.nextLabel ()) in
+                  let quads2 = 
+                    genQuad (Q_Constr, scrut, O_Int offset, reftemp) quads1 
+                  in
+                  let quads3 = 
+                    genQuad (Q_Assign, O_Deref reftemp, O_Empty, temp) quads2 
+                  in
+                  let (quads4, cond_info) = gen_pattom patt temp quads3 in
+                  let f = Labels.mergeLabels f cond_info.false_lst in
+                    (quads4, offset + (sizeOfType ty), cond_info.true_lst, f)
+                end
           ) (quads2, tag_size, t, f) l
       in
       let cond_info = setCondInfo t f in
