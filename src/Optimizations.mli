@@ -28,7 +28,6 @@ module FS :
     val max_elt : t -> elt
     val choose : t -> elt
     val split : elt -> t -> t * bool * t
-    val find : elt -> t -> elt
   end
 val do_opt : (Cfg.CFG.vblock -> Cfg.CFG.vblock) -> bool -> Cfg.G.t -> Cfg.G.t
 val removable_temp : Quads.quad -> Quads.quad -> bool
