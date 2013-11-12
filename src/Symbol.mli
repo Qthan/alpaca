@@ -80,6 +80,7 @@ val setLibraryFunction : SymbTypes.entry -> unit
 val isLibraryFunction : SymbTypes.entry -> bool
 val getFunctionLabel : SymbTypes.entry -> int
 val setFunctionLabel : SymbTypes.entry -> int -> unit
+val isFunction : SymbTypes.entry -> bool
 val getTag : SymbTypes.entry -> int
 val getEqFun : SymbTypes.entry -> SymbTypes.entry
 val isTemporary : SymbTypes.entry -> bool

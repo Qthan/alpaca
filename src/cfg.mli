@@ -47,6 +47,7 @@ module Blocks :
       f_endu              : SymbTypes.entry option;
       cur_fun             : SymbTypes.entry option;
       entry_block         : bool;
+      mutable protected   : SymbTypes.entry option;
       mutable block_index : int
       }
   type block_elt = block_info * LS.t * bblock 
@@ -54,6 +55,7 @@ module Blocks :
       {!Blocks.block_info}, a set {!Cfg.LabelSet.t} with the labels of the 
       quads in the block and finally the block of quads. *)
     type blocks = block_elt list
+    val counter : int ref 
     val create_blocks : bblock -> blocks
     (** [create_blocks q] takes a list of {!Quads.quad} [[q1; ...;qn]]
        and creates the basic blocks as defined by type {!blocks}. *)
@@ -156,6 +158,7 @@ module CFG :
     val create_cfg : Quads.quad list -> cfg
     val print_vertices : G.t -> unit
     val print_edges : G.t -> unit
+    val safe_find_unit : vblock list -> SymbTypes.entry -> vblock option
     val quads_of_cfg : G.t -> Quads.quad list
   end
 

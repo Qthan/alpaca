@@ -12,8 +12,8 @@ type config = {
 }
 
 type files = {
-  cin    : Pervasives.in_channel;
-  cout   : Pervasives.out_channel;
+  cin    : Pervasives.in_channel lazy_t;
+  cout   : Pervasives.out_channel lazy_t;
   cgraph : Pervasives.out_channel lazy_t
 }
 
@@ -39,8 +39,8 @@ let open_files () =
         let files =
           try
             let chopped = Filename.chop_extension name in
-              { cin = open_in name;
-                cout = open_out (chopped ^ out_ext);
+              { cin = lazy (open_in name);
+                cout = lazy (open_out (chopped ^ out_ext));
                 cgraph = lazy (open_out_bin (chopped ^ ".dot"))
               }
           with
@@ -53,8 +53,8 @@ let open_files () =
         in
           files
       | None ->
-        { cin = stdin; 
-          cout = open_out ("a" ^ out_ext);
+        { cin = lazy stdin; 
+          cout = lazy (open_out ("a" ^ out_ext));
           cgraph = lazy (open_out_bin "a.dot")
         }
 
@@ -75,7 +75,7 @@ let read_args () =
 let main =
   let () = read_args () in
   let files = open_files () in
-  let lexbuf = Lexing.from_channel files.cin in
+  let lexbuf = Lexing.from_channel (force files.cin) in
     try
       let ast = Parser.program Lexer.lexer lexbuf in
       let (solved, outer_entry, library_funs) = Ast.walk_program ast in
@@ -92,7 +92,8 @@ let main =
         let ir = Cfg.CFG.quads_of_cfg cfg in
         let () =  match default_config.quads with
           | true -> 
-            Quads.printQuads (Format.formatter_of_out_channel files.cout) ir
+              let chan = (Format.formatter_of_out_channel (force files.cout)) in 
+            Quads.printQuads chan ir
           | false -> 
             let final = CodeGen.codeGen ir outer_entry in
             let final = match default_config.opt with
@@ -102,7 +103,7 @@ let main =
                 final
             in
             let asm = EmitMasm.emit final library_funs in
-              Printf.fprintf files.cout "%s" asm;
+              Printf.fprintf (force files.cout) "%s" asm;
         in
           exit 0
     with 
@@ -129,7 +130,7 @@ let main =
         exit 2
       | Typeinf.UnsolvedTyVar tvar ->
         error "Unsolved type variable, \
-               possibly arising from an unsed polymphic type"
+               possibly arising from an unsed polymorphic type"
       | Typeinf.UnsolvedDimVar tvar ->
         error "Unsolved dimension variable, possibly arising from \
                the use of an array with unspecified dimensions"

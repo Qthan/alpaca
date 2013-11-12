@@ -57,7 +57,7 @@ let addUdt id entry =
     raise (DuplicateTypeDef (id_name id))
   else
     H.add udt_table id entry 
-    
+
 let lookupUdt id = H.find udt_table id
 
 (* Functions for debugging symbol table *)
@@ -614,6 +614,11 @@ let setFunctionLabel e v =
   match e.entry_info with
     | ENTRY_function f -> f.function_label <- v
     | _ -> internal "Entry not a function"
+
+let isFunction e = 
+  match e.entry_info with
+    | ENTRY_function _ -> true
+    | _ -> false
 
 (* Getters for UDT entries *)
 let getTag e = 

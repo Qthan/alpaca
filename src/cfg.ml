@@ -23,6 +23,7 @@ struct
       f_endu              : SymbTypes.entry option;
       cur_fun             : SymbTypes.entry option;
       entry_block         : bool;
+      mutable protected   : SymbTypes.entry option;
       mutable block_index : int
     }
 
@@ -51,6 +52,10 @@ struct
     | Q_Ge | Q_Seq | Q_Nseq
     | Q_Eq | Q_Neq -> true
     | _ -> false
+
+  and is_function = function
+      O_Entry f -> Symbol.isFunction f
+    | _ -> false 
 
   let counter = ref 0
 
@@ -84,6 +89,7 @@ struct
             f_endu = new_end;
             cur_fun = cur_info.cur_fun;
             entry_block = false;
+            protected = None;
             block_index = 0
           }
         in
@@ -103,6 +109,7 @@ struct
             f_endu = None;
             cur_fun = Some new_fun;
             entry_block = is_entry;
+            protected = None;
             block_index = 0
           }
         in
@@ -122,6 +129,7 @@ struct
             f_endu = None;
             cur_fun = cur_info.cur_fun;
             entry_block = false;
+            protected = None;
             block_index = 0
           }
         in
@@ -133,6 +141,14 @@ struct
       | q :: qs when (new_flow q.operator = false) ->
         let cur_set1 = LS.add q.label cur_set in
         let cur_block1 = q :: cur_block in
+          if (q.operator = Q_Assign) && is_function q.arg1 then
+            begin
+              let entry = match q.arg1 with
+                  O_Entry e -> Some e
+                | _ -> internal "not a function"
+              in
+                cur_info.protected <- entry 
+            end;
           create_blocks_aux qs (cur_info, cur_set1, cur_block1) acc
       | q :: qs when (new_flow q.operator = true) ->
         let new_set = LS.empty in
@@ -144,6 +160,7 @@ struct
             f_endu = None;
             cur_fun = cur_info.cur_fun;
             entry_block = false;
+            protected = None;
             block_index = 0
           }
         in
@@ -154,7 +171,7 @@ struct
                   but this function is not well-tested :)"
 
   let index_blocks blocks =
-    iteri (fun i (info, _, _) -> info.block_index <- (i+1)) blocks
+    iteri (fun i (info, _, _) -> info.block_index <- (i+1); incr counter) blocks
 
   let create_blocks quads =
     let cur_info =
@@ -163,6 +180,7 @@ struct
         f_endu = None;
         cur_fun = None;
         entry_block = false;
+        protected = None;
         block_index = 0
       }
     in
@@ -266,6 +284,23 @@ struct
         in
           add_edge acc v1 v2) cfg cfg_unreachable in
       cfg
+
+  (* won't crash if not found *)
+  let safe_find_unit vertices e =
+    let module B = Blocks in
+    let vertex = 
+      try
+        Some (B.find (fun (f_info, _, _) ->
+            match B.(f_info.f_unit) with
+                None -> false
+              | Some f -> Symbol.entry_eq e f) vertices)
+      with
+          Not_found ->
+          None
+    in
+      vertex
+
+
 
 
 

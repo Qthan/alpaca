@@ -50,10 +50,13 @@ let remove_temps (info, s, b) =
 (* DFS *)
 let unreachable cfg =
   let entry_ref = ref None in
-  let vertices = CFG.fold_vertex (fun ((i, s, b) as v) acc ->
-      if Blocks.(i.entry_block) then 
-        entry_ref := Some v;
-      v :: acc) cfg [] in
+  let (vertices, protected) = 
+    CFG.fold_vertex (fun ((i, s, b) as v) (acc1, acc2) ->
+        if Blocks.(i.entry_block) then 
+          entry_ref := Some v;
+        match Blocks.(i.protected) with
+          | Some e -> (v :: acc1, v :: acc2)
+          | None -> (v :: acc1, acc2) ) cfg ([], []) in
   let entry_vert = match !entry_ref with
       None -> internal "No entry block"
     | Some v -> v
@@ -71,12 +74,50 @@ let unreachable cfg =
           search (unexplored @ vs) (v :: visited)
   in
   let reachable = search [entry_vert] [] in
-    List.fold_left (fun acc (i, s, b) as v -> 
+  let (reachable_cfg, reachable_vert) = 
+    List.fold_left (fun (acc1, acc2) (i, s, b) as v -> 
         if not (List.exists (fun r -> V.equal r v) reachable) 
         then 
-          CFG.remove_vertex acc v
+          (CFG.remove_vertex acc1 v, acc2)
         else
-          acc) cfg vertices 
+          (acc1, v :: acc2)) (cfg, []) vertices
+  in
+  (* adding function declarations required by protected blocks *)
+  let (opt_cfg, _) = 
+    List.fold_left (fun (cfg, new_reach) (i, s, b) ->
+        match Blocks.(i.protected) with
+          | None -> (cfg, new_reach)
+          | Some f_unit ->
+            (match CFG.safe_find_unit new_reach f_unit with
+                Some v -> (cfg, new_reach)
+              | None -> (* create a new block with dummy code *)
+                let index = Blocks.counter in
+                let block_info = 
+                  Blocks.({ f_unit = Some f_unit;
+                            f_endu = Some f_unit;
+                            cur_fun = Some f_unit;
+                            entry_block = false;
+                            protected = None;
+                            block_index = (incr index; !index)
+                          })
+                in
+                let quad_lst = Quads.newQuadList () in
+                let quad = 
+                  Quads.(Q_Unit, O_Entry f_unit, O_Empty, O_Empty)
+                in
+                let quads1 = Quads.genQuad quad quad_lst in
+                let quad = 
+                  Quads.(Q_Endu, O_Entry f_unit, O_Empty, O_Empty)
+                in
+                let quads2 = Quads.genQuad quad quad_lst in
+                let quads3 = Quads.mergeQuads quads1 quads2 in
+                let v = CFG.V.create (block_info, LS.empty, quads3) 
+                in
+                  (CFG.add_vertex cfg v, v :: new_reach))) 
+      (reachable_cfg, reachable_vert) reachable_vert
+  in
+    opt_cfg
+
 
 
 let optimize cfg =
