@@ -6,7 +6,7 @@ open Error
 open Types 
 
 let params_size = ref 0 
-let debug_codeGen = ref true
+let debug_codeGen = ref false
 
 let rec codeGen quads outer = 
   let prelude = genInstr (Prelude outer) (newInstrList ()) in

@@ -1,3 +1,5 @@
+(** Symbol table*)
+
 exception DuplicateTypeDef of string
 module H :
   sig

@@ -124,21 +124,24 @@ let main =
       | Typeinf.DimAccesError (dim1, dim2) ->
         error "Array dimensions error. Cannot match dimension size %d with %d" 
           dim1 dim2;
+        exit 2
       | Typeinf.DimSizeError (dim1, dim2) ->
         error "You are requesting the size of the #%d dimension in an array \
                with only %d dimensions" dim1 dim2;
         exit 2
       | Typeinf.UnsolvedTyVar tvar ->
         error "Unsolved type variable, \
-               possibly arising from an unsed polymorphic type"
+               possibly arising from an unused polymorphic type";
+        exit 2
       | Typeinf.UnsolvedDimVar tvar ->
         error "Unsolved dimension variable, possibly arising from \
-               the use of an array with unspecified dimensions"
+               the use of an array with unspecified dimensions";
+        exit 2
       | Intermediate.InvalidCompare typ ->
         error "Cannot compare values of type %a" pretty_typ typ;
         exit 2
       | Ast.RecDef typ ->
-        error "%s connot be recursive" typ;
+        error "%s cannot be recursive" typ;
         exit 2
       | Ast.ConstrParamTyp (cid, tid) ->
         error "Constructor %s has one undefined argument, namely %s" cid tid;    

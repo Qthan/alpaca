@@ -87,6 +87,7 @@ let unreachable cfg =
     List.fold_left (fun (cfg, new_reach) (i, s, b) ->
         match Blocks.(i.protected) with
           | None -> (cfg, new_reach)
+          | Some f_unit when Symbol.isLibraryFunction f_unit -> (cfg, new_reach)
           | Some f_unit ->
             (match CFG.safe_find_unit new_reach f_unit with
                 Some v -> (cfg, new_reach)

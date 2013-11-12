@@ -109,7 +109,7 @@ let libFunDecl lst_lib lst_auxil =
 
 let instructionToString = function
   | Prelude outer -> 
-    ".model Small\n.stack 16384\n.data\n" ^
+    ".model Small\n.stack 32768\n.data\n" ^
       (let floats = List.fold_left (fun acc (f, id) ->
            (constFloatToString f id) ^ acc) "" (!Final.flt_lst)  in
          (List.fold_left (fun acc (s, id) -> 

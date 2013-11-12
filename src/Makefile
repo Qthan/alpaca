@@ -1,18 +1,12 @@
 .PHONY: clean distclean pack count
 
-# OS type: Linux/Win DJGPP
-ifdef OS
-   EXE=.exe
-else
-   EXE=
-endif
 
-EXEFILE=gracec$(EXE)
 MLFILES=Hashcons.ml Identifier.ml Error.ml Types.ml Pretty_print.ml Typeinf.ml Symbol.ml \
    Lexer.ml Ast.ml Quads.ml Intermediate.ml Misc.ml Cfg.ml Local.ml Optimizations.ml \
    Final.ml CodeGen.ml Peephole.ml EmitMasm.ml Parser.ml Main.ml
 MLIFILES=Hashcons.mli Identifier.mli Error.mli Types.mli Pretty_print.mli Typeinf.mli Symbol.mli \
-   SymbTypes.mli Lexer.mli AstTypes.mli Quads.mli Cfg.mli Local.mli Final.mli Ast.mli Parser.mli
+   SymbTypes.mli Lexer.mli AstTypes.mli Quads.mli Cfg.mli Local.mli Final.mli Ast.mli Parser.mli \
+   EmitMasm.mli Intermediate.mli Optimizations.mli Peephole.mli Types.mli
 
 CMOFILES=$(patsubst %.ml,%.cmo,$(MLFILES))
 CMIFILES=$(patsubst %.ml,%.cmi,$(MLFILES))
@@ -24,7 +18,7 @@ SRCFILES=Makefile extend.ml Lexer.mll Parser.mly \
   $(filter-out Parser.%,$(MLIFILES))
 
 CAMLP5_FLAGS=-pp "camlp5o ./extend.cmo"
-OCAMLC_FLAGS=-g
+OCAMLC_FLAGS=
 OCAMLOPT_FLAGS=
 OCAMLDOC_FLAGS=-sort -html -colorize-code -d ../doc/
 PACKAGES=ocamlgraph
@@ -39,13 +33,19 @@ default: Llama
 Llama: $(CMOFILES)
 	$(OCAMLC) -o $@ $^ -linkpkg
 
+Llama.opt: $(CMXFILES)
+	    $(OCAMLOPT) -o $@ $^ -linkpkg
+
+extend.cmx: extend.ml
+	$(OCAMLOPT) -pp "camlp5o pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` -c $<
+
 extend.cmo: extend.ml
 	$(OCAMLC) -pp "camlp5o pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` -c $<
 
 %.cmo: %.ml %.mli extend.cmo
 	$(OCAMLC) $(CAMLP5_FLAGS) -c $<
 
-%.cmx: %.ml extend.cmo
+%.cmx: %.ml %.mli extend.cmx
 	$(OCAMLOPT) $(CAMLP5_FLAGS) -c $<
 
 %.cmi: %.mli extend.cmo
@@ -53,6 +53,10 @@ extend.cmo: extend.ml
 
 %.cmo %.cmi: %.ml extend.cmo
 	$(OCAMLC) $(CAMLP5_FLAGS) -c $<
+
+%.cmx %.cmi: %.ml extend.cmx
+	$(OCAMLOPT) $(CAMLP5_FLAGS) -c $<
+
 
 .PHONY: all clean count depend
 
@@ -76,12 +80,12 @@ doc:
 	$(OCAMLDOC) $(OCAMLDOC_FLAGS) $(MLIFILES)
 
 clean:
-	$(RM) $(CMXFILES) $(CMOFILES) $(CMIFILES) $(OBJFILES) $(EXEFILES) \
-           extend.cmi extend.cmo \
-           $(patsubst %,%.cm?,$(EXEFILES)) $(PARSERFILES) pplib.cma *~
+	$(RM) $(CMXFILES) $(CMOFILES) $(CMIFILES) $(OBJFILES) \
+           extend.cmi extend.cmo extend.cmx \
+           $(PARSERFILES) pplib.cma *~
 
 distclean: clean
-	$(RM) $(EXEFILE) Llama$(EXE) .depend
+	$(RM) Llama Llama.opt .depend
 
 pack: clean
 	tar cvfz gracec.tar.gz $(SRCFILES)

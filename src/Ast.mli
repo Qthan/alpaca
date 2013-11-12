@@ -1,3 +1,5 @@
+(** Walks the AST performing semantic and other checks *)
+
 exception RecDef of string
 exception ConstrParamTyp of string * string
 exception ConstrParamArity of string * int * int

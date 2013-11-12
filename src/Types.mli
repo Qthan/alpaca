@@ -1,3 +1,4 @@
+(** LLama types related functions and values*)
 exception PolymorphicTypes
 type dim = D_Dim of int | D_DimSize of int | D_Alpha of int
 type typ =

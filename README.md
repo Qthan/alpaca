@@ -24,6 +24,11 @@ Llama is a functional programing language, inspired from Caml, featuring:
 
     $ make .depend
     $ make
+
+Alternatively, you can generate a native executable using ocamlopt:
+
+    $ make .depend
+    $ make Llama.opt
     
 Optionaly, you can create the documentation files: 
     
@@ -46,4 +51,3 @@ to see the list of available options.
 Have fun!!
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/1gZ0x8AVaBI/0.jpg)](http://www.youtube.com/watch?v=1gZ0x8AVaBI)
-
