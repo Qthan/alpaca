@@ -38,6 +38,9 @@ Optionaly, you can create the documentation files:
 **To run:**
 
     $ ./Llama file.lla
+		or 
+	$ ./Llama.opt file.lla 
+
     $ dosbox
     $ ml.exe file.asm llama.lib
 

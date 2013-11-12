@@ -36,3 +36,4 @@ dosbox.conf
 /doc/*.html
 /doc/*.css
 report/report.tex.old
+/sample_programs/*.sh
